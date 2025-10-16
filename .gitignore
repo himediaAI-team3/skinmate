@@ -1,0 +1,249 @@
+# 바이트 컴파일된 / 최적화된 / DLL 파일들
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C 확장 모듈
+*.so
+
+# 배포 / 패키징
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  보통 이런 파일들은 PyInstaller가 exe를 빌드하기 전에
+#  템플릿에서 파이썬 스크립트로 작성되어 날짜/기타 정보를 주입합니다.
+*.manifest
+*.spec
+
+# 설치 로그
+pip-log.txt
+pip-delete-this-directory.txt
+
+# 단위 테스트 / 커버리지 리포트
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# 번역 파일
+*.mo
+*.pot
+
+# Django 관련:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask 관련:
+instance/
+.webassets-cache
+
+# Scrapy 관련:
+.scrapy
+
+# Sphinx 문서
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+
+# PEP 582; 예: github.com/David-OConnor/pyflow에서 사용
+__pypackages__/
+
+# Celery 관련
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath 파싱된 파일
+*.sage.py
+
+# 환경 변수
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder 프로젝트 설정
+.spyderproject
+.spyproject
+
+# Rope 프로젝트 설정
+.ropeproject
+
+# mkdocs 문서
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# 운영체제
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node.js (프론트엔드용)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# 로그
+logs
+*.log
+
+# 런타임 데이터
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# jscoverage/JSCover로 생성된 계측 라이브러리 디렉토리
+lib-cov
+
+# istanbul 같은 도구에서 사용하는 커버리지 디렉토리
+coverage
+
+# nyc 테스트 커버리지
+.nyc_output
+
+# Grunt 중간 저장소 (https://gruntjs.com/creating-plugins#storing-task-files)
+.grunt
+
+# Bower 의존성 디렉토리 (https://bower.io/)
+bower_components
+
+# node-waf 설정
+.lock-wscript
+
+# 컴파일된 바이너리 애드온 (https://nodejs.org/api/addons.html)
+build/Release
+
+# 의존성 디렉토리
+jspm_packages/
+
+# TypeScript v1 선언 파일
+typings/
+
+# 선택적 npm 캐시 디렉토리
+.npm
+
+# 선택적 eslint 캐시
+.eslintcache
+
+# Microbundle 캐시
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# 선택적 REPL 히스토리
+.node_repl_history
+
+# 'npm pack' 출력
+*.tgz
+
+# Yarn 무결성 파일
+.yarn-integrity
+
+# dotenv 환경 변수 파일
+.env
+.env.test
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# parcel-bundler 캐시 (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js 빌드 출력
+.next
+
+# Nuxt.js 빌드 / 생성 출력
+.nuxt
+dist
+
+# Gatsby 파일
+.cache/
+public
+
+# Storybook 빌드 출력
+.out
+.storybook-out
+
+# 임시 폴더
+tmp/
+temp/
+
+# 데이터베이스
+*.db
+*.sqlite
+*.sqlite3
+
+# 업로드
+uploads/
+media/
+
+# 민감한 데이터가 포함된 설정 파일
+config.ini
+config.json
+secrets.json

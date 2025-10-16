@@ -1,0 +1,5 @@
+# 웹 프레임워크
+fastapi==0.104.1
+
+# ASGI 서버
+uvicorn[standard]==0.24.0
