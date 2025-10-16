@@ -1,5 +1,8 @@
 from fastapi import FastAPI
 import uvicorn
+from app.core.config.database import engine
+from app.schemas import Base
+from app.router import skin_image
 
 # FastAPI 애플리케이션 생성 (Swagger 표시 설정)
 app = FastAPI(
@@ -17,6 +20,9 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "SkinMate API"}
+
+# SQLAlchemy 테이블 자동 생성
+Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
     uvicorn.run(

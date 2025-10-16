@@ -1,8 +1,5 @@
 from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import declarative_base
-from .common import Common
-
-Base = declarative_base()
+from .common import Base, Common
 
 class Member(Base, Common):
     __tablename__ = "member"
