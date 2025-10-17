@@ -5,8 +5,8 @@ class Diagnosis(Base, Common):
     __tablename__ = "diagnosis"
 
     diagnosis_id = Column(Integer, primary_key=True, autoincrement=True)
-    member_id = Column(Integer, nullable=False)
-    image_id = Column(Integer, nullable=False)
-    disease_name = Column(String(100), nullable=False)
-    summary = Column(Text)
+    member_id = Column(Integer, nullable=True)
+    image_id = Column(Integer, nullable=True)
+    disease_name = Column(String(100), nullable=True)
+    summary = Column(Text, nullable=True)
 

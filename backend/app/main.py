@@ -1,23 +1,33 @@
 from fastapi import FastAPI
 import uvicorn
+from contextlib import asynccontextmanager
 from app.core.config.database import engine
 from app.schemas import Base
-from app.router import skin_image
+
+
+# 앱 시작 시 테이블 생성
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 시작 시 실행
+    Base.metadata.create_all(bind=engine)
+    yield
+    # 종료 시 실행 (필요시)
 
 # FastAPI 애플리케이션 생성 (Swagger 표시 설정)
 app = FastAPI(
     title="SkinMate API",
     description="피부질환 진단 및 화장품 추천 서비스 API",
-    docs_url= "/docs"
+    docs_url="/docs",
+    lifespan=lifespan
 )
 
 # 기본 라우트
-@app.get("/")
+@app.get("/api")
 async def root():
     return {"message": "SkinMate API 서버 실행 성공"}
 
 # 헬스 체크 엔드포인트
-@app.get("/health")
+@app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "service": "SkinMate API"}
 
