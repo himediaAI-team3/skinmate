@@ -1,10 +1,6 @@
 import logging
 import sys
 import os
-from dotenv import load_dotenv
-
-# 환경변수 로드
-load_dotenv()
 
 # 로그 레벨 설정 (환경변수에서 가져오거나 기본값 INFO 사용)
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
