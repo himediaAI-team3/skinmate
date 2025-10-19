@@ -7,6 +7,7 @@ uvicorn[standard]==0.24.0
 # ORM 및 데이터베이스 지원
 sqlalchemy==2.0.23
 pymysql==1.1.0  # MySQL 드라이버
+cryptography==41.0.7  # MySQL 인증용
 
 # 환경변수 관리
 python-dotenv==1.0.0
