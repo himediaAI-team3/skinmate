@@ -84,10 +84,10 @@ class AnalysisService:
                     reason=rec.reason
                 ))
         
-        # 6. 결과 조합 (products 리스트로 반환)
+        # 6. 결과 조합 (file_id로 반환)
         return AnalysisResponse(
             analysis_id=analysis_id,
-            file_url=file.file_url if file else "",
+            file_id=file.file_id if file else 0,
             disease_name=diagnosis.disease_name if diagnosis else "",
             diagnosis_summary=diagnosis.summary if diagnosis else "",
             products=recommendation_list,

@@ -12,6 +12,7 @@
 2. 개발 서버 실행
     2-1. VS Code 내 "Python(ms-python)" 확장 프로그램 설치 
     2-2. Ctrl + F5 (launch.json 설정대로 서버 실행됨)
+    (2-3. uvicorn app.main:app --host 192.168.0.235자신IP입력 --port 8000)
 
 3. Swagger 문서 확인
     - 브라우저에서 `http://127.0.0.1:8000/docs`

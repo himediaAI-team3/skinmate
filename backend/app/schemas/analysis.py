@@ -12,7 +12,7 @@ class AnalysisCreateResponse(BaseModel):
 class AnalysisResponse(BaseModel):
     """피부 분석 결과 응답 (GET용)"""
     analysis_id: int
-    file_url: str  # 피부 이미지 URL
+    file_id: int  # 피부 이미지 파일 ID (GET /api/files/{file_id}로 조회)
     disease_name: str
     diagnosis_summary: str
     products: List[Recommendation]  # TOP 3 화장품 리스트
