@@ -1,6 +1,9 @@
 # 웹 프레임워크
 fastapi==0.104.1
 
+# 파일 업로드 지원
+python-multipart==0.0.6
+
 # ASGI 서버
 uvicorn[standard]==0.24.0
 
@@ -11,3 +14,6 @@ cryptography==41.0.7  # MySQL 인증용
 
 # 환경변수 관리
 python-dotenv==1.0.0
+
+# 로그 포맷팅 (가독성 개선)
+rich==13.7.0

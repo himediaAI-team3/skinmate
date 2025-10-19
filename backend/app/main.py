@@ -4,7 +4,8 @@ from contextlib import asynccontextmanager
 from app.core.config.database import engine
 from app.models import Base
 from app.core.exception import ApiException, api_exception_handler
-from app.router import member_router
+from app.router import member_router, analysis_router
+from app.core.config import logging  # Rich 로깅 설정 활성화
 
 
 # 앱 시작 시 테이블 생성
@@ -28,6 +29,7 @@ app.add_exception_handler(ApiException, api_exception_handler)
 
 # 라우터 등록
 app.include_router(member_router)
+app.include_router(analysis_router)
 
 # 기본 라우트
 @app.get("/api")

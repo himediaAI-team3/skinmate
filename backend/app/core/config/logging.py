@@ -1,24 +1,21 @@
 import logging
 import sys
-import os
+from rich.logging import RichHandler
 
-# 로그 레벨 설정 (환경변수에서 가져오거나 기본값 INFO 사용)
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-
-# 로그 포맷 설정
-LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-
-# 기본 로거 설정
+# Rich 핸들러로 로깅 설정
 logging.basicConfig(
-    level=getattr(logging, LOG_LEVEL, logging.INFO),
-    format=LOG_FORMAT,
-    datefmt=DATE_FORMAT,
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+    level=logging.INFO,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(
+        rich_tracebacks=True,  # 에러 트레이스 예쁘게
+        markup=True,           # 마크업 지원
+        show_time=True,        # 시간 표시
+        show_level=True,       # 레벨 표시
+        show_path=True         # 파일 경로 표시
+    )]
 )
 
-# 로거 생성
+# 로거 생성 함수
 def get_logger(name: str) -> logging.Logger:
     return logging.getLogger(name)
