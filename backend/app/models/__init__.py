@@ -1,7 +1,7 @@
 from .common import Base, Common
 from .member import Member
 from .file import File
-from .skin_image import SkinAnalysis
+from .skin_analysis import SkinAnalysis
 from .diagnosis import Diagnosis
 from .cosmetic import Cosmetic
 from .recommendation import Recommendation

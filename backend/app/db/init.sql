@@ -1,21 +1,34 @@
-CREATE OR REPLACE VIEW v_recommendation_summary AS
-SELECT
-    m.member_id,
-    si.image_id,
-    f.file_url AS skin_image_url,
-    d.diagnosis_id,
-    d.disease_name,
-    d.summary AS diagnosis_summary,
-    c.cosmetic_id,
-    c.name AS cosmetic_name,
-    c.brand AS cosmetic_brand,
-    c.price AS cosmetic_price,
-    f2.file_url AS cosmetic_image_url,
-    r.rationale AS recommendation_reason
-FROM recommendation r
-JOIN diagnosis d ON r.diagnosis_id = d.diagnosis_id
-JOIN skin_image si ON d.image_id = si.image_id
-JOIN member m ON si.member_id = m.member_id
-JOIN cosmetic c ON r.cosmetic_id = c.cosmetic_id
-LEFT JOIN file f ON f.ref_id = si.image_id AND f.ref_type = 'SKIN_IMAGE'
-LEFT JOIN file f2 ON f2.ref_id = c.cosmetic_id AND f2.ref_type = 'COSMETIC_IMAGE';
+- 더미 회원 데이터 삽입
+INSERT INTO member (
+    member_id, 
+    oauth_provider, 
+    oauth_id, 
+    name, 
+    email, 
+    role,
+    skin_type,
+    min_price,
+    max_price,
+    gender,
+    age_group,
+    created_at,
+    updated_at,
+    created_id,
+    updated_id
+) VALUES (
+    1,                              -- member_id
+    'kakao',                        -- oauth_provider (카카오 로그인)
+    'kakao_123456789',              -- oauth_id
+    '김지수',                       -- name
+    'jisoo.kim@gmail.com',        -- email
+    'USER',                         -- role
+    '복합성',                       -- skin_type (복합성 피부)
+    15000,                          -- min_price (1만5천원)
+    50000,                          -- max_price (5만원)
+    '여성',                         -- gender
+    '20',                           -- age_group (20대)
+    '2025-01-15 10:30:00',          -- created_at
+    '2025-01-15 10:30:00',          -- updated_at
+    NULL,                           -- created_id
+    NULL                            -- updated_id
+);

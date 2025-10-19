@@ -3,6 +3,8 @@ import uvicorn
 from contextlib import asynccontextmanager
 from app.core.config.database import engine
 from app.models import Base
+from app.core.exception import ApiException, api_exception_handler
+from app.router import member_router
 
 
 # 앱 시작 시 테이블 생성
@@ -20,6 +22,12 @@ app = FastAPI(
     docs_url="/docs",
     lifespan=lifespan
 )
+
+# 전역 예외 핸들러 등록
+app.add_exception_handler(ApiException, api_exception_handler)
+
+# 라우터 등록
+app.include_router(member_router)
 
 # 기본 라우트
 @app.get("/api")
