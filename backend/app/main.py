@@ -2,7 +2,7 @@ from fastapi import FastAPI
 import uvicorn
 from contextlib import asynccontextmanager
 from app.core.config.database import engine
-from app.schemas import Base
+from app.models import Base
 
 
 # 앱 시작 시 테이블 생성

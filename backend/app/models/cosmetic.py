@@ -9,6 +9,7 @@ class Cosmetic(Base, Common):
     brand = Column(String(100), nullable=True)
     category = Column(String(50), nullable=True)
     price = Column(DECIMAL(10, 2), nullable=True)
+    image_url = Column(String(255), nullable=True)
     ingredients = Column(Text, nullable=True)
     buy_url = Column(String(255), nullable=True)
 

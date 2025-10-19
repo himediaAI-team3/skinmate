@@ -1,21 +1,11 @@
-from pydantic import BaseModel
-from typing import Any, Optional
-from datetime import datetime
+from sqlalchemy import Column, Integer, DateTime, func
+from sqlalchemy.orm import declarative_base
 
+Base = declarative_base()
 
-class ApiResponse(BaseModel):
-    """
-    success : 요청 성공 여부
-    code    : HTTP 상태 코드 또는 내부 코드
-    message : 결과 설명 (성공/실패 사유)
-    data    : 실제 응답 데이터 (Pydantic 객체, 리스트, dict 등) => JSON
-    timestamp : 응답 시각
-    """
-    code: int
-    success: bool
-    message: str
-    data: Optional[Any] = None
-    timestamp: datetime = datetime.utcnow()
+class Common:
+    created_at = Column(DateTime, server_default=func.now())
+    created_id = Column(Integer, nullable=True)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    updated_id = Column(Integer, nullable=True)
 
-    class Config:
-        orm_mode = True
