@@ -13,4 +13,8 @@ class FileRepository:
         db.refresh(file)
         return file
     
+    @staticmethod
+    def get_by_analysis_id(db: Session, analysis_id: int) -> File:
+        return db.query(File).filter(File.analysis_id == analysis_id).first()
+    
 

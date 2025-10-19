@@ -27,4 +27,26 @@ def create_skin_analysis(
     )
 
 
+@router.get("/{analysis_id}", response_model=ApiResponse)
+def get_skin_analysis_result(
+    analysis_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    피부 분석 결과 조회
+    
+    - **analysis_id**: 분석 ID
+    """
+    # 전체 결과 조회
+    result = AnalysisService.get_analysis_result(db, analysis_id)
+    
+    # ApiResponse로 감싸서 반환
+    return ApiResponse(
+        code=status.HTTP_200_OK,
+        success=True,
+        message="분석 결과 조회 성공",
+        data=result
+    )
+
+
 

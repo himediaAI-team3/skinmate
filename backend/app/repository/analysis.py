@@ -13,4 +13,8 @@ class AnalysisRepository:
         db.refresh(analysis)
         return analysis
     
+    @staticmethod
+    def get_by_id(db: Session, analysis_id: int) -> SkinAnalysis:
+        return db.query(SkinAnalysis).filter(SkinAnalysis.analysis_id == analysis_id).first()
+    
 

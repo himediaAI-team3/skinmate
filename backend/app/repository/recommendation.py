@@ -15,4 +15,12 @@ class RecommendationRepository:
             db.refresh(rec)
         return recommendations
     
+    @staticmethod
+    def get_by_analysis_id(db: Session, analysis_id: int) -> List[Recommendation]:
+        """분석 ID로 추천 목록 조회 (ranking 순)"""
+        return db.query(Recommendation)\
+            .filter(Recommendation.analysis_id == analysis_id)\
+            .order_by(Recommendation.ranking)\
+            .all()
+    
 
