@@ -1,14 +1,15 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import Optional
 
 
 class MemberCreate(BaseModel):
     """개인정보 입력 요청 스키마"""
-    skin_type: str = Field(..., description="피부 타입 (지성, 건성, 복합성, 민감성 등)")
-    min_price: int = Field(..., ge=0, description="최소 선호 가격대")
-    max_price: int = Field(..., ge=0, description="최대 선호 가격대")
-    gender: str = Field(..., description="성별 (남성, 여성)")
-    age_group: str = Field(..., description="나이대 (10, 20, 30, 40, 50)")
+    skin_type: Optional[str] = Field(None, description="피부 타입 (지성, 건성, 복합성, 민감성 등)")
+    min_price: Optional[int] = Field(None, ge=0, description="최소 선호 가격대")
+    max_price: Optional[int] = Field(None, ge=0, description="최대 선호 가격대")
+    gender: Optional[str] = Field(None, description="성별 (남성, 여성)")
+    age_group: Optional[str] = Field(None, description="나이대 (10, 20, 30, 40, 50)")
 
     class Config:
         json_schema_extra = {
