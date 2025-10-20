@@ -65,7 +65,7 @@ CREATE TABLE cosmetic (
     price DECIMAL(10, 2),
     image_url VARCHAR(255),
     ingredients TEXT,
-    buy_url VARCHAR(255),
+    buy_url VARCHAR(2048),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_id INT,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

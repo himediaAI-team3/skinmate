@@ -11,5 +11,5 @@ class Cosmetic(Base, Common):
     price = Column(DECIMAL(10, 2), nullable=True)
     image_url = Column(String(255), nullable=True)
     ingredients = Column(Text, nullable=True)
-    buy_url = Column(String(255), nullable=True)
+    buy_url = Column(String(2048), nullable=True)
 
