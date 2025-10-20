@@ -5,7 +5,7 @@ from app.core.config.database import engine
 from app.models import Base
 from app.core.exception import ApiException, api_exception_handler
 from app.router import member_router, analysis_router, file_router
-from app.core.config import logging  # Rich 로깅 설정 활성화
+from fastapi.middleware.cors import CORSMiddleware
 
 
 # 앱 시작 시 테이블 생성
@@ -22,6 +22,15 @@ app = FastAPI(
     description="피부질환 진단 및 화장품 추천 서비스 API",
     docs_url="/docs",
     lifespan=lifespan
+)
+
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # ex ["http://localhost:3000", "http://192.168.0.249:3000"]
+    allow_credentials=True,
+    allow_methods=["*"],  # GET, POST, PUT, DELETE, OPTIONS 전부 허용
+    allow_headers=["*"],  # 모든 헤더 허용
 )
 
 # 전역 예외 핸들러 등록
