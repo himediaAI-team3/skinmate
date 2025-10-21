@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+    font-family: 'GmarketSans';
+    font-weight: 700;
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
+}
+
+body {
+    font-family: 'Pretendard', 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.text-gradient {
+    background: -webkit-linear-gradient(45deg, #F97316, #EC4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.card-glow {
+    box-shadow: 0px 10px 30px -5px rgba(249, 115, 22, 0.1), 0px 5px 15px -5px rgba(236, 72, 153, 0.1);
+}
+
+.option-button.selected {
+    border-color: #F97316; /* brand-orange */
+    background-color: #FFF7ED; /* orange-50 */
+    color: #F97316; /* brand-orange */
+    font-weight: 600;
+}

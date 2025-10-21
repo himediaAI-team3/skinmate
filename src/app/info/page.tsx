@@ -1,0 +1,167 @@
+'use client';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { infoApi } from '@/features/info';
+import { SkinTypeEnum, GenderEnum, AgeGroupEnum } from '@/entities/info';
+
+const SKIN_TYPES = SkinTypeEnum.options;
+const GENDER_TYPES = GenderEnum.options;
+const AGE_GROUPS = AgeGroupEnum.options;
+
+type SkinType = typeof SKIN_TYPES[number];
+type GenderType = typeof GENDER_TYPES[number];
+type AgeGroup = typeof AGE_GROUPS[number];
+
+export default function InfoPage() {
+  const router = useRouter();
+  const [form, setForm] = useState<{
+    skinType: SkinType | '';
+    gender: GenderType | '';
+    ageGroup: AgeGroup | '';
+    priceMin: string;
+    priceMax: string;
+  }>({ skinType: '', gender: '', ageGroup: '', priceMin: '', priceMax: '' });
+
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const toggle = <K extends 'skinType' | 'gender' | 'ageGroup'>(k: K, v: any) =>
+    setForm(p => ({ ...p, [k]: p[k] === v ? '' : v }));
+
+  const onNum = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target; // priceMin | priceMax
+    setForm(p => ({ ...p, [id]: value }));
+  };
+
+  const validate = () => {
+    if (!form.skinType) return '피부 타입을 선택해주세요.';
+    if (!form.gender) return '성별을 선택해주세요.';
+    if (!form.ageGroup) return '연령대를 선택해주세요.';
+    const min = Number(form.priceMin ?? 0);
+    const max = Number(form.priceMax ?? 0);
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return '가격은 숫자여야 합니다.';
+    if (min <= 0 || max <= 0) return '가격은 0보다 커야 합니다.';
+    if (min > max) return '최소 금액이 최대 금액보다 클 수 없습니다.';
+    return null;
+  };
+
+  //[del]테스트용
+  const btntest = async () => {
+    location.href = "/upload"
+  };
+
+  const handleNext = async () => {
+    setMsg(null);
+    const err = validate();
+    if (err) return setMsg(err);
+
+    setLoading(true);
+    try {
+      const memberId = 1; // TODO: 실제 로그인 사용자 ID
+      await infoApi.update(memberId, {
+        skin_type: form.skinType as SkinType,
+        gender: form.gender as GenderType,
+        age_group: form.ageGroup as AgeGroup,
+        min_price: Number(form.priceMin),
+        max_price: Number(form.priceMax),
+      });
+      router.push('/upload');
+    } catch (e: any) {
+      setMsg(e?.message ?? '서버 요청 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const btn = (on: boolean) =>
+    `border-2 rounded-xl p-4 text-center font-semibold transition-colors
+     ${on ? 'border-orange-500 bg-orange-100 text-orange-700' : 'border-gray-200 text-gray-700 hover:border-orange-200'}`;
+
+  return (
+    <div>
+      <header className="p-4 flex items-center h-16">
+        <a href="/login" className="w-10 h-10 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </a>
+        <h1 className="text-xl font-bold text-gray-800 absolute left-1/2 -translate-x-1/2">추가 정보 입력</h1>
+      </header>
+
+      <main className="p-6 pb-24">
+        {/* 피부 타입 */}
+        <section className="bg-orange-50 p-6 rounded-2xl">
+          <h3 className="text-xl font-bold text-gray-800">피부 타입</h3>
+          <p className="text-gray-500 mt-1">해당하는 피부 타입을 선택해주세요.</p>
+          <div className="grid grid-cols-2 gap-4 mt-3">
+            {SKIN_TYPES.map(t => (
+              <button key={t} type="button" onClick={() => toggle('skinType', t)} className={btn(form.skinType === t)}>
+                {t}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* 가격대 */}
+        <section className="bg-orange-50 p-6 rounded-2xl mt-6">
+          <h3 className="text-xl font-bold text-gray-800">가격대</h3>
+          <p className="text-gray-500 mt-1">원하시는 화장품의 가격 범위를 입력해주세요.</p>
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="flex items-center border-2 border-gray-200 rounded-xl p-3 focus-within:border-orange-500 transition-colors">
+              <input type="number" id="priceMin" placeholder="최소 금액" value={form.priceMin} onChange={onNum}
+                     className="w-full font-semibold text-gray-700 focus:outline-none bg-transparent" min={0}/>
+              <span className="font-semibold text-gray-500 ml-2">원</span>
+            </div>
+            <div className="flex items-center border-2 border-gray-200 rounded-xl p-3 focus-within:border-orange-500 transition-colors">
+              <input type="number" id="priceMax" placeholder="최대 금액" value={form.priceMax} onChange={onNum}
+                     className="w-full font-semibold text-gray-700 focus:outline-none bg-transparent" min={0}/>
+              <span className="font-semibold text-gray-500 ml-2">원</span>
+            </div>
+          </div>
+        </section>
+
+        {/* 성별 */}
+        <section className="bg-orange-50 p-6 rounded-2xl mt-6">
+          <h3 className="text-xl font-bold text-gray-800">성별</h3>
+          <p className="text-gray-500 mt-1">사용자의 성별을 선택해 주세요.</p>
+          <div className="grid grid-cols-2 gap-4 mt-3">
+            {GENDER_TYPES.map(t => (
+              <button key={t} type="button" onClick={() => toggle('gender', t)} className={btn(form.gender === t)}>
+                {t}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* 나이 */}
+        <section className="bg-orange-50 p-6 rounded-2xl mt-6">
+          <h3 className="text-xl font-bold text-gray-800">나이</h3>
+          <p className="text-gray-500 mt-1">사용자의 연령대를 선택해 주세요.</p>
+          <div className="grid grid-cols-3 gap-3 mt-3">
+            {AGE_GROUPS.map(a => (
+              <button key={a} type="button" onClick={() => toggle('ageGroup', a)} className={btn(form.ageGroup === a)}>
+                {a}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {msg && <p className="mt-4 text-sm text-red-600">{msg}</p>}
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-6 bg-white">
+        {/* 
+          <button onClick={handleNext} disabled={loading}
+                  className="w-full bg-orange-500 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:bg-orange-600 transition-colors disabled:opacity-50">
+            {loading ? '저장 중...' : '다음'}
+          </button>
+        */}
+          <button onClick={btntest} disabled={loading}
+                  className="w-full bg-orange-500 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:bg-orange-600 transition-colors disabled:opacity-50">
+            {loading ? '저장 중...' : '다음'}
+          </button>
+        </div>
+      </main>
+    </div>
+  );
+}
