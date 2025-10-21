@@ -8,11 +8,15 @@ from app.router import member_router, analysis_router, file_router
 from fastapi.middleware.cors import CORSMiddleware
 
 
-# 앱 시작 시 테이블 생성
+# 앱 시작 시 테이블 생성 (VIEW 제외)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 시작 시 실행
-    Base.metadata.create_all(bind=engine)
+    # 시작 시 실행 - VIEW를 제외하고 테이블만 생성
+    tables_to_create = [
+        table for table in Base.metadata.sorted_tables 
+        if not table.info.get('is_view', False)
+    ]
+    Base.metadata.create_all(bind=engine, tables=tables_to_create)
     yield
     # 종료 시 실행 (필요시)
 
@@ -51,8 +55,7 @@ async def root():
 async def health_check():
     return {"status": "healthy", "service": "SkinMate API"}
 
-# SQLAlchemy 테이블 자동 생성
-Base.metadata.create_all(bind=engine)
+# 테이블 생성은 lifespan에서 처리됨 (VIEW 제외)
 
 if __name__ == "__main__":
     uvicorn.run(

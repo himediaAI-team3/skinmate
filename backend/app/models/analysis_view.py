@@ -3,7 +3,10 @@ from .common import Base
 
 class AnalysisResultView(Base):
     __tablename__ = "analysis_result_view"
-    __table_args__ = {'info': dict(is_view=True)}
+    __table_args__ = {
+        'info': dict(is_view=True),
+        'extend_existing': True
+    }
     
     analysis_id = Column(Integer, primary_key=True)
     member_id = Column(Integer)
