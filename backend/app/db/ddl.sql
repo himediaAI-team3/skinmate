@@ -85,3 +85,26 @@ CREATE TABLE recommendation (
     updated_id INT
 );
 
+-- 7. analysis_result_view (분석 결과 조회용 VIEW)
+CREATE VIEW analysis_result_view AS
+SELECT 
+    sa.analysis_id,
+    sa.member_id,
+    sa.created_at as analysis_created_at,
+    f.file_id,
+    d.disease_name,
+    d.summary as diagnosis_summary,
+    r.cosmetic_id,
+    c.name as product_name,
+    c.brand,
+    c.price,
+    c.image_url,
+    r.reason,
+    r.ranking
+FROM skin_analysis sa
+LEFT JOIN file f ON sa.analysis_id = f.analysis_id
+LEFT JOIN diagnosis d ON sa.analysis_id = d.analysis_id
+LEFT JOIN recommendation r ON sa.analysis_id = r.analysis_id
+LEFT JOIN cosmetic c ON r.cosmetic_id = c.cosmetic_id
+ORDER BY r.ranking;
+

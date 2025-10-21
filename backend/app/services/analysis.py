@@ -1,13 +1,10 @@
 from sqlalchemy.orm import Session
 from fastapi import UploadFile, status
 from app.repository.analysis import AnalysisRepository
-from app.repository.file import FileRepository
-from app.repository.diagnosis import DiagnosisRepository
-from app.repository.recommendation import RecommendationRepository
+from app.repository.analysis_view import AnalysisViewRepository
 from app.services.file import FileService
 from app.services.diagnosis import DiagnosisService
 from app.services.recommendation import RecommendationService
-from app.models.cosmetic import Cosmetic
 from app.schemas.analysis import AnalysisResponse
 from app.schemas.recommendation import Recommendation as RecommendationSchema
 from app.core.exception import ApiException
@@ -47,51 +44,36 @@ class AnalysisService:
     
     @staticmethod
     def get_analysis_result(db: Session, analysis_id: int) -> AnalysisResponse:
-        """
-        분석 결과 조회 (GET용)
         
-        Args:
-            db: 데이터베이스 세션
-            analysis_id: 분석 ID
-            
-        Returns:
-            AnalysisResponse (전체 결과)
-        """
-        # 1. 분석 존재 확인
-        analysis = AnalysisRepository.get_by_id(db, analysis_id)
-        if not analysis:
+        # 1. DB View에서 데이터 조회 (ranking 순 정렬됨)
+        view_results = AnalysisViewRepository.get_by_analysis_id(db, analysis_id)
+        
+        if not view_results:
             raise ApiException(status.HTTP_404_NOT_FOUND, "분석 결과를 찾을 수 없습니다")
         
-        # 2. 파일 조회
-        file = FileRepository.get_by_analysis_id(db, analysis_id)
+        # 2. 첫 번째 row에서 기본 정보 추출
+        first_row = view_results[0]
         
-        # 3. 진단 조회
-        diagnosis = DiagnosisRepository.get_by_analysis_id(db, analysis_id)
-        
-        # 4. 추천 목록 조회 (ranking 순)
-        recommendations = RecommendationRepository.get_by_analysis_id(db, analysis_id)
-        
-        # 5. cosmetic JOIN해서 Recommendation 스키마로 변환
+        # 3. 추천 제품 리스트 구성 (cosmetic_id가 있는 row만)
         recommendation_list = []
-        for rec in recommendations:
-            cosmetic = db.query(Cosmetic).filter(Cosmetic.cosmetic_id == rec.cosmetic_id).first()
-            if cosmetic:
+        for row in view_results:
+            if row.cosmetic_id:  # cosmetic이 존재하는 경우만
                 recommendation_list.append(RecommendationSchema(
-                    name=cosmetic.name,
-                    brand=cosmetic.brand,
-                    price=float(cosmetic.price),
-                    image_url=cosmetic.image_url or "",
-                    reason=rec.reason
+                    name=row.product_name or "",
+                    brand=row.brand or "",
+                    price=float(row.price) if row.price else 0,
+                    image_url=row.image_url or "",
+                    reason=row.reason or ""
                 ))
         
-        # 6. 결과 조합 (file_id로 반환)
+        # 4. 응답 반환
         return AnalysisResponse(
-            analysis_id=analysis_id,
-            file_id=file.file_id if file else 0,
-            disease_name=diagnosis.disease_name if diagnosis else "",
-            diagnosis_summary=diagnosis.summary if diagnosis else "",
+            analysis_id=first_row.analysis_id,
+            file_id=first_row.file_id or 0, # 유저가 업로드한 피부 이미지파일 ID
+            disease_name=first_row.disease_name or "",
+            diagnosis_summary=first_row.diagnosis_summary or "",
             products=recommendation_list,
-            created_at=analysis.created_at
+            created_at=first_row.analysis_created_at
         )
     
     

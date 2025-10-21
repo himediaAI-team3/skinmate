@@ -5,6 +5,7 @@ from .skin_analysis import SkinAnalysis
 from .diagnosis import Diagnosis
 from .cosmetic import Cosmetic
 from .recommendation import Recommendation
+from .analysis_view import AnalysisResultView
 
 __all__ = [
     "Base",
@@ -15,5 +16,6 @@ __all__ = [
     "Diagnosis",
     "Cosmetic",
     "Recommendation",
+    "AnalysisResultView",
 ]
 
