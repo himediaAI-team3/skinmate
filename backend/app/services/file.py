@@ -37,7 +37,7 @@ class FileService:
         
         file_data = {
             "analysis_id": analysis_id,
-            "file_url": f"\{file_path}",
+            "file_url": file_path,
             "file_name": image_file.filename,
             "mime_type": image_file.content_type,
             "size": os.path.getsize(file_path)
