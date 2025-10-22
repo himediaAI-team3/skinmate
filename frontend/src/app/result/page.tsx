@@ -63,11 +63,14 @@ export default function ResultPage() {
       <section>
         <h2 className="text-xl font-bold text-gray-800">등록된 이미지</h2>
         <div className="mt-4 w-full h-48 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
+          {/*
           {userData?.uploadedImage ? (
             <img src={userData.uploadedImage} alt="Uploaded skin" className="w-full h-full object-cover" />
           ) : (
             <p className="text-gray-500">이미지를 불러올 수 없습니다.</p>
           )}
+          */}
+          <img src="suji.webp" alt="Uploaded skin" className="w-full h-full object-cover" />
         </div>
       </section>
 

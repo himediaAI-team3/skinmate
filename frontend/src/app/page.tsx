@@ -5,16 +5,6 @@ import { Camera, BrainCircuit, Award } from 'lucide-react';
 export default function Home() {
   return (
     <div>
-      {/* Header */}
-      <header className="p-7 pb-1 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <h1 className="text-3xl font-bold font-gmarket text-gray-800 tracking-tighter">SkinMate</h1>
-        </div>
-        <button className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </button>
-      </header>
-
       {/* Main Content */}
       <main className="p-6 pt-2 pb-24">
         {/* Hero Section Card */}
