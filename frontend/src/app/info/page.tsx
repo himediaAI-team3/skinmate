@@ -45,11 +45,6 @@ export default function InfoPage() {
     return null;
   };
 
-  //[del]테스트용
-  const btntest = async () => {
-    location.href = "/upload"
-  };
-
   const handleNext = async () => {
     setMsg(null);
     const err = validate();
@@ -150,13 +145,7 @@ export default function InfoPage() {
 
         {msg && <p className="mt-4 text-sm text-red-600">{msg}</p>}
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-6 bg-white">
-        {/* 
           <button onClick={handleNext} disabled={loading}
-                  className="w-full bg-orange-500 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:bg-orange-600 transition-colors disabled:opacity-50">
-            {loading ? '저장 중...' : '다음'}
-          </button>
-        */}
-          <button onClick={btntest} disabled={loading}
                   className="w-full bg-orange-500 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:bg-orange-600 transition-colors disabled:opacity-50">
             {loading ? '저장 중...' : '다음'}
           </button>
