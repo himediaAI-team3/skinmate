@@ -24,10 +24,6 @@ export default function LoadingPage() {
   useEffect(() => {
     const run = async () => {
       try {
-        //[del]테스트용
-        setTimeout(() => { router.push('/result?analysis=0'); }, 3000);
-        return;
-        /*
         const raw0 = sessionStorage.getItem('skinMatePendingUpload');
         if (raw0 == null) throw new Error('업로드 대기 데이터가 없습니다.');
         const raw: string = raw0;
@@ -42,7 +38,6 @@ export default function LoadingPage() {
         // 결과 저장(+ 복원 대비)
         try { sessionStorage.setItem('skinMateAnalysis', JSON.stringify(res)); } catch {}
         router.push(`/result?analysis=${res.data.analysis_id}`);
-        */
       } catch (e: any) {
         setError(e?.message ?? '분석 요청 중 오류가 발생했습니다.');
       } finally {

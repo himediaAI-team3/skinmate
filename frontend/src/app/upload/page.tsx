@@ -41,10 +41,6 @@ export default function UploadPage() {
     reader.readAsDataURL(f);
     e.currentTarget.value = ''; // 같은 파일 재선택 허용
   };
-  //[del]테스트용
-  const starttest = async () => {
-    location.href = "/loading"
-  };
 
   const onStart = async () => {
     if (loading) return;
@@ -92,17 +88,8 @@ export default function UploadPage() {
         </div>
 
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-6 bg-white">
-          {/*
           <button
             onClick={onStart}
-            disabled={!imagePreview || loading}
-            className="w-full bg-orange-500 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:bg-orange-600 transition-colors disabled:bg-gray-300"
-          >
-            {loading ? '이동 중...' : '분석 시작하기'}
-          </button>
-          */}
-          <button
-            onClick={starttest}
             disabled={!imagePreview || loading}
             className="w-full bg-orange-500 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:bg-orange-600 transition-colors disabled:bg-gray-300"
           >
