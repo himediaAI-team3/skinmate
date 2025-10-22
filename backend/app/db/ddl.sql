@@ -65,6 +65,7 @@ CREATE TABLE cosmetic (
     price DECIMAL(10, 2),
     image_url VARCHAR(255),
     ingredients TEXT,
+    description TEXT,
     buy_url VARCHAR(2048),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_id INT,
@@ -99,6 +100,7 @@ SELECT
     c.brand,
     c.price,
     c.image_url,
+    c.buy_url,
     r.reason,
     r.ranking
 FROM skin_analysis sa

@@ -19,6 +19,7 @@ class AnalysisResultView(Base):
     brand = Column(String(100))
     price = Column(DECIMAL(10, 2))
     image_url = Column(String(255))
+    buy_url = Column(String(2048))
     reason = Column(String(255))
     ranking = Column(Integer)
 
