@@ -33,8 +33,9 @@ CREATE TABLE skin_analysis (
 -- 3. file 테이블
 CREATE TABLE file (
     file_id INT AUTO_INCREMENT PRIMARY KEY,
-    analysis_id INT,
-    file_url VARCHAR(255),
+    entity_type VARCHAR(50),
+    entity_id INT,
+    file_path VARCHAR(255),
     file_name VARCHAR(255),
     mime_type VARCHAR(100),
     size INT,
@@ -63,7 +64,6 @@ CREATE TABLE cosmetic (
     brand VARCHAR(100),
     category VARCHAR(50),
     price DECIMAL(10, 2),
-    image_url VARCHAR(255),
     ingredients TEXT,
     description TEXT,
     buy_url VARCHAR(2048),
@@ -92,21 +92,22 @@ SELECT
     sa.analysis_id,
     sa.member_id,
     sa.created_at as analysis_created_at,
-    f.file_id,
+    f.file_id as skin_file_id,
     d.disease_name,
     d.summary as diagnosis_summary,
     r.cosmetic_id,
-    c.name as product_name,
+    c.name as cosmetic_name,
     c.brand,
     c.price,
-    c.image_url,
     c.buy_url,
+    cf.file_id as cosmetic_file_id,
     r.reason,
     r.ranking
 FROM skin_analysis sa
-LEFT JOIN file f ON sa.analysis_id = f.analysis_id
+LEFT JOIN file f ON f.entity_type = 'skin_analysis' AND f.entity_id = sa.analysis_id
 LEFT JOIN diagnosis d ON sa.analysis_id = d.analysis_id
 LEFT JOIN recommendation r ON sa.analysis_id = r.analysis_id
 LEFT JOIN cosmetic c ON r.cosmetic_id = c.cosmetic_id
+LEFT JOIN file cf ON cf.entity_type = 'cosmetic' AND cf.entity_id = c.cosmetic_id
 ORDER BY r.ranking;
 
