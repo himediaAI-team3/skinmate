@@ -92,7 +92,21 @@ CREATE TABLE recommendation (
     updated_id INT
 );
 
--- 7. analysis_result_view (분석 결과 조회용 VIEW)
+-- 8. likes 테이블
+CREATE TABLE likes (
+    like_id INT AUTO_INCREMENT PRIMARY KEY,
+    member_id INT,
+    cosmetic_id INT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_id INT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_id INT,
+    UNIQUE KEY unique_member_cosmetic (member_id, cosmetic_id),
+    INDEX idx_cosmetic_id (cosmetic_id),
+    INDEX idx_member_id (member_id)
+);
+
+-- 9. analysis_result_view (분석 결과 조회용 VIEW)
 CREATE VIEW analysis_result_view AS
 SELECT 
     sa.analysis_id,
