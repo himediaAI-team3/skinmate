@@ -1,22 +1,18 @@
 from sqlalchemy.orm import Session
 from app.repository.diagnosis import DiagnosisRepository
+from app.repository.file import FileRepository
 from app.models.diagnosis import Diagnosis
+from app.models.entity_type import EntityType
 
 
 class DiagnosisService:
     
     @staticmethod
     def create_diagnosis(db: Session, analysis_id: int) -> Diagnosis:
-        """
-        피부 진단 생성 (현재: 더미 데이터, 나중: AI 모델)
         
-        Args:
-            db: 데이터베이스 세션
-            analysis_id: 분석 ID
-            
-        Returns:
-            Diagnosis 객체
-        """
+        # analysis_id로 파일 조회
+        file = FileRepository.get_by_entity(db, EntityType.SKIN_ANALYSIS, analysis_id)
+        
         # 더미 진단 데이터
         diagnosis_data = {
             "analysis_id": analysis_id,

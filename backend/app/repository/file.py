@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.file import File
+from app.models.entity_type import EntityType
 
 
 class FileRepository:
@@ -19,8 +20,11 @@ class FileRepository:
         return db.query(File).filter(File.file_id == file_id).first()
     
     @staticmethod
-    def get_by_analysis_id(db: Session, analysis_id: int) -> File:
-        """분석 ID로 파일 조회"""
-        return db.query(File).filter(File.analysis_id == analysis_id).first()
+    def get_by_entity(db: Session, entity_type: EntityType, entity_id: int) -> File:
+        """entity로 파일 조회"""
+        return db.query(File).filter(
+            File.entity_type == entity_type,
+            File.entity_id == entity_id
+        ).first()
     
 

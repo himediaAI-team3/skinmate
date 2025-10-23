@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import UploadFile
 from app.repository.file import FileRepository
 from app.models.file import File
+from app.models.entity_type import EntityType
 from app.core.config.file import get_upload_path, ALLOWED_EXTENSIONS, MAX_FILE_SIZE
 from app.core.exception import ApiException
 import os
@@ -36,8 +37,9 @@ class FileService:
             f.write(image_file.file.read())
         
         file_data = {
-            "analysis_id": analysis_id,
-            "file_url": file_path,
+            "entity_type": EntityType.SKIN_ANALYSIS,
+            "entity_id": analysis_id,
+            "file_path": file_path,
             "file_name": image_file.filename,
             "mime_type": image_file.content_type,
             "size": os.path.getsize(file_path)

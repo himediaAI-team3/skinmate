@@ -22,7 +22,7 @@ def get_file(
         raise ApiException(status.HTTP_404_NOT_FOUND, "파일을 찾을 수 없습니다")
     
     # 파일 존재 확인
-    file_path = file.file_url.lstrip("\\")  # "/uploads/xxx.jpg" → "uploads/xxx.jpg"
+    file_path = file.file_path.lstrip("\\")  # "/uploads/xxx.jpg" → "uploads/xxx.jpg"
     
     if not os.path.exists(file_path):
         raise ApiException(status.HTTP_404_NOT_FOUND, "파일이 존재하지 않습니다")
