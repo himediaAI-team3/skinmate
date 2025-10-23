@@ -59,17 +59,18 @@ class AnalysisService:
         for row in view_results:
             if row.cosmetic_id:  # cosmetic이 존재하는 경우만
                 recommendation_list.append(RecommendationSchema(
-                    name=row.product_name or "",
+                    name=row.cosmetic_name or "",
                     brand=row.brand or "",
                     price=float(row.price) if row.price else 0,
-                    image_url=row.image_url or "",
+                    file_id=row.cosmetic_file_id or 0,
+                    buy_url=row.buy_url or "",
                     reason=row.reason or ""
                 ))
         
         # 4. 응답 반환
         return AnalysisResponse(
             analysis_id=first_row.analysis_id,
-            file_id=first_row.file_id or 0, # 유저가 업로드한 피부 이미지파일 ID
+            file_id=first_row.skin_file_id or 0, # 유저가 업로드한 피부 이미지파일 ID
             disease_name=first_row.disease_name or "",
             diagnosis_summary=first_row.diagnosis_summary or "",
             products=recommendation_list,

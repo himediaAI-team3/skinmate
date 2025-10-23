@@ -6,7 +6,8 @@ class Recommendation(BaseModel):
     name: str
     brand: str
     price: float
-    image_url: str
+    file_id: int      # 화장품 이미지 file_id
+    buy_url: str      # 구매 링크
     reason: str
     
     class Config:
