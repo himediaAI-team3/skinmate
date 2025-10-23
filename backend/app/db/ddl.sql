@@ -57,16 +57,23 @@ CREATE TABLE diagnosis (
     updated_id INT
 );
 
--- 5. cosmetic 테이블
+-- 5. cosmetic 테이블 (전체 컬럼 포함)
 CREATE TABLE cosmetic (
     cosmetic_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(200),
     brand VARCHAR(100),
     category VARCHAR(50),
     price DECIMAL(10, 2),
+    image_url VARCHAR(255),
     ingredients TEXT,
-    description TEXT,
+    short_description TEXT COMMENT '한줄설명',
+    description TEXT COMMENT '상세설명',
     buy_url VARCHAR(2048),
+    skin_type VARCHAR(50) COMMENT '피부타입',
+    skin_disease VARCHAR(50) COMMENT '관련 피부질환',
+    main_effect VARCHAR(100) COMMENT '주요효능',
+    care_symptom VARCHAR(100) COMMENT '케어증상',
+    key_ingredient VARCHAR(200) COMMENT '핵심성분',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_id INT,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
