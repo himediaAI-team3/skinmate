@@ -83,3 +83,46 @@ INSERT INTO cosmetic (
     NOW(),
     NOW()
 );
+
+-- 화장품 이미지 파일 더미 데이터
+-- cosmetic_id 1, 2, 3에 해당하는 이미지 파일들
+INSERT INTO file (
+    entity_type,
+    entity_id,
+    file_path,
+    file_name,
+    mime_type,
+    size,
+    created_at,
+    updated_at
+) VALUES
+(
+    'cosmetic',
+    1,
+    'images/0.jpg',
+    '0.jpg',
+    'image/jpeg',
+    245760,
+    NOW(),
+    NOW()
+),
+(
+    'cosmetic',
+    2,
+    'images/1.png',
+    '1.png',
+    'image/png',
+    189440,
+    NOW(),
+    NOW()
+),
+(
+    'cosmetic',
+    3,
+    'images/2.png',
+    '2.png',
+    'image/png',
+    156320,
+    NOW(),
+    NOW()
+);
