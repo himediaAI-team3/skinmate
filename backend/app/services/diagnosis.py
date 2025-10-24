@@ -30,6 +30,7 @@ class DiagnosisService:
             model=os.getenv("RUNPOD_MODEL_NAME"),
             api_key=os.getenv("RUNPOD_API_KEY"),
             base_url=os.getenv("RUNPOD_BASE_URL"),
+            temperature=0.1,
         )
 
         messages = [
