@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { cookies } from "next/headers";
-import AppHeader from "@/components/AppHeader";
-import TabBar from "@/components/TabBar"; // 이미 만든 탭바
+import HeaderGate from "@/components/HeaderGate";
+
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
@@ -11,8 +10,6 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const hasJwt = !!cookies().get("sm_token")?.value; // 백엔드가 세팅한 JWT 쿠키명
-
   return (
     <html lang="ko">
       <head>
@@ -21,14 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@700;800&family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body>
-        {/* ✅ 기존 컨테이너 스타일 그대로 */}
         <div className="max-w-md mx-auto bg-white min-h-screen relative">
-          {/* 공통 상단 헤더 */}
-          <AppHeader />
-          <main className="pb-16">
-            {children}
-          </main>
-          <TabBar />
+          <HeaderGate />
+          <main className="pb-16">{children}</main>
         </div>
       </body>
     </html>
