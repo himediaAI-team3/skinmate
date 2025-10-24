@@ -24,7 +24,7 @@ const items: Item[] = [
   },
   {
     href: '/info',
-    label: '진단',
+    label: '분석',
     icon: (active) => (
       <svg viewBox="0 0 24 18" className="w-6 h-6 stroke-current" aria-hidden>
         <path
