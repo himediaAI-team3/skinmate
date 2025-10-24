@@ -73,7 +73,7 @@ export default function TabBar() {
   return (
     <>
       {/* 컨텐츠가 탭에 가려지지 않도록 스페이서 */}
-      <div aria-hidden className="w-full" style={tabHeightStyle} />
+      <div aria-hidden className="w-full" />
         <nav
           className="
             fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md
