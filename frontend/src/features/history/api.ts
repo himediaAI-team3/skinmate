@@ -1,15 +1,17 @@
 import type { ApiListResponse, DiagnosisSummary } from '@/app/entities/history';
 
-const API = process.env.API_PROXY_TARGET;
+const API = process.env.API_PROXY_TARGET!; // 예: https://api.example.com
 
-// 진단 이력 조회 (커서 기반)
-export async function fetchDiagnosisHistory(cursor?: string | null): Promise<ApiListResponse<DiagnosisSummary>> {
-  const url = new URL(`${API}/api/hisroty`);
+// 목록 조회 (커서 기반)
+export async function fetchDiagnosisHistory(
+  cursor?: string | null
+): Promise<ApiListResponse<DiagnosisSummary>> {
+  const url = new URL(`${API}/api/me/diagnoses`);
   if (cursor) url.searchParams.set('cursor', cursor);
 
   const res = await fetch(url.toString(), {
     method: 'GET',
-    credentials: 'include',     // JWT HttpOnly 쿠키 전송
+    credentials: 'include',
     headers: { Accept: 'application/json' },
     cache: 'no-store',
   });
@@ -20,6 +22,20 @@ export async function fetchDiagnosisHistory(cursor?: string | null): Promise<Api
   }
 
   const json = (await res.json()) as ApiListResponse<DiagnosisSummary>;
-  if (!json?.success) throw new Error(json?.message || '진단 이력 조회 실패');
+  if (!json?.success) {
+    throw new Error(json?.message || '진단 이력 조회 실패');
+  }
   return json;
+}
+
+// 항목 삭제
+export async function deleteDiagnosis(analysis_id: number): Promise<void> {
+  const res = await fetch(`${API}/api/me/diagnoses/${analysis_id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(text || `삭제 실패 (HTTP ${res.status})`);
+  }
 }

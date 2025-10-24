@@ -101,7 +101,7 @@ export default function AppHeader({ me, loading = false, onLogout }: Props) {
                     <History size={18} /><span>분석 이력</span>
                   </Link>
                   <Link href="/likes" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50" role="menuitem" onClick={() => setOpen(false)}>
-                    <Heart size={18} /><span>좋아요 내역</span>
+                    <Heart size={18} /><span>좋아요 이력</span>
                   </Link>
                 </nav>
                 <div className="px-2 pb-2 border-t">
