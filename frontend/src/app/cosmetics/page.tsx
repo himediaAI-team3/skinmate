@@ -169,7 +169,7 @@ export default function CosmeticsPage() {
   return (
     <main className="px-5 pt-4">
       <section className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-extrabold tracking-tight text-gray-900">상점</h1>
+        <h1 className="text-xl font-extrabold tracking-tight text-gray-900">화장품</h1>
       </section>
 
       <section className="mb-5 space-y-3">
