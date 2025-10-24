@@ -32,7 +32,7 @@ class AnalysisService:
         # 2. 파일 업로드 (FileService 호출)
         FileService.upload_and_save(db, analysis_id, image_file)
         
-        # 3. 진단 생성 (더미 데이터 -> 추후 파인튜닝 모델 적용)
+        # 3. 진단 생성 (파인튜닝 모델 호출)
         DiagnosisService.create_diagnosis(db, analysis_id)
         
         # 4. 추천 생성 (더미 데이터 -> 추후 RAG 파이프라인 구축)

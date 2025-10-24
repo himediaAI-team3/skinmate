@@ -17,3 +17,13 @@ python-dotenv==1.0.0
 
 # 로그 포맷팅 (가독성 개선)
 rich==13.7.0
+
+# 이미지 처리
+Pillow==10.1.0
+
+# YAML 파싱
+PyYAML==6.0.1
+
+# LangChain (안정 버전)
+langchain-openai==0.1.23
+langchain-core==0.2.38
