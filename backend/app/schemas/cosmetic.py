@@ -74,4 +74,4 @@ class CosmeticDetailResponse(BaseModel):
     is_liked: bool = False
 
     class Config:
-        orm_mode = True
+        from_attributes = True # 이거 orm_mode로 하면 서버 로딩이 안됨

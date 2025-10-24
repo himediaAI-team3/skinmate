@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status # Query 추가
 from sqlalchemy.orm import Session
+from typing import Optional # 새로 추가됨
 from app.core.config.database import get_db
 from app.services.cosmetic import CosmeticService
 from app.schemas.cosmetic import CosmeticSearchResponse, CosmeticDetailResponse, CosmeticSearchParams
