@@ -25,12 +25,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="max-w-md mx-auto bg-white min-h-screen relative">
           {/* 공통 상단 헤더 */}
           <AppHeader />
-          {/* 탭이 있을 때만 본문 하단 여백 확보 */}
-          <main className={hasJwt ? "pb-16" : ""}>
+          <main className="pb-16">
             {children}
           </main>
-          {/* JWT가 있으면 하단 탭 표시 */}
-          {hasJwt && <TabBar />}
+          <TabBar />
         </div>
       </body>
     </html>

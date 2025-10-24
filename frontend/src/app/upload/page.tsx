@@ -31,36 +31,36 @@ export default function UploadPage() {
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      const base64 = reader.result as string; // dataURL
+      const base64 = reader.result as string;
       setImagePreview(base64);
-
-      // loading 페이지가 재구성해 POST할 수 있도록 저장
-      const payload = { member_id: 1, image_data_url: base64, file_name: f.name }; // TODO: member_id 실제값
+      const payload = { member_id: 1, image_data_url: base64, file_name: f.name }; // TODO: 실제 member_id
       sessionStorage.setItem('skinMatePendingUpload', JSON.stringify(payload));
     };
     reader.readAsDataURL(f);
-    e.currentTarget.value = ''; // 같은 파일 재선택 허용
+    e.currentTarget.value = '';
   };
 
   const onStart = async () => {
     if (loading) return;
     if (!imagePreview) return alert('피부 사진을 등록해주세요.');
     setLoading(true);
-    // POST는 /loading에서 실행 (여긴 이동만)
     router.push('/loading');
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white">
+    <div className="max-w-md mx-auto bg-white">
       <PageHeader title="사진 등록" backHref="/info" />
-      <main className="p-6 pb-24">
+
+      <main className="p-6">
         <h2 className="text-2xl font-bold text-gray-800">
           마지막 단계예요.<br />피부 사진을 등록해주세요.
         </h2>
         <p className="text-gray-500 mt-2">정확한 진단을 위해 가장 선명한 사진을 올려주세요.</p>
 
-        <div className="mt-8 w-full aspect-square bg-gray-100 rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden"
-             onClick={() => fileInputRef.current?.click()}>
+        <div
+          className="mt-8 w-full aspect-square bg-gray-100 rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden"
+          onClick={() => fileInputRef.current?.click()}
+        >
           <input
             type="file"
             accept="image/*"
@@ -70,6 +70,7 @@ export default function UploadPage() {
             onChange={onChange}
           />
           {imagePreview ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={imagePreview} alt="Uploaded skin preview" className="w-full h-full object-cover" />
           ) : (
             <div className="flex flex-col items-center justify-center text-gray-500">
@@ -87,15 +88,19 @@ export default function UploadPage() {
           )}
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-6 bg-white">
+        {/* CTA: 일반 흐름으로 배치(고정/스티키 아님) */}
+        <div className="px-6 pt-4 bg-white">
           <button
             onClick={onStart}
             disabled={!imagePreview || loading}
-            className="w-full bg-orange-500 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:bg-orange-600 transition-colors disabled:bg-gray-300"
+            className="w-full bg-orange-500 text-white font-bold py-4 rounded-full shadow-lg hover:bg-orange-600 transition-colors disabled:bg-gray-300"
           >
             {loading ? '이동 중...' : '분석 시작하기'}
           </button>
         </div>
+
+        {/* 탭바와의 간격 확보 스페이서(탭 56px + safe-area + 12px) */}
+        <div aria-hidden/>
       </main>
     </div>
   );
