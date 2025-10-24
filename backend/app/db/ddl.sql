@@ -92,12 +92,11 @@ CREATE TABLE recommendation (
     updated_id INT
 );
 
--- 8. like 테이블
+-- 8. like 테이블 (행 존재=좋아요, 행 없음=취소)
 CREATE TABLE like (
     like_id INT AUTO_INCREMENT PRIMARY KEY,
     member_id INT,
     cosmetic_id INT,
-    is_liked TINYINT(1) DEFAULT 1 COMMENT '좋아요 여부 (1: 좋아요, 0: 좋아요 취소)',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_id INT,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -105,7 +104,7 @@ CREATE TABLE like (
     UNIQUE KEY unique_member_cosmetic (member_id, cosmetic_id),
     INDEX idx_cosmetic_id (cosmetic_id),
     INDEX idx_member_id (member_id)
-);
+) COMMENT='좋아요 규칙: INSERT(좋아요) → UNIQUE 위반 시 DELETE(취소) / COUNT(cosmetic_id)=총 좋아요 수';
 
 -- 9. analysis_result_view (분석 결과 조회용 VIEW)
 CREATE VIEW analysis_result_view AS
