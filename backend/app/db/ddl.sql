@@ -92,11 +92,12 @@ CREATE TABLE recommendation (
     updated_id INT
 );
 
--- 8. likes 테이블
-CREATE TABLE likes (
+-- 8. like 테이블
+CREATE TABLE like (
     like_id INT AUTO_INCREMENT PRIMARY KEY,
     member_id INT,
     cosmetic_id INT,
+    is_liked TINYINT(1) DEFAULT 1 COMMENT '좋아요 여부 (1: 좋아요, 0: 좋아요 취소)',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_id INT,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
