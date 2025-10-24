@@ -1,163 +1,117 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { LogOut, ChevronDown, User2, UserRound } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
+import { LogOut, User2, Menu, User, History, Heart, Settings, LogIn } from 'lucide-react';
 
-type Me = {
-  id: number | string;
-  name?: string;
-  email?: string;
-  image_url?: string;
+export type Me = { id: number | string; name?: string; email?: string; image_url?: string; };
+
+type Props = {
+  me: Me | null;
+  loading?: boolean;
+  onLogout?: () => Promise<void> | void;
 };
 
-const API = process.env.NEXT_PUBLIC_API_URL; // 예: "https://api.example.com"
-
-export default function AppHeader() {
-  const [me, setMe] = useState<Me | null>(null);
+export default function AppHeader({ me, loading = false, onLogout }: Props) {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
-  // 백엔드의 /api/me에서 로그인 사용자 정보 조회 (JWT 쿠키 기반)
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const res = await fetch(`${API}/api/me`, {
-          credentials: 'include', // HttpOnly 쿠키 전송
-        });
-        if (!alive) return;
-        if (res.ok) {
-          const data = await res.json();
-          setMe(data ?? null);
-        } else {
-          setMe(null);
-        }
-      } catch {
-        setMe(null);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  // 바깥 클릭 시 드롭다운 닫기
-  useEffect(() => {
+    if (!open) return;
     const onClickOutside = (e: MouseEvent) => {
-      if (!menuRef.current) return;
-      if (!menuRef.current.contains(e.target as Node)) setOpen(false);
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
-    if (open) window.addEventListener('click', onClickOutside);
-    return () => window.removeEventListener('click', onClickOutside);
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('click', onClickOutside);
+    window.addEventListener('keydown', onEsc);
+    return () => {
+      window.removeEventListener('click', onClickOutside);
+      window.removeEventListener('keydown', onEsc);
+    };
   }, [open]);
 
-  const onLogout = async () => {
-    try {
-      await fetch(`${API}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      location.reload(); // 상태 초기화
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  const handleLogout = async () => { try { await onLogout?.(); } finally { setOpen(false); } };
 
   return (
     <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b">
-      <div className="h-16 px-7 max-w-md mx-auto flex items-center justify-between">
-        {/* 좌측: 로고 */}
+      <div className="h-16 px-7 max-w-md mx-auto flex items-center justify-between relative">
         <a href="/" className="flex items-center space-x-2">
           <h1 className="text-3xl font-bold font-gmarket text-gray-800 tracking-tighter">SkinMate</h1>
         </a>
 
-        {/* 우측: 유저 영역 */}
-        <div className="relative" ref={menuRef}>
-          {loading ? (
-            <div className="w-10 h-10 bg-gray-100 rounded-full animate-pulse" />
-          ) : me ? (
-            // ✅ 로그인 상태: 아바타 버튼 클릭 시 드롭다운 토글
-            <button
-              onClick={() => setOpen(v => !v)}
-              className="h-10 pl-3 pr-2 bg-gray-100 rounded-full flex items-center gap-2 hover:bg-gray-200 transition"
-              aria-haspopup="menu"
-              aria-expanded={open}
-            >
-              {me.image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={me.image_url}
-                  alt="avatar"
-                  className="w-7 h-7 rounded-full object-cover"
-                />
+        <div ref={rootRef} className="relative">
+          <button
+            onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
+            className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition"
+            aria-haspopup="menu" aria-expanded={open} aria-controls="appheader-menu" aria-label="메뉴 열기" title="메뉴"
+          >
+            <Menu size={20} />
+          </button>
+
+          <div
+            id="appheader-menu" role="menu"
+            className={[
+              'absolute right-2 top-full mt-2 w-64 max-w-[calc(100vw-16px)]',
+              'origin-top-right rounded-2xl border bg-white shadow-xl',
+              'transition-transform transition-opacity duration-150',
+              open ? 'opacity-100 scale-100' : 'pointer-events-none opacity-0 scale-95',
+              'z-50',
+            ].join(' ')}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-4 py-3 border-b">
+              {loading ? (
+                <div className="h-10 bg-gray-100 rounded animate-pulse" />
+              ) : me ? (
+                <div className="flex items-center gap-3">
+                  {me.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={me.image_url} alt="avatar" className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                      <User2 size={18} />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{me.name || me.email || '사용자'}</p>
+                    {me.email && <p className="text-xs text-gray-500 truncate">{me.email}</p>}
+                  </div>
+                </div>
               ) : (
-                <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center">
-                  <User2 size={18} />
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <User2 size={16} />
+                  <span>로그인이 필요합니다.</span>
                 </div>
               )}
-              <span className="text-sm font-semibold text-gray-800 max-w-[110px] truncate">
-                {me.name || me.email || '사용자'}
-              </span>
-              <ChevronDown size={16} />
-            </button>
-          ) : (
-            // ✅ 로그아웃 상태(비로그인): 로그인 버튼(아이콘 교체)
-            <a
-              href="/login"
-              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition"
-              aria-label="로그인"
-              title="로그인"
-            >
-              <UserRound size={20} />
-            </a>
-          )}
-
-          {/* 드롭다운 메뉴 */}
-          {open && me && (
-            <div
-              role="menu"
-              className="absolute right-0 mt-2 w-48 bg-white border rounded-xl shadow-lg py-1"
-            >
-              <div className="px-3 py-2">
-                <p className="text-sm font-semibold text-gray-800 truncate">
-                  {me.name || me.email || '사용자'}
-                </p>
-                {me.email && (
-                  <p className="text-xs text-gray-500 truncate">{me.email}</p>
-                )}
-              </div>
-              <hr />
-              <a
-                href="/me"
-                role="menuitem"
-                className="block px-3 py-2 text-sm hover:bg-gray-50"
-              >
-                내 정보
-              </a>
-              <button
-                role="menuitem"
-                onClick={onLogout}
-                className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-              >
-                <LogOut size={16} /> 로그아웃
-              </button>
             </div>
-          )}
 
-          {/*
-          // (옵션) 아이콘만으로 바로 로그아웃하는 초간단 버튼을 헤더에 쓰고 싶다면:
-          // <button
-          //   onClick={onLogout}
-          //   className="ml-2 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition"
-          //   aria-label="로그아웃"
-          //   title="로그아웃"
-          // >
-          //   <LogOut size={18} />
-          // </button>
-          */}
+            {!me ? (
+              <div className="p-2">
+                <Link href="/login" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-900" role="menuitem" onClick={() => setOpen(false)}>
+                  <LogIn size={18} /> 로그인
+                </Link>
+              </div>
+            ) : (
+              <>
+                <nav className="p-2">
+                  <Link href="/account" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50" role="menuitem" onClick={() => setOpen(false)}>
+                    <User size={18} /><span>내 정보</span>
+                  </Link>
+                  <Link href="/history" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50" role="menuitem" onClick={() => setOpen(false)}>
+                    <History size={18} /><span>분석 이력</span>
+                  </Link>
+                  <Link href="/likes" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50" role="menuitem" onClick={() => setOpen(false)}>
+                    <Heart size={18} /><span>좋아요 내역</span>
+                  </Link>
+                </nav>
+                <div className="px-2 pb-2 border-t">
+                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 text-left text-red-600" role="menuitem">
+                    <LogOut size={18} /> 로그아웃
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </header>
