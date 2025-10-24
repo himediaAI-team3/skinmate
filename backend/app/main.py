@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from app.core.config.database import engine
 from app.models import Base
 from app.core.exception import ApiException, api_exception_handler
-from app.router import member_router, analysis_router, file_router, like_router
+from app.router import member_router, analysis_router, file_router, like_router, cosmetic_router
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -45,6 +45,7 @@ app.include_router(member_router)
 app.include_router(analysis_router)
 app.include_router(file_router)
 app.include_router(like_router)
+app.include_router(cosmetic_router)
 
 # 기본 라우트
 @app.get("/api")
