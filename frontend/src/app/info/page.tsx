@@ -75,17 +75,9 @@ export default function InfoPage() {
   return (
     <div>
       <header className="p-4 flex items-center h-16">
-        <a href="/login" className="w-10 h-10 flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-               viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
-        </a>
         <h1 className="text-xl font-bold text-gray-800 absolute left-1/2 -translate-x-1/2">추가 정보 입력</h1>
       </header>
-
-      <main className="p-6 pb-24">
+        <main className="p-6">
         {/* 피부 타입 */}
         <section className="bg-orange-50 p-6 rounded-2xl">
           <h3 className="text-xl font-bold text-gray-800">피부 타입</h3>
@@ -137,19 +129,26 @@ export default function InfoPage() {
           <div className="grid grid-cols-3 gap-3 mt-3">
             {AGE_GROUPS.map(a => (
               <button key={a} type="button" onClick={() => toggle('ageGroup', a)} className={btn(form.ageGroup === a)}>
-                {a}
+                {a}대
               </button>
             ))}
           </div>
         </section>
 
         {msg && <p className="mt-4 text-sm text-red-600">{msg}</p>}
-        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-6 bg-white">
-          <button onClick={handleNext} disabled={loading}
-                  className="w-full bg-orange-500 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:bg-orange-600 transition-colors disabled:opacity-50">
+
+        <div className="px-6 pt-6 bg-white">
+          <button
+            onClick={handleNext}
+            disabled={loading}
+            className="w-full bg-orange-500 text-white font-bold py-4 rounded-full shadow-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
+          >
             {loading ? '저장 중...' : '다음'}
           </button>
         </div>
+
+        {/* 탭바와의 간격 확보를 위한 스페이서 */}
+        <div aria-hidden />
       </main>
     </div>
   );

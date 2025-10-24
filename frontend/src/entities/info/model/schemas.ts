@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const SkinTypeEnum = z.enum(['지성', '건성', '복합성', '민감성']);
 export const GenderEnum   = z.enum(['남성', '여성']);
-export const AgeGroupEnum = z.enum(['10대', '20대', '30대', '40대', '50대']);
+export const AgeGroupEnum = z.enum(['10', '20', '30', '40', '50']);
 
 export const UpdateSkinInfoInput = z.object({
   min_price: z.number().int().positive(),
@@ -26,7 +26,7 @@ export const UpdateSkinInfoOutput = z.object({
     min_price: z.number(),
     max_price: z.number(),
     gender: z.string(),
-    age_group: z.string(),
+    age_group: z.number(),
   }),
   timestamp: z.string(),
 });

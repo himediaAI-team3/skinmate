@@ -4,7 +4,8 @@ export const ProductSchema = z.object({
   name: z.string(),
   brand: z.string(),
   price: z.number().int().nonnegative(),
-  image_url: z.string().min(1),
+  file_id: z.number().int().nonnegative(),
+  buy_url: z.string().min(1),
   reason: z.string(),
 });
 

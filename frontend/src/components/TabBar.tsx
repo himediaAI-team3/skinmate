@@ -9,44 +9,47 @@ type Item = {
   icon: (active: boolean) => JSX.Element;
 };
 
+const DIAG_GROUP = ['/info', '/upload', '/loading', '/result'];
+
+// ← items는 3개만 유지
 const items: Item[] = [
   {
     href: '/',
     label: '홈',
     icon: (active) => (
-      <svg viewBox="0 0 24 24" className={`w-6 h-6 ${active ? 'fill-gray-900' : 'fill-none'} stroke-current`}>
+      <svg viewBox="0 0 24 18" className={`w-6 h-6 ${active ? 'fill-gray-900' : 'fill-none'} stroke-current`} aria-hidden>
         <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5Z" strokeWidth="1.8" />
       </svg>
     ),
   },
   {
-    href: '/scan',
-    label: '스캔',
+    href: '/info',
+    label: '진단',
     icon: (active) => (
-      <svg viewBox="0 0 24 24" className={`w-6 h-6 ${active ? 'fill-gray-900' : 'fill-none'} stroke-current`}>
-        <rect x="3" y="3" width="7" height="7" rx="2" strokeWidth="1.8" />
-        <rect x="14" y="14" width="7" height="7" rx="2" strokeWidth="1.8" />
-        <rect x="14" y="3" width="7" height="7" rx="2" strokeWidth="1.8" />
-        <rect x="3" y="14" width="7" height="7" rx="2" strokeWidth="1.8" />
+      <svg viewBox="0 0 24 18" className="w-6 h-6 stroke-current" aria-hidden>
+        <path
+          d="M4 7.5a2.5 2.5 0 0 1 2.5-2.5h2.2c.5 0 1-.22 1.32-.6l.72-.84A1.8 1.8 0 0 1 12.9 3h2.6c.8 0 1.5.5 1.8 1.2l.35.75H19.5A2.5 2.5 0 0 1 22 7.5v8A2.5 2.5 0 0 1 19.5 18h-15A2.5 2.5 0 0 1 2 15.5v-8Z"
+          className={active ? 'fill-gray-900' : 'fill-none'}
+          strokeWidth="1.6"
+        />
+        <circle cx="12" cy="12" r="3.5" strokeWidth="1.8" className={active ? 'fill-white' : 'fill-none'} />
       </svg>
     ),
   },
   {
-    href: '/routine',
-    label: '루틴',
+    href: '/cosmetics',
+    label: '화장품',
     icon: (active) => (
-      <svg viewBox="0 0 24 24" className={`w-6 h-6 ${active ? 'fill-gray-900' : 'fill-none'} stroke-current`}>
-        <path d="M4 6h16M4 12h16M4 18h10" strokeWidth="1.8" />
-      </svg>
-    ),
-  },
-  {
-    href: '/me',
-    label: '내 정보',
-    icon: (active) => (
-      <svg viewBox="0 0 24 24" className={`w-6 h-6 ${active ? 'fill-gray-900' : 'fill-none'} stroke-current`}>
-        <circle cx="12" cy="8" r="4" strokeWidth="1.8" />
-        <path d="M20 21a8 8 0 0 0-16 0" strokeWidth="1.8" />
+      <svg viewBox="0 0 24 18" className="w-9 h-9 stroke-current" fill="none" aria-hidden>
+        <circle cx="8" cy="9" r="4.5" strokeWidth="1.2" className={active ? 'fill-gray-900' : 'fill-none'} />
+        <path d="M6.6 7.6c.9-1 2.4-1.1 3.4-.2" strokeWidth="1.2" />
+        <rect x="14" y="9" width="4.8" height="8" rx="1.2" strokeWidth="1.2" className={active ? 'fill-gray-900' : 'fill-none'} />
+        <path
+          d="M16.4 5.2c.6 0 1.1.3 1.4.8l.9 1.7c.2.4.1.9-.2 1.2l-.6.6h-3.2l-.6-.6a1 1 0 0 1-.2-1.2l.9-1.7c.3-.5.8-.8 1.4-.8Z"
+          strokeWidth="1.6"
+          className={active ? 'fill-gray-900' : 'fill-none'}
+        />
+        <path d="M5 13.8h6" strokeWidth="1.6" />
       </svg>
     ),
   },
@@ -55,35 +58,55 @@ const items: Item[] = [
 export default function TabBar() {
   const pathname = usePathname();
 
+  const isActive = (href: string) => {
+    if (href === '/info') {
+      return DIAG_GROUP.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+    }
+    if (href === '/') return pathname === '/';
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
+  const TAB_H = 56;
+  const tabHeightStyle = { height: `calc(${TAB_H}px + env(safe-area-inset-bottom))` };
+  const tabPaddingStyle = { paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' };
+
   return (
-    <nav
-      className="
-        fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md
-        border-t border-gray-200 bg-white/95 backdrop-blur
-        shadow-[0_-6px_12px_rgba(0,0,0,0.04)]
-        safe-area-bottom
-      "
-      style={{
-        paddingBottom: 'max(env(safe-area-inset-bottom), 8px)',
-      }}
-    >
-      <ul className="grid grid-cols-4 h-14 items-center">
-        {items.map(({ href, label, icon }) => {
-          const active = pathname === href || (href !== '/' && pathname.startsWith(href));
-          return (
-            <li key={href} className="flex justify-center">
-              <Link
-                href={href}
-                className="flex flex-col items-center gap-1 text-xs"
-                aria-current={active ? 'page' : undefined}
-              >
-                {icon(active)}
-                <span className={active ? 'text-gray-900 font-semibold' : 'text-gray-500'}>{label}</span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <>
+      {/* 컨텐츠가 탭에 가려지지 않도록 스페이서 */}
+      <div aria-hidden className="w-full" style={tabHeightStyle} />
+        <nav
+          className="
+            fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md
+            border-t border-gray-200 bg-white/95 backdrop-blur
+            shadow-[0_-6px_12px_rgba(0,0,0,0.04)]
+            z-40
+            flex items-center justify-center
+          "
+          style={tabHeightStyle}
+          aria-label="하단 메뉴"
+        >
+          {/* 중앙 정렬 + 간격 확대 */}
+          <ul className="flex items-center justify-center gap-8 sm:gap-10 md:gap-12 h-full">
+            {items.map(({ href, label, icon }) => {
+              const active = isActive(href);
+              return (
+                <li key={href} className="h-full flex">
+                  <Link
+                    href={href}
+                    className="h-full px-6 sm:px-7 md:px-8 flex flex-col items-center justify-center gap-1 text-xs"
+                    aria-current={active ? 'page' : undefined}
+                    aria-label={label}
+                    style={tabPaddingStyle}
+                  >
+                    {icon(active)}
+                    <span className={active ? 'text-gray-900 font-semibold' : 'text-gray-500'}>{label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+    </>
   );
 }
