@@ -13,7 +13,7 @@ CREATE TABLE member (
     min_price INT,
     max_price INT,
     gender VARCHAR(10),
-    age_group VARCHAR(10),
+    age_group INT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_id INT,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

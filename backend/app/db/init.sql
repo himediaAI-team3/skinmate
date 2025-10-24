@@ -26,7 +26,7 @@ INSERT INTO member (
     15000,                          -- min_price (1만5천원)
     50000,                          -- max_price (5만원)
     '여성',                         -- gender
-    '20',                           -- age_group (20대)
+    20,                             -- age_group (20대)
     '2025-01-15 10:30:00',          -- created_at
     '2025-01-15 10:30:00',          -- updated_at
     NULL,                           -- created_id
