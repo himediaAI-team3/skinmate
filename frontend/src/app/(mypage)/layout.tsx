@@ -1,5 +1,6 @@
 'use client';
 import AppHeader, { type Me } from '@/components/AppHeader';
+import TabBar from '@/components/TabBar';
 
 export default function MyPageLayout({ children }: { children: React.ReactNode }) {
   const tempMe: Me = {
@@ -13,6 +14,7 @@ export default function MyPageLayout({ children }: { children: React.ReactNode }
     <div className="max-w-md mx-auto min-h-screen bg-white">
       <AppHeader me={tempMe} onLogout={() => alert('임시 로그아웃')} />
       <main className="px-5 pb-5">{children}</main>
+      <TabBar />
     </div>
   );
 }

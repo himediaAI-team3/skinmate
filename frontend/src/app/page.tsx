@@ -41,7 +41,7 @@ export default function Welcome() {
           {/* 첫진입 랜딩의 CTA */}
           <a href="/login">
             <button className="mt-8 w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:scale-105 transform transition-transform duration-300">
-              AI 피부 진단 시작하기
+              AI 피부 분석 시작하기
             </button>
           </a>
         </section>
