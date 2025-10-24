@@ -15,7 +15,10 @@ type ProductDetail = {
   category: '클렌징' | '토너' | '크림' | '선크림' | '패드' | '앰플' | '젤';
   oliveyoungUrl: string;
   ingredients: string;
-  description: string;
+  description: string; // 제품 상세설명
+  main_effect: string; // 주요 효능
+  care_symptom: string; // 케어 증상
+  key_ingredient: string; // 핵심 성분
   likes: number;
   liked?: boolean;
 
@@ -35,8 +38,10 @@ const MOCK: ProductDetail[] = [
     oliveyoungUrl: 'https://www.oliveyoung.co.kr/',
     ingredients:
       '정제수, 병풀추출물, 글리세린, 부틸렌글라이콜, 메틸프로판다이올, 카보머, 트로메타민, 판테놀, 1,2-헥산다이올, 초피나무열매추출물',
-    description:
-    '[제품유형: 크림][피부타입: 건성, 민감성][관련 피부질환: 아토피, 건선][주요 효능: 보습, 피부장벽강화, 진정, 수분공급][케어 증상: 건조, 인설, 가려움, 피부장벽손상, 당김][핵심 성분: 미리스토일/팔미토일옥소스테아라마이드/아라카마이드엠이에이, 피토스테롤, 소듐하이알루로네이트, 비사보롤]아토피와 건선으로 인한 손상된 피부 장벽을 복원하고 극건조한 피부에 집중 보습을 제공하는 데 도움을 줍니다. 세라마이드 유사 성분과 피토스테롤이 피부 장벽을 강화하고 수분 손실을 방지하며, 히알루론산이 깊은 수분 공급을 통해 건조와 인설을 완화합니다. 비사보롤 성분이 민감해진 피부를 진정시키고 가려움을 달래주어 예민한 피부에도 안전하게 사용할 수 있습니다.',
+    description: '아토피와 건선으로 인한 손상된 피부 장벽을 복원하고 극건조한 피부에 집중 보습을 제공하는 데 도움을 줍니다. 세라마이드 유사 성분과 피토스테롤이 피부 장벽을 강화하고 수분 손실을 방지하며, 히알루론산이 깊은 수분 공급을 통해 건조와 인설을 완화합니다. 비사보롤 성분이 민감해진 피부를 진정시키고 가려움을 달래주어 예민한 피부에도 안전하게 사용할 수 있습니다.',
+    main_effect: '보습, 피부장벽강화, 진정, 수분공급',
+    care_symptom: '건조, 인설, 가려움, 피부장벽손상, 당김',
+    key_ingredient: '미리스토일/팔미토일옥소스테아라마이드/아라카마이드엠이에이, 피토스테롤, 소듐하이알루로네이트, 비사보롤',
     likes: 124,
     liked: false,
     suitableSkinTypes: '건성, 민감성',
@@ -52,8 +57,10 @@ const MOCK: ProductDetail[] = [
     oliveyoungUrl: 'https://www.oliveyoung.co.kr/',
     ingredients:
       '정제수, 에칠헥실메톡시신나메이트, 티타늄디옥사이드, 글리세린, 사이클로펜타실록세인, 트리에탄올아민, 디메치콘',
-    description:
-      '[제품유형: 크림][피부타입: 건성, 민감성][관련 피부질환: 아토피, 건선][주요 효능: 보습, 피부장벽강화, 진정, 수분공급][케어 증상: 건조, 인설, 가려움, 피부장벽손상, 당김][핵심 성분: 미리스토일/팔미토일옥소스테아라마이드/아라카마이드엠이에이, 피토스테롤, 소듐하이알루로네이트, 비사보롤]아토피와 건선으로 인한 손상된 피부 장벽을 복원하고 극건조한 피부에 집중 보습을 제공하는 데 도움을 줍니다. 세라마이드 유사 성분과 피토스테롤이 피부 장벽을 강화하고 수분 손실을 방지하며, 히알루론산이 깊은 수분 공급을 통해 건조와 인설을 완화합니다. 비사보롤 성분이 민감해진 피부를 진정시키고 가려움을 달래주어 예민한 피부에도 안전하게 사용할 수 있습니다.',
+    description: '가벼운 텍스처로 끈적임 없이 발리며 강력한 자외선 차단 효과를 제공합니다. 오일프리 포뮬러로 지성 피부에도 부담 없이 사용할 수 있으며, 백탁 현상 없이 자연스러운 마무리감을 연출합니다.',
+    main_effect: '자외선 차단, 피부 보호, 수분 공급',
+    care_symptom: '자외선 손상, 건조함, 피부 노화',
+    key_ingredient: '에칠헥실메톡시신나메이트, 티타늄디옥사이드, 글리세린',
     likes: 231,
     suitableSkinTypes: ['건성', '민감성'],
     suitableDiseases: ['아토피', '건선'],
@@ -68,8 +75,10 @@ const MOCK: ProductDetail[] = [
     oliveyoungUrl: 'https://www.oliveyoung.co.kr/',
     ingredients:
       '정제수, 글리세린, 부틸렌글라이콜, 소듐하이알루로네이트, 베타인, 판테놀, 알란토인, 하이드록시에틸셀룰로오스',
-    description:
-      '[제품유형: 크림][피부타입: 건성, 민감성][관련 피부질환: 아토피, 건선][주요 효능: 보습, 피부장벽강화, 진정, 수분공급][케어 증상: 건조, 인설, 가려움, 피부장벽손상, 당김][핵심 성분: 미리스토일/팔미토일옥소스테아라마이드/아라카마이드엠이에이, 피토스테롤, 소듐하이알루로네이트, 비사보롤]아토피와 건선으로 인한 손상된 피부 장벽을 복원하고 극건조한 피부에 집중 보습을 제공하는 데 도움을 줍니다. 세라마이드 유사 성분과 피토스테롤이 피부 장벽을 강화하고 수분 손실을 방지하며, 히알루론산이 깊은 수분 공급을 통해 건조와 인설을 완화합니다. 비사보롤 성분이 민감해진 피부를 진정시키고 가려움을 달래주어 예민한 피부에도 안전하게 사용할 수 있습니다.',
+    description: '고농도 히알루론산이 함유된 대용량 토너로 깊은 수분 공급과 피부 진정 효과를 제공합니다. 끈적임 없는 수분감으로 모든 피부 타입에 적합하며, 매일 사용해도 부담 없는 순한 성분으로 구성되었습니다.',
+    main_effect: '수분 공급, 피부 진정, 각질 정리',
+    care_symptom: '건조함, 거칠음, 수분 부족',
+    key_ingredient: '소듐하이알루로네이트, 베타인, 판테놀, 알란토인',
     likes: 98,
     suitableSkinTypes: '모든 피부',
     suitableDiseases: '',
@@ -87,6 +96,7 @@ export default function CosmeticDetailPage() {
 
   const [liked, setLiked] = useState<boolean>(!!product?.liked);
   const [likeCount, setLikeCount] = useState<number>(product?.likes ?? 0);
+  const [activeTab, setActiveTab] = useState<'info' | 'effect' | 'ingredient'>('info');
 
   if (!product) {
     return (
@@ -117,13 +127,9 @@ export default function CosmeticDetailPage() {
     // TODO: 서버 반영
   };
 
-  // 설명 전처리: \n, <br>, ][ → 개행
-  const prettyDescription = useMemo(() => {
-    return (product.description ?? '')
-      .replace(/\\n/g, '\n')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/]\s*\[/g, ']\n[');
-  }, [product.description]);
+  // 효능/증상/성분을 배열로 변환하는 함수
+  const toChipList = (value: string) => 
+    value.split(',').map(s => s.trim()).filter(Boolean);
 
   // "건성, 민감성" 같은 문자열도 배열로 변환
   const toList = (v?: string[] | string) =>
@@ -207,7 +213,7 @@ export default function CosmeticDetailPage() {
             </div>
 
             <div className="mt-2 flex items-start gap-2">
-              <span className="mt-1 text-[11px] font-bold text-gray-600 w-16 shrink-0">적합 질병</span>
+              <span className="mt-1 text-[11px] font-bold text-gray-600 w-16 shrink-0">관련질환</span>
               <div className="flex flex-wrap gap-1.5">
                 {diseaseChips.length > 0 ? (
                   diseaseChips.map((d) => (
@@ -262,20 +268,116 @@ export default function CosmeticDetailPage() {
         </Link>
       </section>
 
-      {/* 제품설명 */}
-      <section className="mt-4 rounded-2xl border bg-white p-4">
-        <h2 className="text-sm font-bold text-gray-900">제품설명</h2>
-        <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-line">
-          {prettyDescription}
-        </p>
+      {/* 탭 네비게이션 */}
+      <section className="mt-4">
+        <div className="flex rounded-2xl border bg-white p-1">
+          <button
+            onClick={() => setActiveTab('info')}
+            className={`flex-1 rounded-xl py-2 px-3 text-sm font-semibold transition-all ${
+              activeTab === 'info'
+                ? 'bg-gray-900 text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            기본정보
+          </button>
+          <button
+            onClick={() => setActiveTab('effect')}
+            className={`flex-1 rounded-xl py-2 px-3 text-sm font-semibold transition-all ${
+              activeTab === 'effect'
+                ? 'bg-gray-900 text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            효능정보
+          </button>
+          <button
+            onClick={() => setActiveTab('ingredient')}
+            className={`flex-1 rounded-xl py-2 px-3 text-sm font-semibold transition-all ${
+              activeTab === 'ingredient'
+                ? 'bg-gray-900 text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            성분정보
+          </button>
+        </div>
       </section>
 
-      {/* 전성분 */}
+      {/* 탭 컨텐츠 */}
       <section className="mt-3 rounded-2xl border bg-white p-4">
-        <h2 className="text-sm font-bold text-gray-900">전성분</h2>
-        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
-          {product.ingredients}
-        </p>
+        {activeTab === 'info' && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 mb-2">제품 설명</h3>
+              <p className="text-sm leading-relaxed text-gray-700">
+                {product.description}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'effect' && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 mb-2">주요 효능</h3>
+              <div className="flex flex-wrap gap-2">
+                {toChipList(product.main_effect).map((effect, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700 ring-1 ring-green-200"
+                  >
+                    {effect}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 mb-2">케어 증상</h3>
+              <div className="flex flex-wrap gap-2">
+                {toChipList(product.care_symptom).map((symptom, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700 ring-1 ring-orange-200"
+                  >
+                    {symptom}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'ingredient' && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 mb-2">핵심 성분</h3>
+              <div className="space-y-2">
+                {toChipList(product.key_ingredient).map((ingredient, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-2 rounded-lg bg-blue-50 p-3"
+                  >
+                    <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
+                      {idx + 1}
+                    </span>
+                    <span className="text-sm font-medium text-blue-900">
+                      {ingredient}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 mb-2">전체 성분</h3>
+              <p className="text-xs leading-relaxed text-gray-600 bg-gray-50 rounded-lg p-3">
+                {product.ingredients}
+              </p>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* 탭바 간격 */}
