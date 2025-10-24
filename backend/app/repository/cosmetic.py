@@ -85,3 +85,72 @@ class CosmeticRepository:
             })
         
         return result_items, total
+    
+    @staticmethod
+    def get_detail(db: Session, cosmetic_id: int, member_id: Optional[int] = None) -> Optional[dict]:
+        """화장품 상세 정보 조회"""
+        
+        # 서브쿼리: 좋아요 개수
+        like_count_sq = select(func.count(Like.like_id)).where(
+            Like.cosmetic_id == Cosmetic.cosmetic_id
+        ).scalar_subquery()
+        
+        # 서브쿼리: 대표 이미지 file_path
+        file_path_sq = select(File.file_path).where(
+            File.entity_type == EntityType.COSMETIC,
+            File.entity_id == Cosmetic.cosmetic_id
+        ).order_by(File.file_id.asc()).limit(1).scalar_subquery()
+        
+        # 서브쿼리: 사용자 좋아요 여부
+        if member_id:
+            is_liked_sq = select(func.count(Like.like_id) > 0).where(
+                Like.cosmetic_id == Cosmetic.cosmetic_id,
+                Like.member_id == member_id
+            ).scalar_subquery()
+        else:
+            is_liked_sq = literal(False)
+        
+        # 메인 쿼리 - 모든 필드 조회
+        result = db.query(
+            Cosmetic.cosmetic_id,
+            Cosmetic.name,
+            Cosmetic.brand,
+            Cosmetic.category,
+            Cosmetic.price,
+            Cosmetic.short_description,
+            Cosmetic.description,
+            Cosmetic.buy_url,
+            Cosmetic.skin_type,
+            Cosmetic.skin_disease,
+            Cosmetic.main_effect,
+            Cosmetic.care_symptom,
+            Cosmetic.key_ingredient,
+            Cosmetic.ingredients,
+            file_path_sq.label('file_path'),
+            like_count_sq.label('like_count'),
+            is_liked_sq.label('is_liked')
+        ).filter(Cosmetic.cosmetic_id == cosmetic_id).first()
+        
+        if not result:
+            return None
+        
+        # 결과를 딕셔너리로 변환
+        return {
+            'cosmetic_id': result.cosmetic_id,
+            'name': result.name,
+            'brand': result.brand,
+            'category': result.category,
+            'price': result.price,
+            'short_description': result.short_description,
+            'description': result.description,
+            'buy_url': result.buy_url,
+            'skin_type': result.skin_type,
+            'skin_disease': result.skin_disease,
+            'main_effect': result.main_effect,
+            'care_symptom': result.care_symptom,
+            'key_ingredient': result.key_ingredient,
+            'ingredients': result.ingredients,
+            'file_path': result.file_path,
+            'like_count': result.like_count or 0,
+            'is_liked': result.is_liked or False
+        }
