@@ -114,7 +114,6 @@ class AnalysisRepository:
         
         # 5. skin_analysis 삭제
         db.delete(analysis)
-        db.commit()
         return True
     
 

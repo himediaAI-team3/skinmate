@@ -39,7 +39,6 @@ class FileRepository:
             return False
         
         db.delete(file)
-        db.commit()
         return True
 
 

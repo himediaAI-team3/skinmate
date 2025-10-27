@@ -38,3 +38,5 @@ class AnalysisHistoryResponse(BaseModel):
     total: int
     page: int
     size: int
+
+# 분석 이력 관련 스키마

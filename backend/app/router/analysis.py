@@ -92,6 +92,9 @@ def delete_analysis(
     # 이력 삭제
     AnalysisService.delete_analysis(db, analysis_id)
     
+    # commit 처리
+    db.commit()
+    
     # ApiResponse로 감싸서 반환
     return ApiResponse(
         code=status.HTTP_200_OK,
@@ -100,5 +103,5 @@ def delete_analysis(
         data=None
     )
 
-
+    # 분석 이력 조회 및 삭제 엔드포인트
 
