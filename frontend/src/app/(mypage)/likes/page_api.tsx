@@ -5,9 +5,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Heart } from 'lucide-react';
 import {
   fetchLikedProducts,
-  likeProduct,
-  unlikeProduct,
-} from '@/app/features/likes';
+  toggleProductLike,
+} from '@/features/likes/api';
 import type { LikedItem } from '@/app/entities/likes';
 
 export default function LikesPage() {
@@ -25,7 +24,9 @@ export default function LikesPage() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetchLikedProducts();
+        // TODO: 실제 로그인 사용자의 member_id를 가져오는 로직 필요
+        const memberId = 1; // 임시 하드코딩
+        const res = await fetchLikedProducts(memberId);
         if (!alive) return;
         setLikes(res.data.items);
         setCursor(res.data.next_cursor ?? null);
@@ -47,7 +48,9 @@ export default function LikesPage() {
     if (!cursor) return;
     try {
       setMoreLoading(true);
-      const res = await fetchLikedProducts(cursor);
+      // TODO: 실제 로그인 사용자의 member_id를 가져오는 로직 필요
+      const memberId = 1; // 임시 하드코딩
+      const res = await fetchLikedProducts(memberId, cursor);
       setLikes((prev) => [...prev, ...res.data.items]);
       setCursor(res.data.next_cursor ?? null);
     } catch (e: any) {
@@ -71,11 +74,22 @@ export default function LikesPage() {
     );
 
     try {
-      if (isLiked) {
-        await unlikeProduct(item.id);
+      // TODO: 실제 로그인 사용자의 member_id를 가져오는 로직 필요
+      const memberId = 1; // 임시 하드코딩
+      const result = await toggleProductLike(memberId, item.id);
+      
+      // 백엔드 응답에 따라 상태 재조정 (낙관적 업데이트가 틀렸을 경우 대비)
+      if (result.isLiked) {
+        // 좋아요가 추가된 경우 - 이미 낙관적으로 추가했으므로 그대로 유지
+        if (!likedIds.has(item.id)) {
+          setLikes((curr) => [item, ...curr]);
+        }
       } else {
-        await likeProduct(item.id);
+        // 좋아요가 취소된 경우 - 이미 낙관적으로 제거했으므로 그대로 유지
+        setLikes((curr) => curr.filter((p) => p.id !== item.id));
       }
+      
+      console.log(`✅ 좋아요 ${result.isLiked ? '추가' : '취소'} 완료! 총 ${result.likeCount}개`);
     } catch (err: any) {
       // 실패 시 롤백
       setLikes(prev);

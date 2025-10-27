@@ -2,103 +2,61 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Heart, Tag, ExternalLink, ChevronLeft } from 'lucide-react';
-
-type ProductDetail = {
-  id: number;
-  brand: string;
-  name: string;
-  price: number;
-  image: string;
-  category: '클렌징' | '토너' | '크림' | '선크림' | '패드' | '앰플' | '젤';
-  oliveyoungUrl: string;
-  ingredients: string;
-  description: string; // 제품 상세설명
-  main_effect: string; // 주요 효능
-  care_symptom: string; // 케어 증상
-  key_ingredient: string; // 핵심 성분
-  likes: number;
-  liked?: boolean;
-
-  // 적합 피부/질병
-  suitableSkinTypes?: string[] | string;  // 예: "건성, 민감성" 또는 ["건성","민감성"]
-  suitableDiseases?: string[] | string;   // 예: "아토피, 건선" 또는 ["아토피","건선"]
-};
-
-const MOCK: ProductDetail[] = [
-  {
-    id: 1,
-    brand: 'SKNM',
-    name: '수딩 시카 크림',
-    price: 19800,
-    image: 'https://placehold.co/800x800/FFE0B2/FF6B6B?text=Soothing+Cica',
-    category: '크림',
-    oliveyoungUrl: 'https://www.oliveyoung.co.kr/',
-    ingredients:
-      '정제수, 병풀추출물, 글리세린, 부틸렌글라이콜, 메틸프로판다이올, 카보머, 트로메타민, 판테놀, 1,2-헥산다이올, 초피나무열매추출물',
-    description: '아토피와 건선으로 인한 손상된 피부 장벽을 복원하고 극건조한 피부에 집중 보습을 제공하는 데 도움을 줍니다. 세라마이드 유사 성분과 피토스테롤이 피부 장벽을 강화하고 수분 손실을 방지하며, 히알루론산이 깊은 수분 공급을 통해 건조와 인설을 완화합니다. 비사보롤 성분이 민감해진 피부를 진정시키고 가려움을 달래주어 예민한 피부에도 안전하게 사용할 수 있습니다.',
-    main_effect: '보습, 피부장벽강화, 진정, 수분공급',
-    care_symptom: '건조, 인설, 가려움, 피부장벽손상, 당김',
-    key_ingredient: '미리스토일/팔미토일옥소스테아라마이드/아라카마이드엠이에이, 피토스테롤, 소듐하이알루로네이트, 비사보롤',
-    likes: 124,
-    liked: false,
-    suitableSkinTypes: '건성, 민감성',
-    suitableDiseases: '아토피, 건선',
-  },
-  {
-    id: 2,
-    brand: 'Rayderm',
-    name: '오일프리 선스크린 SPF50+',
-    price: 15800,
-    image: 'https://placehold.co/800x800/B2DFDB/00796B?text=Oil-free+Sun',
-    category: '선크림',
-    oliveyoungUrl: 'https://www.oliveyoung.co.kr/',
-    ingredients:
-      '정제수, 에칠헥실메톡시신나메이트, 티타늄디옥사이드, 글리세린, 사이클로펜타실록세인, 트리에탄올아민, 디메치콘',
-    description: '가벼운 텍스처로 끈적임 없이 발리며 강력한 자외선 차단 효과를 제공합니다. 오일프리 포뮬러로 지성 피부에도 부담 없이 사용할 수 있으며, 백탁 현상 없이 자연스러운 마무리감을 연출합니다.',
-    main_effect: '자외선 차단, 피부 보호, 수분 공급',
-    care_symptom: '자외선 손상, 건조함, 피부 노화',
-    key_ingredient: '에칠헥실메톡시신나메이트, 티타늄디옥사이드, 글리세린',
-    likes: 231,
-    suitableSkinTypes: ['건성', '민감성'],
-    suitableDiseases: ['아토피', '건선'],
-  },
-  {
-    id: 3,
-    brand: 'HyaLab',
-    name: '히알루론산 토너 500ml',
-    price: 12900,
-    image: 'https://placehold.co/800x800/E1BEE7/6A1B9A?text=Hyaluronic+Toner',
-    category: '토너',
-    oliveyoungUrl: 'https://www.oliveyoung.co.kr/',
-    ingredients:
-      '정제수, 글리세린, 부틸렌글라이콜, 소듐하이알루로네이트, 베타인, 판테놀, 알란토인, 하이드록시에틸셀룰로오스',
-    description: '고농도 히알루론산이 함유된 대용량 토너로 깊은 수분 공급과 피부 진정 효과를 제공합니다. 끈적임 없는 수분감으로 모든 피부 타입에 적합하며, 매일 사용해도 부담 없는 순한 성분으로 구성되었습니다.',
-    main_effect: '수분 공급, 피부 진정, 각질 정리',
-    care_symptom: '건조함, 거칠음, 수분 부족',
-    key_ingredient: '소듐하이알루로네이트, 베타인, 판테놀, 알란토인',
-    likes: 98,
-    suitableSkinTypes: '모든 피부',
-    suitableDiseases: '',
-  },
-];
+import type { CosmeticDetail } from '@/entities/cosmetics';
+import { fetchCosmeticDetail } from '@/features/cosmetics';
+import { toggleProductLike } from '@/features/likes/api';
 
 export default function CosmeticDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
-  const product = useMemo(() => {
-    const idNum = Number(params.id);
-    return MOCK.find((p) => p.id === idNum) || null;
-  }, [params.id]);
-
-  const [liked, setLiked] = useState<boolean>(!!product?.liked);
-  const [likeCount, setLikeCount] = useState<number>(product?.likes ?? 0);
+  // 백엔드 데이터 상태
+  const [product, setProduct] = useState<CosmeticDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [liked, setLiked] = useState<boolean>(false);
+  const [likeCount, setLikeCount] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<'info' | 'effect' | 'ingredient'>('info');
 
-  if (!product) {
+  // API 데이터 로딩
+  useEffect(() => {
+    async function loadProduct() {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const cosmetic_id = Number(params.id);
+        if (isNaN(cosmetic_id)) {
+          throw new Error('잘못된 제품 ID입니다.');
+        }
+        
+        // TODO: member_id를 실제 로그인 사용자 ID로 교체
+        const response = await fetchCosmeticDetail(cosmetic_id);
+        
+        if (response.success && response.data) {
+          setProduct(response.data);
+          setLiked(response.data.is_liked || false);
+          setLikeCount(response.data.like_count || 0);
+        } else {
+          throw new Error(response.message || '제품 정보를 찾을 수 없습니다.');
+        }
+      } catch (err) {
+        console.error('제품 상세 로딩 실패:', err);
+        setError(err instanceof Error ? err.message : '데이터 로딩에 실패했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadProduct();
+  }, [params.id]);
+
+  // 로딩 상태
+  if (loading) {
     return (
       <main className="px-5 pt-4 pb-6">
         <header className="relative flex h-16 items-center px-4">
@@ -113,23 +71,59 @@ export default function CosmeticDetailPage() {
           <div className="absolute right-4 h-9 w-9" aria-hidden />
         </header>
 
-        <div className="mt-6 rounded-2xl border p-6 text-center text-sm text-gray-600">
-          존재하지 않는 상품입니다.
+        <div className="mt-6 rounded-2xl border p-6 text-center text-sm text-gray-500">
+          로딩 중...
         </div>
       </main>
     );
   }
 
-  const onToggleLike = () => {
-    const next = !liked;
-    setLiked(next);
-    setLikeCount((c) => c + (next ? 1 : -1));
-    // TODO: 서버 반영
+  // 에러 상태
+  if (error || !product) {
+    return (
+      <main className="px-5 pt-4 pb-6">
+        <header className="relative flex h-16 items-center px-4">
+          <button
+            onClick={() => router.back()}
+            aria-label="뒤로가기"
+            className="absolute left-4 inline-flex h-9 w-9 items-center justify-center rounded-full border hover:bg-gray-50 transition"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <h1 className="mx-auto text-xl font-bold text-gray-800">제품 상세</h1>
+          <div className="absolute right-4 h-9 w-9" aria-hidden />
+        </header>
+
+        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-600">
+          {error || '제품 정보를 찾을 수 없습니다.'}
+        </div>
+      </main>
+    );
+  }
+
+  const onToggleLike = async () => {
+    if (!product) return;
+    
+    try {
+      // TODO: 실제 로그인 사용자의 member_id를 가져오는 로직 필요
+      const memberId = 1; // 임시 하드코딩
+      
+      const result = await toggleProductLike(memberId, product.cosmetic_id);
+      
+      // 백엔드 응답으로 상태 업데이트
+      setLiked(result.isLiked);
+      setLikeCount(result.likeCount);
+      
+      console.log(`✅ 좋아요 ${result.isLiked ? '추가' : '취소'} 완료! 총 ${result.likeCount}개`);
+    } catch (error) {
+      console.error('좋아요 토글 실패:', error);
+      // TODO: 사용자에게 에러 메시지 표시
+    }
   };
 
   // 효능/증상/성분을 배열로 변환하는 함수
-  const toChipList = (value: string) => 
-    value.split(',').map(s => s.trim()).filter(Boolean);
+  const toChipList = (value?: string) => 
+    (value || '').split(',').map(s => s.trim()).filter(Boolean);
 
   // "건성, 민감성" 같은 문자열도 배열로 변환
   const toList = (v?: string[] | string) =>
@@ -140,8 +134,8 @@ export default function CosmeticDetailPage() {
           .map((s) => s.trim())
           .filter(Boolean);
 
-  const skinChips = toList(product.suitableSkinTypes);
-  const diseaseChips = toList(product.suitableDiseases);
+  const skinChips = toList(product.skin_type);
+  const diseaseChips = toList(product.skin_disease);
 
   const TAB_H = 56;
   const tabSpacerStyle = { height: `calc(${TAB_H}px + env(safe-area-inset-bottom))` };
@@ -175,7 +169,11 @@ export default function CosmeticDetailPage() {
       <section className="overflow-hidden rounded-2xl border bg-white">
         <div className="relative aspect-square w-full">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+          <img 
+            src={product.image_url || 'https://placehold.co/800x800/E5E7EB/9CA3AF?text=No+Image'} 
+            alt={product.name || '제품 이미지'} 
+            className="h-full w-full object-cover" 
+          />
         </div>
       </section>
 
@@ -242,7 +240,7 @@ export default function CosmeticDetailPage() {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            {product.price.toLocaleString()}원
+            {Math.floor(product.price || 0).toLocaleString()}원
           </span>
 
           <button
@@ -258,14 +256,16 @@ export default function CosmeticDetailPage() {
 
       {/* 구매/올리브영 링크 */}
       <section className="mt-3">
-        <Link
-          href={product.oliveyoungUrl}
-          target="_blank"
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-900 py-3 text-sm font-bold text-white hover:opacity-95"
-        >
-          올리브영 상세페이지 열기
-          <ExternalLink size={16} />
-        </Link>
+        {product.buy_url && (
+          <Link
+            href={product.buy_url}
+            target="_blank"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-900 py-3 text-sm font-bold text-white hover:opacity-95"
+          >
+            구매 사이트 열기
+            <ExternalLink size={16} />
+          </Link>
+        )}
       </section>
 
       {/* 탭 네비게이션 */}
@@ -311,9 +311,18 @@ export default function CosmeticDetailPage() {
             <div>
               <h3 className="text-sm font-bold text-gray-900 mb-2">제품 설명</h3>
               <p className="text-sm leading-relaxed text-gray-700">
-                {product.description}
+                {product.description || '설명이 없습니다.'}
               </p>
             </div>
+            
+            {product.short_description && (
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2">한줄 설명</h3>
+                <p className="text-sm leading-relaxed text-gray-700">
+                  {product.short_description}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -322,28 +331,36 @@ export default function CosmeticDetailPage() {
             <div>
               <h3 className="text-sm font-bold text-gray-900 mb-2">주요 효능</h3>
               <div className="flex flex-wrap gap-2">
-                {toChipList(product.main_effect).map((effect, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700 ring-1 ring-green-200"
-                  >
-                    {effect}
-                  </span>
-                ))}
+                {toChipList(product.main_effect).length > 0 ? (
+                  toChipList(product.main_effect).map((effect, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700 ring-1 ring-green-200"
+                    >
+                      {effect}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-gray-400">정보 없음</span>
+                )}
               </div>
             </div>
 
             <div>
               <h3 className="text-sm font-bold text-gray-900 mb-2">케어 증상</h3>
               <div className="flex flex-wrap gap-2">
-                {toChipList(product.care_symptom).map((symptom, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700 ring-1 ring-orange-200"
-                  >
-                    {symptom}
-                  </span>
-                ))}
+                {toChipList(product.care_symptom).length > 0 ? (
+                  toChipList(product.care_symptom).map((symptom, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700 ring-1 ring-orange-200"
+                    >
+                      {symptom}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-gray-400">정보 없음</span>
+                )}
               </div>
             </div>
           </div>
@@ -354,26 +371,30 @@ export default function CosmeticDetailPage() {
             <div>
               <h3 className="text-sm font-bold text-gray-900 mb-2">핵심 성분</h3>
               <div className="space-y-2">
-                {toChipList(product.key_ingredient).map((ingredient, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-start gap-2 rounded-lg bg-blue-50 p-3"
-                  >
-                    <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
-                      {idx + 1}
-                    </span>
-                    <span className="text-sm font-medium text-blue-900">
-                      {ingredient}
-                    </span>
-                  </div>
-                ))}
+                {toChipList(product.key_ingredient).length > 0 ? (
+                  toChipList(product.key_ingredient).map((ingredient, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-2 rounded-lg bg-blue-50 p-3"
+                    >
+                      <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
+                        {idx + 1}
+                      </span>
+                      <span className="text-sm font-medium text-blue-900">
+                        {ingredient}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-xs text-gray-400 p-3">정보 없음</div>
+                )}
               </div>
             </div>
 
             <div>
               <h3 className="text-sm font-bold text-gray-900 mb-2">전체 성분</h3>
               <p className="text-xs leading-relaxed text-gray-600 bg-gray-50 rounded-lg p-3">
-                {product.ingredients}
+                {product.ingredients || '성분 정보가 없습니다.'}
               </p>
             </div>
           </div>

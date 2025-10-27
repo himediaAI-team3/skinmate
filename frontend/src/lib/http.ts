@@ -17,7 +17,7 @@ export async function http<T>(path: string, opts: Options = {}) {
     body: json ? JSON.stringify(json) : undefined,
   };
 
-  // Nginx 프록시 사용 중이면 상대경로(/api/...)로 호출
+  // 절대 URL이면 그대로 사용, 상대 경로면 Next.js 프록시 사용
   const url = path.startsWith('http') ? path : path;
 
   const res = await fetch(url, init);
