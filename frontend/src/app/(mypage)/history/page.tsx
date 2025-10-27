@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Calendar, Trash2, Filter } from 'lucide-react';
-import { MOCK_HISTORY } from '@/lib/mypage.mock';
+import { getAnalysisHistory, deleteAnalysis } from '@/features/history';
+import type { AnalysisHistory } from '@/entities/history';
 
 // 카테고리 후보 (UI에 노출될 옵션)
 const CATEGORY_OPTIONS = ['전체', '건선', '아토피', '여드름', '지루', '주사', '정상'] as const;
@@ -12,64 +13,90 @@ type CategoryOpt = typeof CATEGORY_OPTIONS[number];
 const DATE_OPTIONS = ['전체', '1일전', '7일전', '한달전'] as const;
 type DateOpt = typeof DATE_OPTIONS[number];
 
-// summary 기반 간단 카테고리 추론 (데이터 변경 없이 필터용)
-function inferCategory(summary: string): CategoryOpt {
-  const s = summary.toLowerCase();
-  if (s.includes('건선')) return '건선';
-  if (s.includes('아토피')) return '아토피';
-  if (s.includes('여드름')) return '여드름';
-  if (s.includes('지루')) return '지루';
-  if (s.includes('주사')) return '주사';
-  return '정상';
-}
-
-// "1일전/7일전/한달전" → 기준 일수
-function daysFor(opt: DateOpt): number | null {
+// UI → API period 매핑
+function mapPeriod(opt: DateOpt): 'all' | 'day' | 'week' | 'month' {
   switch (opt) {
-    case '1일전':
-      return 1;
-    case '7일전':
-      return 7;
-    case '한달전':
-      return 30;
-    default:
-      return null; // 전체
+    case '1일전': return 'day';
+    case '7일전': return 'week';
+    case '한달전': return 'month';
+    default: return 'all';
   }
 }
+// UI → API disease_name 매핑
+function mapDisease(opt: CategoryOpt): string {
+  return opt === '전체' ? '' : opt;
+}
 
-type HistoryItem = (typeof MOCK_HISTORY)[number];
+// 날짜 표기 통합
+function getDateStr(h: AnalysisHistory): string {
+  const raw = (h as any).analyzed_at ?? (h as any).created_at ?? (h as any).date;
+  if (!raw) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return String(raw);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
 
 export default function HistoryPage() {
-  const [items, setItems] = useState<HistoryItem[]>(MOCK_HISTORY);
+  const memberId = 1; // TODO: 실제 로그인 유저 ID로 치환
+  const [items, setItems] = useState<AnalysisHistory[]>([]);
   const [catFilter, setCatFilter] = useState<CategoryOpt>('전체');
   const [dateFilter, setDateFilter] = useState<DateOpt>('전체');
+  const [loading, setLoading] = useState(false);
 
-  const onDelete = (e: React.MouseEvent, id: number) => {
-    e.preventDefault();   // 링크 이동 방지
-    e.stopPropagation();  // 부모(Link) 클릭 이벤트 방지
-    setItems((prev) => prev.filter((h) => h.id !== id));
+  // 서버 조회
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await getAnalysisHistory({
+          member_id: memberId,
+          page: 1,
+          size: 10, // 필요 시 조정
+          disease_name: mapDisease(catFilter),
+          period: mapPeriod(dateFilter),
+        });
+        if (!alive) return;
+        // 서버 키 정규화(안전)
+        const norm = res.items.map((x: any) => ({
+          id: x.id,
+          member_id: x.member_id,
+          disease_name: x.disease_name ?? x.diagnosis ?? '정상',
+          summary: x.summary ?? x.note ?? '',
+          analyzed_at: x.analyzed_at ?? x.created_at ?? x.date,
+        })) as AnalysisHistory[];
+        setItems(norm);
+      } catch (e) {
+        if (!alive) return;
+        setItems([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [memberId, catFilter, dateFilter]);
+
+  // 디자인 유지 위해 변수명 그대로 사용 (추가 클라이언트 필터 없음)
+  const filtered = useMemo(() => items, [items]);
+
+  const onDelete = async (e: React.MouseEvent, id: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // 낙관적 업데이트
+    const prev = items;
+    setItems((ps) => ps.filter((h) => h.id !== id));
+    try {
+      await deleteAnalysis(id);
+    } catch (err) {
+      // 롤백
+      setItems(prev);
+      alert('삭제 중 오류가 발생했습니다.');
+    }
   };
-
-  // 필터링
-  const filtered = useMemo(() => {
-    const now = new Date();
-    const d = daysFor(dateFilter);
-    const cutoff = d ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - d) : null;
-
-    return items.filter((h) => {
-      // 카테고리 필터
-      const cat = inferCategory(h.summary);
-      const passCat = catFilter === '전체' ? true : cat === catFilter;
-
-      // 날짜 필터 (h.date: 'YYYY-MM-DD')
-      const passDate =
-        !cutoff
-          ? true
-          : new Date(h.date) >= cutoff; // 지정일수 이내만 표시
-
-      return passCat && passDate;
-    });
-  }, [items, catFilter, dateFilter]);
 
   return (
     <section className="mt-2">
@@ -119,7 +146,11 @@ export default function HistoryPage() {
 
       {/* 리스트 */}
       <div className="mt-3 divide-y divide-gray-100 rounded-2xl border border-gray-100 bg-white overflow-hidden">
-        {filtered.map((h) => (
+        {loading && (
+          <div className="p-4 text-sm text-gray-500">불러오는 중…</div>
+        )}
+
+        {!loading && filtered.map((h) => (
           <Link
             key={h.id}
             href={`/result/${h.id}`}
@@ -129,7 +160,7 @@ export default function HistoryPage() {
               <p className="text-sm font-semibold text-gray-900 truncate">{h.summary}</p>
               <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-gray-500">
                 <Calendar size={14} />
-                <span>{h.date}</span>
+                <span>{getDateStr(h)}</span>
               </p>
             </div>
 
@@ -151,7 +182,7 @@ export default function HistoryPage() {
           </Link>
         ))}
 
-        {filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div className="p-4 text-sm text-gray-500 text-center">조건에 맞는 분석 이력이 없습니다.</div>
         )}
       </div>
