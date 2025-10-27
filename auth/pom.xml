@@ -49,13 +49,6 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- SQL 로그 출력 (log4jdbc) -->
-        <dependency>
-            <groupId>org.bgee.log4jdbc-log4j2</groupId>
-            <artifactId>log4jdbc-log4j2-jdbc4.1</artifactId>
-            <version>1.16</version>
-        </dependency>
-
         <!-- 인증 & 인가 지원 -->
         <!-- Spring Security + OAuth2 -->
         <dependency>
