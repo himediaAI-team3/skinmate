@@ -23,4 +23,9 @@ class RecommendationRepository:
             .order_by(Recommendation.ranking)\
             .all()
     
+    @staticmethod
+    def delete_by_analysis_id(db: Session, analysis_id: int) -> int:
+        """분석 ID로 추천 정보 삭제"""
+        deleted = db.query(Recommendation).filter(Recommendation.analysis_id == analysis_id).delete()
+        return deleted
 

@@ -27,4 +27,19 @@ class FileRepository:
             File.entity_id == entity_id
         ).first()
     
+    @staticmethod
+    def delete_by_entity(db: Session, entity_type: EntityType, entity_id: int) -> bool:
+        """entity로 파일 삭제"""
+        file = db.query(File).filter(
+            File.entity_type == entity_type,
+            File.entity_id == entity_id
+        ).first()
+        
+        if not file:
+            return False
+        
+        db.delete(file)
+        db.commit()
+        return True
+
 

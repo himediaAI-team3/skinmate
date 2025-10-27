@@ -3,6 +3,10 @@ from sqlalchemy import func, and_
 from datetime import datetime, timedelta
 from app.models.skin_analysis import SkinAnalysis
 from app.models.diagnosis import Diagnosis
+from app.models.entity_type import EntityType
+from app.repository.file import FileRepository
+from app.repository.diagnosis import DiagnosisRepository
+from app.repository.recommendation import RecommendationRepository
 
 
 class AnalysisRepository:
@@ -94,11 +98,21 @@ class AnalysisRepository:
     @staticmethod
     def delete_by_id(db: Session, analysis_id: int) -> bool:
         """분석 이력 삭제 (연관 데이터도 함께 삭제)"""
-        # 1. skin_analysis 삭제 (CASCADE로 연관 데이터 자동 삭제)
+        # 1. skin_analysis 존재 확인
         analysis = db.query(SkinAnalysis).filter(SkinAnalysis.analysis_id == analysis_id).first()
         if not analysis:
             return False
         
+        # 2. 관련 file 데이터 삭제
+        FileRepository.delete_by_entity(db, EntityType.SKIN_ANALYSIS, analysis_id)
+        
+        # 3. 관련 diagnosis 데이터 삭제
+        DiagnosisRepository.delete_by_analysis_id(db, analysis_id)
+        
+        # 4. 관련 recommendation 데이터 삭제
+        RecommendationRepository.delete_by_analysis_id(db, analysis_id)
+        
+        # 5. skin_analysis 삭제
         db.delete(analysis)
         db.commit()
         return True
