@@ -15,12 +15,12 @@ type DateOpt = typeof DATE_OPTIONS[number];
 // summary 기반 간단 카테고리 추론 (데이터 변경 없이 필터용)
 function inferCategory(summary: string): CategoryOpt {
   const s = summary.toLowerCase();
-  if (s.includes('민감')) return '민감';
-  if (s.includes('지성')) return '지성';
-  if (s.includes('건성')) return '건성';
-  if (s.includes('복합')) return '복합성';
-  if (s.includes('중성')) return '중성';
-  return '기타';
+  if (s.includes('건선')) return '건선';
+  if (s.includes('아토피')) return '아토피';
+  if (s.includes('여드름')) return '여드름';
+  if (s.includes('지루')) return '지루';
+  if (s.includes('주사')) return '주사';
+  return '정상';
 }
 
 // "1일전/7일전/한달전" → 기준 일수
