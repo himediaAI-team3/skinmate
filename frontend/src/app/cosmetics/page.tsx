@@ -5,35 +5,13 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Search, SlidersHorizontal, Heart, Tag } from 'lucide-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import type { CosmeticItem, CosmeticCategory } from '@/entities/cosmetics';
+import { fetchCosmetics } from '@/features/cosmetics';
+import { toggleProductLike } from '@/features/likes/api';
 
-type Product = {
-  id: number;
-  brand: string;
-  name: string;
-  price: number;
-  image: string;
-  category:
-    | '로션/크림/올인원'
-    | '에센스/세럼'
-    | '스킨/토너'
-    | '아이크림'
-    | '미스트/오일'
-    | '패드';
-  tags?: string[];
-  rating?: number;
-  likes: number;
-};
+// 백엔드에서 데이터를 가져오므로 하드코딩된 데이터 제거
 
-const ALL_PRODUCTS: Product[] = [
-  { id: 1, brand: 'SKNM',    name: '수딩 시카 크림',            price: 19800, image: 'https://placehold.co/640x640/FFE0B2/FF6B6B?text=Soothing+Cica', category: '로션/크림/올인원', tags: ['민감', '진정'],   rating: 4.6, likes: 124 },
-  { id: 2, brand: 'Rayderm', name: '오일프리 선스크린 SPF50+', price: 15800, image: 'https://placehold.co/640x640/B2DFDB/00796B?text=Oil-free+Sun',  category: '로션/크림/올인원', tags: ['지성', '자외선'], rating: 4.8, likes: 231 },
-  { id: 3, brand: 'HyaLab',  name: '히알루론산 토너 500ml',     price: 12900, image: 'https://placehold.co/640x640/E1BEE7/6A1B9A?text=Hyaluronic+Toner', category: '스킨/토너',      tags: ['수분', '모든피부'], rating: 4.4, likes: 98  },
-  { id: 4, brand: 'Clearup', name: '트러블 패드 70매',           price: 17900, image: 'https://placehold.co/640x640/F8BBD0/C2185B?text=Acne+Pad',       category: '패드',             tags: ['지성', '각질'],   rating: 4.2, likes: 67  },
-  { id: 5, brand: 'Calmia',  name: '시카 수분 앰플',             price: 24900, image: 'https://placehold.co/640x640/FFF3E0/FB8C00?text=Cica+Ampoule',   category: '미스트/오일',      tags: ['민감', '수분'],   rating: 4.7, likes: 174 },
-  { id: 6, brand: 'Lite',    name: '라이트 젤 크림',             price: 15400, image: 'https://placehold.co/640x640/E0F7FA/006064?text=Gel+Cream',      category: '아이크림',         tags: ['지성', '가벼움'], rating: 4.1, likes: 52  },
-];
-
-const CATEGORIES = [
+const CATEGORIES: ('전체' | CosmeticCategory)[] = [
   '전체',
   '로션/크림/올인원',
   '에센스/세럼',
@@ -41,7 +19,7 @@ const CATEGORIES = [
   '아이크림',
   '미스트/오일',
   '패드',
-] as const;
+];
 
 type Category = typeof CATEGORIES[number];
 
@@ -50,17 +28,62 @@ export default function CosmeticsPage() {
   const [cat, setCat] = useState<Category>('전체');
   const [sort, setSort] = useState<'rec' | 'price-asc' | 'price-desc' | 'rating' | 'likes'>('rec');
   const [liked, setLiked] = useState<Record<number, boolean>>({});
-  const [likeCounts, setLikeCounts] = useState<Record<number, number>>(
-    Object.fromEntries(ALL_PRODUCTS.map((p) => [p.id, p.likes]))
-  );
+  const [likeCounts, setLikeCounts] = useState<Record<number, number>>({});
+  
+  // 백엔드 데이터 상태
+  const [products, setProducts] = useState<CosmeticItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
 
   // 페이지네이션
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
 
-  // 테스트용 고정 페이지네이션 스위치
-  const TEST_PAGINATION = true;
-  const TEST_PAGE_COUNT = 5;
+  // API 데이터 로딩
+  useEffect(() => {
+    async function loadCosmetics() {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // TODO: 실제 로그인 사용자의 member_id를 가져오는 로직 필요
+        const memberId = 1; // 임시 하드코딩
+        
+        const response = await fetchCosmetics({
+          page: page,
+          size: PAGE_SIZE,
+          category: cat === '전체' ? undefined : cat,
+          name: q.trim() || undefined,
+          member_id: memberId, // 사용자 좋아요 상태 조회를 위해 추가
+        });
+        
+        if (response.success && response.data) {
+          setProducts(response.data.items || []);
+          setTotalCount(response.data.total || 0);
+          
+          // 좋아요 수 및 좋아요 상태 초기화
+          const initialLikeCounts: Record<number, number> = {};
+          const initialLikedStates: Record<number, boolean> = {};
+          
+          response.data.items?.forEach(item => {
+            initialLikeCounts[item.cosmetic_id] = item.like_count || 0;
+            initialLikedStates[item.cosmetic_id] = item.is_liked || false; // 백엔드에서 받은 좋아요 상태
+          });
+          
+          setLikeCounts(initialLikeCounts);
+          setLiked(initialLikedStates); // 초기 좋아요 상태 설정
+        }
+      } catch (err) {
+        console.error('화장품 목록 로딩 실패:', err);
+        setError(err instanceof Error ? err.message : '데이터 로딩에 실패했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadCosmetics();
+  }, [page, cat, q]); // 페이지, 카테고리, 검색어 변경시 재호출
 
   function IconButton({
     onClick,
@@ -99,71 +122,64 @@ export default function CosmeticsPage() {
     );
   }
 
-  // 검색/필터/정렬 결과
-  const filtered = useMemo(() => {
-    let list = ALL_PRODUCTS.filter(
-      (p) =>
-        (cat === '전체' || p.category === cat) &&
-        (q.trim() === '' ||
-          p.name.toLowerCase().includes(q.toLowerCase()) ||
-          p.brand.toLowerCase().includes(q.toLowerCase()))
-    );
+  // 정렬 처리 (백엔드에서 가져온 데이터 기준)
+  const sortedProducts = useMemo(() => {
+    let list = [...products];
 
     switch (sort) {
       case 'price-asc':
-        list = list.slice().sort((a, b) => a.price - b.price);
+        list = list.sort((a, b) => (a.price || 0) - (b.price || 0));
         break;
       case 'price-desc':
-        list = list.slice().sort((a, b) => b.price - a.price);
+        list = list.sort((a, b) => (b.price || 0) - (a.price || 0));
         break;
       case 'rating':
-        list = list.slice().sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+        list = list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
         break;
       case 'likes':
-        list = list.slice().sort((a, b) => (likeCounts[b.id] ?? 0) - (likeCounts[a.id] ?? 0));
+        list = list.sort((a, b) => (likeCounts[b.cosmetic_id] ?? 0) - (likeCounts[a.cosmetic_id] ?? 0));
         break;
       default:
         break;
     }
     return list;
-  }, [q, cat, sort, likeCounts]);
+  }, [products, sort, likeCounts]);
 
   // 필터/검색/정렬 변경 시 1페이지로
   useEffect(() => {
     setPage(1);
   }, [q, cat, sort]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const maxPage = TEST_PAGINATION ? TEST_PAGE_COUNT : totalPages;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   // 숫자 페이지 버튼(최대 5개) 계산
   const visibleCount = 5;
-  let pages: number[];
+  const startPage = Math.max(
+    1,
+    Math.min(page - Math.floor(visibleCount / 2), totalPages - visibleCount + 1)
+  );
+  const endPage = Math.min(totalPages, startPage + visibleCount - 1);
+  const pages = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
 
-  if (TEST_PAGINATION) {
-    // ✅ 항상 1~5 고정 노출
-    pages = Array.from({ length: TEST_PAGE_COUNT }, (_, i) => i + 1);
-  } else {
-    const startPage = Math.max(
-      1,
-      Math.min(page - Math.floor(visibleCount / 2), totalPages - visibleCount + 1)
-    );
-    const endPage = Math.min(totalPages, startPage + visibleCount - 1);
-    pages = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
-  }
+  // 현재 페이지의 제품들 (이미 백엔드에서 페이징 처리됨)
+  const paged = sortedProducts;
 
-  const start = (page - 1) * PAGE_SIZE;
-  const paged = filtered.slice(start, start + PAGE_SIZE);
-
-  const toggleLike = (id: number) => {
-    setLiked((s) => {
-      const next = !s[id];
-      setLikeCounts((c) => ({
-        ...c,
-        [id]: (c[id] ?? 0) + (next ? 1 : -1),
-      }));
-      return { ...s, [id]: next };
-    });
+  const toggleLike = async (cosmetic_id: number) => {
+    try {
+      // TODO: 실제 로그인 사용자의 member_id를 가져오는 로직 필요
+      const memberId = 1; // 임시 하드코딩
+      
+      const result = await toggleProductLike(memberId, cosmetic_id);
+      
+      // 백엔드 응답으로 상태 업데이트
+      setLiked((s) => ({ ...s, [cosmetic_id]: result.isLiked }));
+      setLikeCounts((c) => ({ ...c, [cosmetic_id]: result.likeCount }));
+      
+      console.log(`✅ 좋아요 ${result.isLiked ? '추가' : '취소'} 완료! 총 ${result.likeCount}개`);
+    } catch (error) {
+      console.error('좋아요 토글 실패:', error);
+      // TODO: 사용자에게 에러 메시지 표시
+    }
   };
 
   return (
@@ -226,18 +242,36 @@ export default function CosmeticsPage() {
       </section>
 
       {/* 세로 리스트 (브랜드 오른쪽=태그, 우측=하트버튼 + 좋아요 수) */}
+      {loading && (
+        <section className="mt-4 text-center py-8">
+          <div className="text-sm text-gray-500">로딩 중...</div>
+        </section>
+      )}
+      
+      {error && (
+        <section className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-center">
+          <div className="text-sm text-red-600">{error}</div>
+        </section>
+      )}
+      
+      {!loading && !error && paged.length === 0 && (
+        <section className="mt-4 text-center py-8">
+          <div className="text-sm text-gray-500">검색 결과가 없습니다.</div>
+        </section>
+      )}
+
       <section className="mt-2 space-y-3">
         {paged.map((p) => {
-          const isLiked = !!liked[p.id];
-          const likeNum = likeCounts[p.id] ?? p.likes;
+          const isLiked = !!liked[p.cosmetic_id];
+          const likeNum = likeCounts[p.cosmetic_id] ?? p.like_count ?? 0;
         
           return (
             <article
-              key={p.id}
+              key={p.cosmetic_id}
               className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:shadow-md"
             >
               {/* 링크 컨테이너를 relative로 만들어 하트를 우측 상단에 배치 */}
-              <Link href={`/cosmetics/${p.id}`} className="block relative">
+              <Link href={`/cosmetics/${p.cosmetic_id}`} className="block relative">
                 {/* 우측 최상단 하트 토글 버튼 */}
                 <button
                   type="button"
@@ -245,7 +279,7 @@ export default function CosmeticsPage() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    toggleLike(p.id);
+                    toggleLike(p.cosmetic_id);
                   }}
                   className="absolute right-2 top-2 rounded-full bg-white/95 p-1.5 shadow-sm backdrop-blur transition hover:bg-white border border-white/60"
                 >
@@ -259,7 +293,11 @@ export default function CosmeticsPage() {
                   {/* 썸네일 */}
                   <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                    <img 
+                      src={p.image_url || 'https://placehold.co/640x640/E5E7EB/9CA3AF?text=No+Image'} 
+                      alt={p.name || '제품 이미지'} 
+                      className="w-full h-full object-cover" 
+                    />
                   </div>
                 
                   {/* 우측 텍스트/액션 */}
@@ -288,7 +326,7 @@ export default function CosmeticsPage() {
                           WebkitTextFillColor: 'transparent',
                         }}
                       >
-                        {p.price.toLocaleString()}원
+                        {Math.floor(p.price || 0).toLocaleString()}원
                       </span>
                       
                       {/* 좋아요 수 */}
@@ -343,8 +381,8 @@ export default function CosmeticsPage() {
         {/* 다음 */}
         <IconButton
           label="다음 페이지"
-          onClick={() => setPage((p) => Math.min(maxPage, p + 1))}
-          disabled={page >= maxPage}
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          disabled={page >= totalPages}
         >
           <ChevronRight size={18} className="text-gray-800" aria-hidden />
         </IconButton>
