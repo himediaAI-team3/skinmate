@@ -20,3 +20,21 @@ class AnalysisResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+class AnalysisHistoryItem(BaseModel):
+    """분석 이력 목록의 개별 항목"""
+    analysis_id: int
+    disease_name: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class AnalysisHistoryResponse(BaseModel):
+    """페이징된 분석 이력 목록 응답"""
+    items: List[AnalysisHistoryItem]
+    total: int
+    page: int
+    size: int
