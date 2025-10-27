@@ -10,6 +10,11 @@ from app.models.entity_type import EntityType
 class CosmeticRepository:
     
     @staticmethod
+    def exists(db: Session, cosmetic_id: int) -> bool:
+        """화장품 존재 여부 확인"""
+        return db.query(Cosmetic).filter(Cosmetic.cosmetic_id == cosmetic_id).count() > 0
+    
+    @staticmethod
     def search(
         db: Session, 
         brand: Optional[str] = None,

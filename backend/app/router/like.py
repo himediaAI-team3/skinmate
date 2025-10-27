@@ -2,17 +2,17 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from app.core.config.database import get_db
 from app.schemas.response import ApiResponse
-from app.schemas.like import LikeToggleResponse, LikeCountResponse, LikeStatusResponse
+from app.schemas.like import LikeToggleRequest, LikeToggleResponse, LikeCountResponse, LikeStatusResponse
 from app.services.like import LikeService
 
 
-router = APIRouter(prefix="/api/likes", tags=["likes"])
+router = APIRouter(prefix="/api/cosmetics", tags=["likes"])
 
 
-@router.post("/{cosmetic_id}/toggle", response_model=ApiResponse)
-def toggle_like(cosmetic_id: int, member_id: int, db: Session = Depends(get_db)):
+@router.post("/{cosmetic_id}/likes", response_model=ApiResponse)
+def toggle_like(cosmetic_id: int, request: LikeToggleRequest, db: Session = Depends(get_db)):
     """좋아요 토글 (INSERT 시도 → 실패 시 DELETE)"""
-    result = LikeService.toggle_like(db, member_id, cosmetic_id)
+    result = LikeService.toggle_like(db, request.member_id, cosmetic_id)
     return ApiResponse(
         code=status.HTTP_200_OK,
         success=True,
