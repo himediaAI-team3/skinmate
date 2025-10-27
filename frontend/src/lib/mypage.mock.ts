@@ -1,7 +1,7 @@
 import type { DiagnoseItem, LikedItem, UserProfile } from './mypage.types';
 
 export const MOCK_USER: UserProfile = {
-  avatar: 'https://placehold.co/160x160/png?text=YOU',
+  avatar: '/images/1.webp',
   name: '홍길동',
   email: 'gildong@example.com',
   info: [

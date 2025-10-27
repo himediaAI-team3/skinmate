@@ -8,7 +8,7 @@ const TEMP_ME: Me = {
   id: 999,
   name: 'Test User',
   email: 'test@example.com',
-  image_url: 'https://placehold.co/80x80?text=TU',
+  image_url: '/images/1.webp',
 };
 
 const MY_PREFIXES = ['/account', '/history', '/likes', '/me', '/mypage'];

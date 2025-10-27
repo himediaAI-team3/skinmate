@@ -18,7 +18,7 @@ export default function LoginPage() {
     }
     // TODO: 카카오 로그인 실제 엔드포인트로 변경
     // 예: window.location.href = '/api/auth/kakao';
-    window.location.href = '/';
+    window.location.href = '/info';
   };
 
   return (

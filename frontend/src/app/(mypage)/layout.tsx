@@ -7,7 +7,7 @@ export default function MyPageLayout({ children }: { children: React.ReactNode }
     id: 1,
     name: 'jinwoo',
     email: 'jinwoopz@naver.com',
-    image_url: 'https://placehold.co/80x80?text=JW',
+    image_url: '/images/1.webp',
   };
 
   return (
