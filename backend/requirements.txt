@@ -30,3 +30,10 @@ langchain-core==0.2.38
 
 # JWT 검증
 PyJWT==2.8.0
+
+# Vector DB 및 임베딩
+qdrant-client==1.12.1
+sentence-transformers==2.7.0
+
+# 진행률 표시
+tqdm==4.66.1

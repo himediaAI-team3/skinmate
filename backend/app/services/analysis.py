@@ -9,6 +9,9 @@ from app.schemas.analysis import AnalysisResponse, AnalysisHistoryResponse, Anal
 from app.schemas.recommendation import Recommendation as RecommendationSchema
 from app.core.exception import ApiException
 from app.core.config.file import get_static_file_url
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class AnalysisService:
@@ -33,26 +36,48 @@ class AnalysisService:
         Returns:
             analysis_id (생성된 분석 ID)
         """
-        # 1. skin_analysis 생성 (사용자 선택 데이터 포함)
-        analysis = AnalysisRepository.create(db, {
-            "member_id": member_id,
-            "skin_type": skin_type or None,
-            "min_price": min_price or None,
-            "max_price": max_price or None,
-        })
-        analysis_id = analysis.analysis_id
+        analysis_id = None
         
-        # 2. 파일 업로드 (FileService 호출)
-        FileService.upload_and_save(db, analysis_id, image_file)
-        
-        # 3. 진단 생성 (파인튜닝 모델 호출)
-        DiagnosisService.create_diagnosis(db, analysis_id)
-        
-        # 4. 추천 생성 (더미 데이터 -> 추후 RAG 파이프라인 구축)
-        RecommendationService.create_recommendations(db, analysis_id, member_id)
-        
-        # 5. analysis_id만 반환
-        return analysis_id
+        try:
+            # 1. skin_analysis 생성 (사용자 선택 데이터 포함)
+            analysis = AnalysisRepository.create(db, {
+                "member_id": member_id,
+                "skin_type": skin_type or None,
+                "min_price": min_price or None,
+                "max_price": max_price or None,
+            })
+            analysis_id = analysis.analysis_id
+            logger.info(f"[Step 1] 분석 레코드 생성 완료: analysis_id={analysis_id}")
+            
+            # 2. 파일 업로드 (FileService 호출)
+            FileService.upload_and_save(db, analysis_id, image_file)
+            logger.info(f"[Step 2] 파일 업로드 완료: analysis_id={analysis_id}")
+            
+            # 3. 진단 생성 (파인튜닝 모델 호출)
+            DiagnosisService.create_diagnosis(db, analysis_id)
+            logger.info(f"[Step 3] AI 진단 완료: analysis_id={analysis_id}")
+            
+            # 4. 추천 생성 (RAG 파이프라인: Qdrant Vector 검색 → LLM 선정)
+            RecommendationService.create_recommendations(db, analysis_id, member_id)
+            logger.info(f"[Step 4] 추천 생성 완료: analysis_id={analysis_id}")
+            
+            # 5. analysis_id 반환
+            return analysis_id
+            
+        except Exception as e:
+            logger.error(f"분석 생성 중 오류 발생: {e}")
+            logger.error(f"분석 ID: {analysis_id}")
+            import traceback
+            logger.error(traceback.format_exc())
+            
+            # 이미 생성된 analysis_id가 있으면 정리 (선택사항)
+            # if analysis_id:
+            #     AnalysisRepository.delete_by_id(db, analysis_id)
+            
+            raise ApiException(
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+                f"분석 처리 중 오류가 발생했습니다: {str(e)}"
+            )
     
     
     @staticmethod

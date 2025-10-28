@@ -1,0 +1,89 @@
+"""
+Qdrant Cloud 설정 및 클라이언트 초기화
+"""
+import os
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PayloadSchemaType
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Qdrant 설정
+QDRANT_URL = os.getenv("QDRANT_URL")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+QDRANT_COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", "skinmate_cosmetics")
+
+# 벡터 차원 (multilingual-e5-large)
+VECTOR_DIMENSION = 1024
+
+
+def get_qdrant_client() -> QdrantClient:
+    """
+    Qdrant Cloud 클라이언트 생성
+    
+    Returns:
+        QdrantClient: Qdrant 클라이언트 인스턴스
+    """
+    if not QDRANT_URL or not QDRANT_API_KEY:
+        raise ValueError(
+            "Qdrant 설정이 누락되었습니다. "
+            ".env 파일에 QDRANT_URL, QDRANT_API_KEY를 설정하세요."
+        )
+    
+    client = QdrantClient(
+        url=QDRANT_URL,
+        api_key=QDRANT_API_KEY,
+    )
+    
+    return client
+
+
+def create_collection_if_not_exists():
+    """
+    Qdrant Collection 생성 (없을 경우에만)
+    """
+    client = get_qdrant_client()
+    
+    # Collection 존재 여부 확인
+    collections = client.get_collections().collections
+    collection_names = [col.name for col in collections]
+    
+    if QDRANT_COLLECTION_NAME not in collection_names:
+        # Collection 생성
+        client.create_collection(
+            collection_name=QDRANT_COLLECTION_NAME,
+            vectors_config=VectorParams(
+                size=VECTOR_DIMENSION,
+                distance=Distance.COSINE  # 코사인 유사도
+            )
+        )
+        print(f"Collection '{QDRANT_COLLECTION_NAME}' 생성 완료")
+        
+        # 필터링에 필요한 필드 인덱스 생성
+        print("Payload 인덱스 생성 중...")
+        
+        # price 필드 인덱스 (integer)
+        client.create_payload_index(
+            collection_name=QDRANT_COLLECTION_NAME,
+            field_name="price",
+            field_schema=PayloadSchemaType.INTEGER
+        )
+        
+        # skin_disease 필드 인덱스 (keyword)
+        client.create_payload_index(
+            collection_name=QDRANT_COLLECTION_NAME,
+            field_name="skin_disease",
+            field_schema=PayloadSchemaType.KEYWORD
+        )
+        
+        # skin_type 필드 인덱스 (keyword)
+        client.create_payload_index(
+            collection_name=QDRANT_COLLECTION_NAME,
+            field_name="skin_type",
+            field_schema=PayloadSchemaType.KEYWORD
+        )
+        
+        print("Payload 인덱스 생성 완료")
+    else:
+        print(f"Collection '{QDRANT_COLLECTION_NAME}' 이미 존재")
+

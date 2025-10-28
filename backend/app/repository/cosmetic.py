@@ -16,6 +16,31 @@ class CosmeticRepository:
         return db.query(Cosmetic).filter(Cosmetic.cosmetic_id == cosmetic_id).count() > 0
     
     @staticmethod
+    def get_by_ids(db: Session, cosmetic_ids: List[int]) -> List[Cosmetic]:
+        """
+        여러 화장품 ID로 조회 (RAG 파이프라인용)
+        Qdrant Vector 검색 Top 10 → MySQL 상세 정보 → LLM 최종 선정
+        
+        Args:
+            db: 데이터베이스 세션
+            cosmetic_ids: 화장품 ID 리스트
+            
+        Returns:
+            List[Cosmetic]: 화장품 객체 리스트
+        """
+        return db.query(Cosmetic).filter(Cosmetic.cosmetic_id.in_(cosmetic_ids)).all()
+    
+    @staticmethod
+    def get_all(db: Session) -> List[Cosmetic]:
+        """
+        모든 화장품 조회
+        
+        Returns:
+            List[Cosmetic]: 화장품 객체 리스트
+        """
+        return db.query(Cosmetic).all()
+    
+    @staticmethod
     def search(
         db: Session, 
         brand: Optional[str] = None,
