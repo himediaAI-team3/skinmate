@@ -16,3 +16,12 @@ CREATE TABLE IF NOT EXISTS member (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     updated_id INT
 );
+
+-- RefreshToken 테이블 (JWT 토큰 관리)
+CREATE TABLE IF NOT EXISTS refresh_token (
+    refresh_token_id INT AUTO_INCREMENT PRIMARY KEY,
+    member_id INT,
+    refresh_token VARCHAR(500) UNIQUE,
+    expires_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
