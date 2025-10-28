@@ -5,6 +5,7 @@ from app.models.cosmetic import Cosmetic
 from app.models.like import Like
 from app.models.file import File
 from app.models.entity_type import EntityType
+from app.core.config.file import get_file_url
 
 
 class CosmeticRepository:
@@ -85,6 +86,7 @@ class CosmeticRepository:
                 'category': item.category,
                 'price': item.price,
                 'file_path': item.file_path,
+                'file_url': get_file_url(item.file_path),
                 'like_count': item.like_count or 0,
                 'is_liked': item.is_liked or False
             })
@@ -156,6 +158,7 @@ class CosmeticRepository:
             'key_ingredient': result.key_ingredient,
             'ingredients': result.ingredients,
             'file_path': result.file_path,
+            'file_url': get_file_url(result.file_path),
             'like_count': result.like_count or 0,
             'is_liked': result.is_liked or False
         }
