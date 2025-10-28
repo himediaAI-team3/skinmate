@@ -6,6 +6,7 @@ import com.skinmate.auth.oauth.dto.KakaoOAuth2UserInfo;
 import com.skinmate.auth.oauth.dto.OAuth2UserInfo;
 import com.skinmate.auth.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 
 // OAuth2 로그인 처리 서비스
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
@@ -41,11 +43,14 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // Member 조회 또는 생성
         Member member = findOrCreateMember(userInfo);
         
+        // Provider별 name attribute 키 동적 설정
+        String nameAttributeKey = getNameAttributeKey(registrationId);
+
         // Spring Security OAuth2User 반환
         return new org.springframework.security.oauth2.core.user.DefaultOAuth2User(
             Collections.singleton(new SimpleGrantedAuthority("ROLE_" + member.getRole())),
             attributes,
-            "sub" // name attribute key (Google)
+            nameAttributeKey
         );
     }
     
@@ -57,6 +62,19 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             return new KakaoOAuth2UserInfo(attributes);
         } else {
             throw new OAuth2AuthenticationException("Unsupported provider: " + registrationId);
+        }
+    }
+    
+    /**
+     * OAuth2 제공자별 name attribute 키 반환
+     */
+    private String getNameAttributeKey(String registrationId) {
+        if ("google".equals(registrationId)) {
+            return "sub";  // Google은 "sub"
+        } else if ("kakao".equals(registrationId)) {
+            return "id";   // Kakao는 "id"
+        } else {
+            return "id";   // 기본값
         }
     }
     
