@@ -9,7 +9,7 @@ class MemberCreate(BaseModel):
     min_price: Optional[int] = Field(None, ge=0, description="최소 선호 가격대")
     max_price: Optional[int] = Field(None, ge=0, description="최대 선호 가격대")
     gender: Optional[str] = Field(None, description="성별 (남성, 여성)")
-    age_group: Optional[str] = Field(None, description="나이대 (10, 20, 30, 40, 50)")
+    age_group: Optional[int] = Field(None, description="나이대 (10, 20, 30, 40, 50)")
 
     class Config:
         json_schema_extra = {
@@ -18,7 +18,7 @@ class MemberCreate(BaseModel):
                 "min_price": 10000,
                 "max_price": 50000,
                 "gender": "여성",
-                "age_group": "20"
+                "age_group": 20
             }
         }
 
@@ -30,7 +30,7 @@ class MemberResponse(BaseModel):
     min_price: int
     max_price: int
     gender: str
-    age_group: str
+    age_group: int
     created_at: datetime
 
     class Config:

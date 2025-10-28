@@ -17,5 +17,5 @@ class Member(Base, Common):
     min_price = Column(Integer, nullable=True) 
     max_price = Column(Integer, nullable=True)
     gender = Column(String(10), nullable=True)              # 성별
-    age_group = Column(String(10), nullable=True)           # 나이대
+    age_group = Column(Integer, nullable=True)           # 나이대
 

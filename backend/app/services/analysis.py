@@ -5,7 +5,7 @@ from app.repository.analysis_view import AnalysisViewRepository
 from app.services.file import FileService
 from app.services.diagnosis import DiagnosisService
 from app.services.recommendation import RecommendationService
-from app.schemas.analysis import AnalysisResponse
+from app.schemas.analysis import AnalysisResponse, AnalysisHistoryResponse, AnalysisHistoryItem
 from app.schemas.recommendation import Recommendation as RecommendationSchema
 from app.core.exception import ApiException
 
@@ -78,4 +78,73 @@ class AnalysisService:
         )
     
     
+    @staticmethod
+    def get_analysis_history(db: Session, member_id: int, page: int = 1, size: int = 10, 
+                           disease_name: str = None, period: str = "all") -> AnalysisHistoryResponse:
+        """
+        분석 이력 목록 조회
+        
+        Args:
+            db: 데이터베이스 세션
+            member_id: 회원 ID
+            page: 페이지 번호 (기본값: 1)
+            size: 페이지 크기 (기본값: 10)
+            disease_name: 진단명 필터링 (선택적)
+            period: 기간 필터링 (all/day/week/month, 기본값: all)
+            
+        Returns:
+            AnalysisHistoryResponse: 페이징된 이력 목록
+        """
+        # 1. 페이징된 이력 조회
+        history_items = AnalysisRepository.get_by_member_id_with_pagination(
+            db, member_id, page, size, disease_name, period
+        )
+        
+        # 2. 전체 개수 조회 (필터링 조건 반영)
+        total = AnalysisRepository.count_by_member_id(db, member_id, disease_name, period)
+        
+        # 3. AnalysisHistoryItem 리스트 생성
+        items = []
+        for item in history_items:
+            items.append(AnalysisHistoryItem(
+                analysis_id=item.analysis_id,
+                disease_name=item.disease_name or "",
+                created_at=item.created_at
+            ))
+        
+        # 4. 응답 반환
+        return AnalysisHistoryResponse(
+            items=items,
+            total=total,
+            page=page,
+            size=size
+        )
+    
+    
+    @staticmethod
+    def delete_analysis(db: Session, analysis_id: int) -> bool:
+        """
+        분석 이력 삭제
+        
+        Args:
+            db: 데이터베이스 세션
+            analysis_id: 분석 ID
+            
+        Returns:
+            bool: 삭제 성공 여부
+        """
+        # 1. 분석 이력 존재 확인
+        analysis = AnalysisRepository.get_by_id(db, analysis_id)
+        if not analysis:
+            raise ApiException(status.HTTP_404_NOT_FOUND, "분석 이력을 찾을 수 없습니다")
+        
+        # 2. 삭제 실행
+        success = AnalysisRepository.delete_by_id(db, analysis_id)
+        
+        if not success:
+            raise ApiException(status.HTTP_500_INTERNAL_SERVER_ERROR, "분석 이력 삭제에 실패했습니다")
+        
+        return True
+    
+    # 분석 이력 조회 및 삭제 기능 추가 완료
 

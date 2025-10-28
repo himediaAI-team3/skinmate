@@ -16,16 +16,7 @@ def search_cosmetics(
     """화장품 목록 검색"""
     
     # 서비스 호출
-    result = CosmeticService.search_cosmetics(
-        db=db,
-        brand=params.brand,
-        name=params.name,
-        skin_type=params.skin_type,
-        category=params.category,
-        member_id=params.member_id,
-        page=params.page,
-        size=params.size
-    )
+    result = CosmeticService.search_cosmetics(db=db, params=params)
     
     # ApiResponse로 감싸서 반환
     return ApiResponse(

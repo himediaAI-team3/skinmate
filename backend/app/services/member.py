@@ -9,6 +9,11 @@ from app.core.exception import ApiException
 class MemberService:
     
     @staticmethod
+    def exists(db: Session, member_id: int) -> bool:
+        """회원 존재 여부 확인"""
+        return MemberRepository.exists(db, member_id)
+    
+    @staticmethod
     def update_member(db: Session, member_id: int, data: MemberCreate) -> Member:
         # 회원 존재 여부 확인
         if not MemberRepository.exists(db, member_id):

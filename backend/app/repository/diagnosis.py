@@ -17,4 +17,9 @@ class DiagnosisRepository:
     def get_by_analysis_id(db: Session, analysis_id: int) -> Diagnosis:
         return db.query(Diagnosis).filter(Diagnosis.analysis_id == analysis_id).first()
     
+    @staticmethod
+    def delete_by_analysis_id(db: Session, analysis_id: int) -> int:
+        """분석 ID로 진단 정보 삭제"""
+        deleted = db.query(Diagnosis).filter(Diagnosis.analysis_id == analysis_id).delete()
+        return deleted
 
