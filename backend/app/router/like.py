@@ -1,12 +1,38 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 from app.core.config.database import get_db
 from app.schemas.response import ApiResponse
-from app.schemas.like import LikeToggleRequest, LikeToggleResponse, LikeCountResponse, LikeStatusResponse
+from app.schemas.like import LikeToggleRequest, LikeToggleResponse, LikeCountResponse, LikeStatusResponse, LikedCosmeticsResponse
 from app.services.like import LikeService
 
 
 router = APIRouter(prefix="/api/cosmetics", tags=["likes"])
+
+
+@router.get("/likes/{member_id}", response_model=ApiResponse)
+def get_liked_cosmetics(
+    member_id: int,
+    page: int = Query(1, ge=1, description="페이지 번호"),
+    size: int = Query(5, ge=1, le=100, description="페이지 크기"),
+    db: Session = Depends(get_db)
+):
+    """
+    좋아요한 화장품 목록 조회
+    
+    - **member_id**: 회원 ID (Path Parameter)
+    - **page**: 페이지 번호 (기본값: 1)
+    - **size**: 페이지 크기 (기본값: 5, 최대: 100)
+    """
+    # 좋아요 목록 조회
+    result = LikeService.get_liked_cosmetics(db, member_id, page, size)
+    
+    # ApiResponse로 감싸서 반환
+    return ApiResponse(
+        code=status.HTTP_200_OK,
+        success=True,
+        message="좋아요 목록 조회 성공",
+        data=result
+    )
 
 
 @router.post("/{cosmetic_id}/likes", response_model=ApiResponse)

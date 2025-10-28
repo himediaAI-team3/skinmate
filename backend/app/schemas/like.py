@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+from typing import List, Optional
+from decimal import Decimal
 
 
 class LikeToggleRequest(BaseModel):
@@ -21,3 +23,24 @@ class LikeStatusResponse(BaseModel):
     """좋아요 상태 응답 (여부 + 개수)"""
     is_liked: bool
     like_count: int
+
+
+class LikedCosmeticItem(BaseModel):
+    """좋아요한 화장품 개별 항목"""
+    cosmetic_id: int
+    name: str
+    brand: str
+    price: Optional[Decimal] = None
+    file_id: Optional[int] = None
+    is_liked: bool = True
+
+    class Config:
+        from_attributes = True
+
+
+class LikedCosmeticsResponse(BaseModel):
+    """좋아요한 화장품 목록 응답 (페이징)"""
+    items: List[LikedCosmeticItem]
+    total: int
+    page: int
+    size: int
