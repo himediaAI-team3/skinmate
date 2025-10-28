@@ -33,8 +33,8 @@ class CosmeticRepository:
             Like.cosmetic_id == Cosmetic.cosmetic_id
         ).scalar_subquery()
         
-        # 서브쿼리: 대표 이미지 file_path
-        file_path_sq = select(File.file_path).where(
+        # 서브쿼리: 대표 이미지 file_name
+        file_name_sq = select(File.file_name).where(
             File.entity_type == EntityType.COSMETIC,
             File.entity_id == Cosmetic.cosmetic_id
         ).order_by(File.file_id.asc()).limit(1).scalar_subquery()
@@ -55,7 +55,7 @@ class CosmeticRepository:
             Cosmetic.brand,
             Cosmetic.category,
             Cosmetic.price,
-            file_path_sq.label('file_path'),
+            file_name_sq.label('file_name'),
             like_count_sq.label('like_count'),
             is_liked_sq.label('is_liked')
         )
@@ -85,8 +85,7 @@ class CosmeticRepository:
                 'brand': item.brand,
                 'category': item.category,
                 'price': item.price,
-                'file_path': item.file_path,
-                'file_url': get_file_url(item.file_path),
+                'file_url': get_file_url(item.file_name),
                 'like_count': item.like_count or 0,
                 'is_liked': item.is_liked or False
             })
@@ -102,8 +101,8 @@ class CosmeticRepository:
             Like.cosmetic_id == Cosmetic.cosmetic_id
         ).scalar_subquery()
         
-        # 서브쿼리: 대표 이미지 file_path
-        file_path_sq = select(File.file_path).where(
+        # 서브쿼리: 대표 이미지 file_name
+        file_name_sq = select(File.file_name).where(
             File.entity_type == EntityType.COSMETIC,
             File.entity_id == Cosmetic.cosmetic_id
         ).order_by(File.file_id.asc()).limit(1).scalar_subquery()
@@ -133,7 +132,7 @@ class CosmeticRepository:
             Cosmetic.care_symptom,
             Cosmetic.key_ingredient,
             Cosmetic.ingredients,
-            file_path_sq.label('file_path'),
+            file_name_sq.label('file_name'),
             like_count_sq.label('like_count'),
             is_liked_sq.label('is_liked')
         ).filter(Cosmetic.cosmetic_id == cosmetic_id).first()
@@ -157,8 +156,7 @@ class CosmeticRepository:
             'care_symptom': result.care_symptom,
             'key_ingredient': result.key_ingredient,
             'ingredients': result.ingredients,
-            'file_path': result.file_path,
-            'file_url': get_file_url(result.file_path),
+            'file_url': get_file_url(result.file_name),
             'like_count': result.like_count or 0,
             'is_liked': result.is_liked or False
         }

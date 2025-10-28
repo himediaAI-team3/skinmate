@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 from contextlib import asynccontextmanager
 from app.core.config.database import engine
-from app.core.config.file import SHARED_FOLDER_PATH
+from app.core.config.file import COSMETIC_IMAGE_DIR
 from app.models import Base
 from app.core.exception import ApiException, api_exception_handler
 from app.router import member_router, analysis_router, file_router, like_router, cosmetic_router
@@ -49,8 +49,8 @@ app.include_router(file_router)
 app.include_router(like_router)
 app.include_router(cosmetic_router)
 
-# 정적 파일 서빙 - 네트워크 공유 폴더를 /uploads 경로로 마운트
-app.mount("/uploads", StaticFiles(directory=SHARED_FOLDER_PATH), name="uploads")
+# 정적 파일 서빙 - 화장품 이미지를 /static/cosmetics 경로로 마운트
+app.mount("/static/cosmetics", StaticFiles(directory=COSMETIC_IMAGE_DIR), name="cosmetic-images")
 
 # 기본 라우트
 @app.get("/api")

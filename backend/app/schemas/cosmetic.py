@@ -34,7 +34,6 @@ class CosmeticSearchItem(BaseModel):
     brand: str
     category: Optional[str] = None
     price: Optional[Decimal] = None
-    file_path: Optional[str] = None
     file_url: Optional[str] = None
     like_count: int
     is_liked: bool
@@ -70,7 +69,6 @@ class CosmeticDetailResponse(BaseModel):
     care_symptom: Optional[str] = None
     key_ingredient: Optional[str] = None
     ingredients: Optional[str] = None
-    file_path: Optional[str] = None
     file_url: Optional[str] = None
     like_count: int = 0
     is_liked: bool = False
