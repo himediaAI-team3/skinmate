@@ -13,12 +13,8 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", 10 * 1024 * 1024))  # bytes
 
 # 파일 서빙 관련 설정
-# 화장품 이미지 폴더 경로 (로컬 또는 네트워크 공유 폴더)
-# 17번 줄을 다음과 같이 수정
-COSMETIC_IMAGE_DIR = os.getenv("COSMETIC_IMAGE_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "static", "cosmetic"))
-
-# 파일 베이스 URL (환경변수로 설정 가능, 기본값은 로컬호스트)
-FILE_BASE_URL = os.getenv("FILE_BASE_URL", "http://localhost:8000")
+# static 폴더 경로 (로컬 또는 네트워크 공유 폴더)
+STATIC_DIR = os.getenv("STATIC_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "static"))
 
 # 업로드 디렉토리 절대 경로
 def get_upload_path() -> str:
@@ -28,15 +24,19 @@ def get_upload_path() -> str:
     return str(path)
 
 
-def get_file_url(file_name: str) -> str:
+def get_cosmetic_image_url(file_name: str) -> str:
     """
-    파일명을 전체 URL로 변환
+    화장품 이미지 URL 생성 (상대 경로)
     
     Args:
         file_name: 파일명 (예: "199.jpg")
         
     Returns:
-        전체 URL (예: "http://localhost:8000/static/cosmetics/199.jpg")
+        상대 경로 (예: "/media/cosmetics/199.jpg")
+        
+    Note:
+        프론트엔드에서는 현재 접속한 서버 주소와 조합하여 사용:
+        `${window.location.origin}${file_url}`
     """
     if not file_name:
         return None
@@ -44,6 +44,22 @@ def get_file_url(file_name: str) -> str:
     # 파일명을 정리 (앞뒤 공백 제거, 경로 구분자 정리)
     clean_name = file_name.strip().replace("\\", "/")
     
-    # 전체 URL 생성
-    return f"{FILE_BASE_URL.rstrip('/')}/static/cosmetics/{clean_name}"
+    # 상대 경로 반환 (확장성: /media/members, /media/reviews 등)
+    return f"/media/cosmetic/{clean_name}"
+
+
+# 향후 확장 예시 (현재는 주석으로만 예시)
+# def get_member_image_url(file_name: str) -> str:
+#     """회원 프로필 이미지 URL 생성"""
+#     if not file_name:
+#         return None
+#     clean_name = file_name.strip().replace("\\", "/")
+#     return f"/media/members/{clean_name}"
+# 
+# def get_review_image_url(file_name: str) -> str:
+#     """리뷰 이미지 URL 생성"""
+#     if not file_name:
+#         return None
+#     clean_name = file_name.strip().replace("\\", "/")
+#     return f"/media/reviews/{clean_name}"
 
