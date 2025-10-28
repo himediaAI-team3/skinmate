@@ -15,6 +15,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -46,10 +47,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // Provider별 name attribute 키 동적 설정
         String nameAttributeKey = getNameAttributeKey(registrationId);
 
+        // Member 정보를 attributes에 추가 (SuccessHandler에서 사용)
+        Map<String, Object> enhancedAttributes = new HashMap<>(attributes);
+        enhancedAttributes.put("memberId", member.getMemberId());
+        enhancedAttributes.put("role", member.getRole());
+
         // Spring Security OAuth2User 반환
         return new org.springframework.security.oauth2.core.user.DefaultOAuth2User(
             Collections.singleton(new SimpleGrantedAuthority("ROLE_" + member.getRole())),
-            attributes,
+            enhancedAttributes,
             nameAttributeKey
         );
     }
