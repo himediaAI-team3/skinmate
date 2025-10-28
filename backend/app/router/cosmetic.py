@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends, Query, status # Query 추가
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-from typing import Optional # 새로 추가됨
 from app.core.config.database import get_db
 from app.services.cosmetic import CosmeticService
 from app.schemas.cosmetic import CosmeticSearchResponse, CosmeticDetailResponse, CosmeticSearchParams
@@ -40,10 +39,12 @@ def search_cosmetics(
 @router.get("/{cosmetic_id}", response_model=ApiResponse)
 def get_cosmetic_detail(
     cosmetic_id: int,
-    member_id: Optional[int] = Query(None, description="회원 ID (좋아요 여부 확인용)"),
     db: Session = Depends(get_db)
 ):
     """화장품 상세 정보 조회"""
+    
+    # 임시 하드코딩 (TODO: JWT 인증 구현 시 토큰에서 추출)
+    member_id = 1
     
     # 서비스 호출
     result = CosmeticService.get_cosmetic_detail(db, cosmetic_id, member_id)
