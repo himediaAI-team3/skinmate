@@ -1,5 +1,6 @@
 package com.skinmate.auth.exception;
 
+import com.skinmate.auth.domain.ResponseCode;
 import lombok.Getter;
 
 @Getter

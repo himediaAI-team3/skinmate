@@ -2,7 +2,7 @@ package com.skinmate.auth.oauth.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skinmate.auth.dto.ApiResponse;
-import com.skinmate.auth.exception.ResponseCode;
+import com.skinmate.auth.domain.ResponseCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;

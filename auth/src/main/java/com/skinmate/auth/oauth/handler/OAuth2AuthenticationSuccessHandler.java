@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skinmate.auth.domain.RefreshToken;
 import com.skinmate.auth.dto.ApiResponse;
 import com.skinmate.auth.dto.TokenResponse;
-import com.skinmate.auth.exception.ResponseCode;
+import com.skinmate.auth.domain.ResponseCode;
 import com.skinmate.auth.jwt.JwtTokenProvider;
 import com.skinmate.auth.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;

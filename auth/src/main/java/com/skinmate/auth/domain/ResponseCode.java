@@ -1,4 +1,4 @@
-package com.skinmate.auth.exception;
+package com.skinmate.auth.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
