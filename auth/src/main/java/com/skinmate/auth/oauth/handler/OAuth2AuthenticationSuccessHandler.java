@@ -66,6 +66,6 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         log.info("JWT 토큰 발급 완료 - Access Token: {}, Refresh Token 저장됨", accessToken.substring(0, 20) + "...");
         
         // 프론트엔드로 리다이렉트 (실제 프론트엔드 URL로 변경 필요)
-        response.sendRedirect("http://localhost:3000");
+        response.sendRedirect("https://naver.com");
     }
 }
