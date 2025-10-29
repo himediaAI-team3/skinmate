@@ -35,7 +35,7 @@ public class SecurityConfig {
             
             // 요청 권한 설정
             .authorizeRequests()
-                .antMatchers("/oauth2/**", "/login/oauth2/code/**").permitAll()  // OAuth2 엔드포인트 허용
+                .antMatchers("/oauth2/**", "/login/oauth2/code/**", "/auth/**").permitAll()  // 엔드포인트 허용
                 .anyRequest().authenticated()  // 나머지는 인증 필요
             
             .and()
