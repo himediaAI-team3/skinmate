@@ -4,12 +4,24 @@ import com.skinmate.auth.domain.ResponseCode;
 import com.skinmate.auth.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    
+    // @Valid 필드에 발생한 예외 처리
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException ex) {
+        String errorMessage = ex.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+        log.error("handleValidationException : {}", errorMessage);
+        
+        return ResponseEntity
+                .status(ResponseCode.INVALID_REQUEST.getHttpStatus())
+                .body(ApiResponse.error(ResponseCode.INVALID_REQUEST.getCode(), errorMessage));
+    }
     
     // CustomException 처리
     @ExceptionHandler(CustomException.class)
