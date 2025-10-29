@@ -1,12 +1,11 @@
 package com.skinmate.auth.oauth.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.skinmate.auth.domain.RefreshToken;
 import com.skinmate.auth.dto.ApiResponse;
 import com.skinmate.auth.dto.TokenResponse;
 import com.skinmate.auth.domain.ResponseCode;
 import com.skinmate.auth.jwt.JwtTokenProvider;
-import com.skinmate.auth.repository.RefreshTokenRepository;
+import com.skinmate.auth.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -26,7 +25,7 @@ import java.time.LocalDateTime;
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
     
     private final JwtTokenProvider jwtTokenProvider;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenService refreshTokenService;
     private final ObjectMapper objectMapper;
     
     @Override
@@ -57,14 +56,11 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         String refreshToken = jwtTokenProvider.generateRefreshToken(memberId);
         
         // Refresh Token을 DB에 저장
-        RefreshToken refreshTokenEntity = RefreshToken.builder()
-                .memberId(memberId)
-                .refreshToken(refreshToken)
-                .expiresAt(LocalDateTime.now().plusDays(7)) // 7일 후 만료
-                .createdAt(LocalDateTime.now())
-                .build();
-        
-        refreshTokenRepository.save(refreshTokenEntity);
+        refreshTokenService.saveRefreshToken(
+                memberId,
+                refreshToken,
+                LocalDateTime.now().plusDays(7) // 7일 후 만료
+        );
         
         // log.info("JWT 토큰 발급 완료 - Access Token: {}, Refresh Token 저장됨", accessToken.substring(0, 20) + "...");
         
