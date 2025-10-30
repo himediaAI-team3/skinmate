@@ -33,6 +33,10 @@ public class SecurityConfig {
             
             .and()
             
+            // 기본 로그인폼/기본 인증 비활성화
+            .formLogin().disable()
+            .httpBasic().disable()
+            
             // 요청 권한 설정
             .authorizeRequests()
                 .antMatchers("/oauth2/**", "/login/oauth2/code/**", "/auth/**").permitAll()  // 엔드포인트 허용
