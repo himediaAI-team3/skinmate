@@ -9,10 +9,9 @@
   - **Lombok**
 
 ## 2. 기능
-## 2-1. OAuth2 소셜 로그인
-  - Google 로그인
-  - Kakao 로그인
-  - OAuth2 인증 후 JWT 토큰 발급
+## 2-1. 소셜 로그인(Authorization Code 교환)
+  - 프론트: 카카오 인증 성공 후 `code` 수신 (redirect_uri)
+  - 백엔드: `POST /auth/kakao-login` 으로 code 교환 → 우리 JWT 발급
 
 ## 2-2. JWT 토큰 관리
   - **Access Token**: 15분 유효
@@ -27,9 +26,27 @@
 ## 3-2. CORS 설정
 
 ## 4. 엔드포인트
-## 4-1. OAuth2 로그인
-- **GET** `/oauth2/authorization/google` - Google 로그인
-- **GET** `/oauth2/authorization/kakao` - Kakao 로그인
+## 4-1. 카카오 로그인(code 교환)
+```
+POST /auth/kakao-login
+Content-Type: application/json
+
+RequestBody
+{
+  "code": "{kakao_authorization_code}"
+}
+
+Response
+{
+  "success": true,
+  "code": 200,
+  "message": "카카오 로그인 성공",
+  "data": {
+    "accessToken": "...",
+    "refreshToken": "..."
+  }
+}
+```
 
 ## 4-2. 토큰 갱신
 ```

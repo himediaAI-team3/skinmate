@@ -26,28 +26,28 @@ public class AuthController {
     
     private final AuthService authService;
     private final JwtTokenProvider jwtTokenProvider;
+
+    @PostMapping("/kakao-login")
+    public ResponseEntity<ApiResponse<TokenResponse>> kakaoLogin(@Valid @RequestBody KakaoCodeRequest request) {
+        TokenResponse tokenResponse = authService.loginWithKakaoCode(request.getCode());
+        
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        ResponseCode.SUCCESS.getCode(),
+                        "카카오 로그인 성공",
+                        tokenResponse
+                )
+        );
+    }
     
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<TokenResponse>> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
-        
         TokenResponse tokenResponse = authService.refreshAccessToken(request.getRefreshToken());
         
         return ResponseEntity.ok(
                 ApiResponse.success(
                         ResponseCode.SUCCESS.getCode(),
                         "토큰 갱신 성공",
-                        tokenResponse
-                )
-        );
-    }
-    
-    @PostMapping("/kakao-login")
-    public ResponseEntity<ApiResponse<TokenResponse>> kakaoLogin(@Valid @RequestBody KakaoCodeRequest request) {
-        TokenResponse tokenResponse = authService.loginWithKakaoCode(request.getCode());
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        ResponseCode.SUCCESS.getCode(),
-                        "카카오 로그인 성공",
                         tokenResponse
                 )
         );
