@@ -2,6 +2,7 @@ package com.skinmate.auth.controller;
 
 import com.skinmate.auth.dto.ApiResponse;
 import com.skinmate.auth.dto.RefreshTokenRequest;
+import com.skinmate.auth.dto.KakaoCodeRequest;
 import com.skinmate.auth.dto.TokenResponse;
 import com.skinmate.auth.domain.ResponseCode;
 import com.skinmate.auth.jwt.JwtTokenProvider;
@@ -40,6 +41,18 @@ public class AuthController {
         );
     }
     
+    @PostMapping("/kakao-login")
+    public ResponseEntity<ApiResponse<TokenResponse>> kakaoLogin(@Valid @RequestBody KakaoCodeRequest request) {
+        TokenResponse tokenResponse = authService.loginWithKakaoCode(request.getCode());
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        ResponseCode.SUCCESS.getCode(),
+                        "카카오 로그인 성공",
+                        tokenResponse
+                )
+        );
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String authorizationHeader) {
         
