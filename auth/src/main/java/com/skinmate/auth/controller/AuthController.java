@@ -1,16 +1,17 @@
 package com.skinmate.auth.controller;
 
 import com.skinmate.auth.dto.ApiResponse;
-import com.skinmate.auth.dto.LogoutRequest;
 import com.skinmate.auth.dto.RefreshTokenRequest;
 import com.skinmate.auth.dto.TokenResponse;
 import com.skinmate.auth.domain.ResponseCode;
+import com.skinmate.auth.jwt.JwtTokenProvider;
 import com.skinmate.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,6 +24,7 @@ import javax.validation.Valid;
 public class AuthController {
     
     private final AuthService authService;
+    private final JwtTokenProvider jwtTokenProvider;
     
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<TokenResponse>> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
@@ -39,9 +41,13 @@ public class AuthController {
     }
     
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody LogoutRequest request) {
+    public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String authorizationHeader) {
         
-        authService.logout(request.getMemberId());
+        // Bearer Token에서 memberId 추출
+        String token = authorizationHeader.substring(7); // "Bearer " 제거
+        Long memberId = jwtTokenProvider.getMemberIdFromToken(token);
+        
+        authService.logout(memberId);
         
         return ResponseEntity.ok(
                 ApiResponse.success(

@@ -79,4 +79,14 @@ public class JwtTokenProvider {
             return true;
         }
     }
+    
+    // 토큰에서 Member ID 추출
+    public Long getMemberIdFromToken(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return Long.parseLong(claims.getSubject());
+    }
 }
