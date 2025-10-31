@@ -24,28 +24,29 @@ def get_upload_path() -> str:
     return str(path)
 
 
-def get_cosmetic_image_url(file_name: str) -> str:
+def get_static_file_url(file_path: str) -> str:
     """
-    화장품 이미지 URL 생성 (상대 경로)
+    정적 파일 URL 생성 (상대 경로)
     
     Args:
-        file_name: 파일명 (예: "199.jpg")
+        file_path: 파일 경로 (예: "cosmetic/1.jpg")
         
     Returns:
-        상대 경로 (예: "/media/cosmetics/199.jpg")
+        상대 경로 (예: "/media/cosmetic/1.jpg")
         
     Note:
         프론트엔드에서는 현재 접속한 서버 주소와 조합하여 사용:
-        `${window.location.origin}${file_url}`
+        `${window.location.origin}${file_path}`
+        /media 경로는 main.py에서 STATIC_DIR로 마운트됨
     """
-    if not file_name:
+    if not file_path:
         return None
     
-    # 파일명을 정리 (앞뒤 공백 제거, 경로 구분자 정리)
-    clean_name = file_name.strip().replace("\\", "/")
+    # 경로를 정리 (앞뒤 공백 제거, 경로 구분자 정리)
+    clean_path = file_path.strip().replace("\\", "/")
     
-    # 상대 경로 반환 (확장성: /media/members, /media/reviews 등)
-    return f"/media/cosmetic/{clean_name}"
+    # /media 접두사 추가하여 반환
+    return f"/media/{clean_path}"
 
 
 # 향후 확장 예시 (현재는 주석으로만 예시)
