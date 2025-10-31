@@ -4,7 +4,6 @@ from app.core.config.database import get_db
 from app.services.analysis import AnalysisService
 from app.schemas.analysis import AnalysisCreateResponse, AnalysisHistoryResponse
 from app.schemas.response import ApiResponse
-from app.services.recommendation import RecommendationService
 
 router = APIRouter(prefix="/api/skin-analysis", tags=["skin-analysis"])
 
@@ -105,23 +104,4 @@ def delete_analysis(
     )
 
     # 분석 이력 조회 및 삭제 엔드포인트
-
-
-@router.post("/{analysis_id}/recommendations/rag", response_model=ApiResponse, status_code=status.HTTP_201_CREATED)
-def create_rag_recommendations(
-    analysis_id: int,
-    db: Session = Depends(get_db)
-):
-    """
-    RAG 기반 추천 생성 (Top 3 저장)
-    - 분석 ID로 진단을 조회하고, LLM 기반 검색 질의를 생성하여 Qdrant에서 하이브리드 검색
-    - 상위 3개 제품을 recommendation 테이블에 저장
-    """
-    recs = RecommendationService.create_rag_recommendations(db, analysis_id)
-    return ApiResponse(
-        code=status.HTTP_201_CREATED,
-        success=True,
-        message="RAG 추천 생성 성공",
-        data={"count": len(recs)}
-    )
 
