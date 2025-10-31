@@ -26,4 +26,7 @@ PyYAML==6.0.1
 
 # LangChain (안정 버전)
 langchain-openai==0.1.23
-langchain-core==0.2.38
+
+# RAG 관련 추가
+qdrant-client==1.7.0
+sentence-transformers==2.2.2
