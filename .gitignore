@@ -1,252 +1,241 @@
-# 바이트 컴파일된 / 최적화된 / DLL 파일들
-__pycache__/
-*.py[cod]
-*$py.class
 
-# C 확장 모듈
-*.so
-
-# 배포 / 패키징
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# PyInstaller
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+!/frontend/.yarn/patches
+!/frontend/.yarn/plugins
+!/frontend/.yarn/releases
+!/frontend/.yarn/versions
+# --- Frontend ignores ---
 #  보통 이런 파일들은 PyInstaller가 exe를 빌드하기 전에
 #  템플릿에서 파이썬 스크립트로 작성되어 날짜/기타 정보를 주입합니다.
-*.manifest
-*.spec
-
-# 설치 로그
-pip-log.txt
-pip-delete-this-directory.txt
-
+# Bower 의존성 디렉토리 (https://bower.io/)
+# C 확장 모듈
+# Celery 관련
+# debug
+# Django 관련:
+# dotenv 환경 변수 파일
+# env
+# env files (can opt-in for committing if needed)
+# Flask 관련:
+# Gatsby 파일
+# Grunt 중간 저장소 (https://gruntjs.com/creating-plugins#storing-task-files)
+# IDE
+# IPython
+# istanbul 같은 도구에서 사용하는 커버리지 디렉토리
+# jscoverage/JSCover로 생성된 계측 라이브러리 디렉토리
+# Jupyter Notebook
+# logs
+# Microbundle 캐시
+# misc
+# mkdocs 문서
+# mypy
+# next.js
+# Next.js 빌드 출력
+# Node.js (프론트엔드용)
+# node-waf 설정
+# 'npm pack' 출력
+# Nuxt.js 빌드 / 생성 출력
+# nyc 테스트 커버리지
+# parcel-bundler 캐시 (https://parceljs.org/)
+# PEP 582; 예: github.com/David-OConnor/pyflow에서 사용
+# production
+# PyBuilder
+# pyenv
+# PyInstaller
+# Pyre type checker
+# Rope 프로젝트 설정
+# SageMath 파싱된 파일
+# Scrapy 관련:
+# Sphinx 문서
+# Spyder 프로젝트 설정
+# Storybook 빌드 출력
+# testing
+# typescript
+# TypeScript v1 선언 파일
+# vercel
+# Yarn Berry
+# Yarn 무결성 파일
 # 단위 테스트 / 커버리지 리포트
-htmlcov/
-.tox/
-.nox/
+# 데이터베이스
+# 런타임 데이터
+# 로그
+# 민감한 데이터가 포함된 설정 파일
+# 바이트 컴파일된 / 최적화된 / DLL 파일들
+# 배포 / 패키징
+# 번역 파일
+# 선택적 eslint 캐시
+# 선택적 npm 캐시 디렉토리
+# 선택적 REPL 히스토리
+# 설치 로그
+# 업로드
+# 운영체제
+# 의존성 디렉토리
+# 임시 폴더
+# 정적 파일 (이미지)
+# 컴파일된 바이너리 애드온 (https://nodejs.org/api/addons.html)
+# 환경 변수
+*$py.class
+*.cover
+*.db
+*.egg
+*.egg-info/
+*.log
+*.manifest
+*.mo
+*.pem
+*.pid
+*.pid.lock
+*.pot
+*.py,cover
+*.py[cod]
+*.sage.py
+*.seed
+*.so
+*.spec
+*.sqlite
+*.sqlite3
+*.swo
+*.swp
+*.tgz
+*.tsbuildinfo
+*~
+._*
+.cache
+.cache/
 .coverage
 .coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-
-# 번역 파일
-*.mo
-*.pot
-
-# Django 관련:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Flask 관련:
-instance/
-.webassets-cache
-
-# Scrapy 관련:
-.scrapy
-
-# Sphinx 문서
-docs/_build/
-
-# PyBuilder
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-.python-version
-
-
-# PEP 582; 예: github.com/David-OConnor/pyflow에서 사용
-__pypackages__/
-
-# Celery 관련
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath 파싱된 파일
-*.sage.py
-
-# 환경 변수
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder 프로젝트 설정
-.spyderproject
-.spyproject
-
-# Rope 프로젝트 설정
-.ropeproject
-
-# mkdocs 문서
-/site
-
-# mypy
-.mypy_cache/
 .dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# IDE
-.idea/
-*.swp
-*.swo
-*~
-
-# 운영체제
 .DS_Store
 .DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Node.js (프론트엔드용)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.npm
-.yarn-integrity
-
-# 로그
-logs
-*.log
-
-# 런타임 데이터
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# jscoverage/JSCover로 생성된 계측 라이브러리 디렉토리
-lib-cov
-
-# istanbul 같은 도구에서 사용하는 커버리지 디렉토리
-coverage
-
-# nyc 테스트 커버리지
-.nyc_output
-
-# Grunt 중간 저장소 (https://gruntjs.com/creating-plugins#storing-task-files)
-.grunt
-
-# Bower 의존성 디렉토리 (https://bower.io/)
-bower_components
-
-# node-waf 설정
-.lock-wscript
-
-# 컴파일된 바이너리 애드온 (https://nodejs.org/api/addons.html)
-build/Release
-
-# 의존성 디렉토리
-jspm_packages/
-
-# TypeScript v1 선언 파일
-typings/
-
-# 선택적 npm 캐시 디렉토리
-.npm
-
-# 선택적 eslint 캐시
+.eggs/
+.env
+.env*
+.env.development.local
+.env.local
+.env.production.local
+.env.test
+.env.test.local
 .eslintcache
-
-# Microbundle 캐시
+.grunt
+.hypothesis/
+.idea/
+.installed.cfg
+.ipynb_checkpoints
+.lock-wscript
+.mypy_cache/
+.next
+.node_repl_history
+.nox/
+.npm
+.nuxt
+.nyc_output
+.out
+.parcel-cache
+.pnp.*
+.pnpm-debug.log*
+.pyre/
+.pytest_cache/
+.Python
+.python-version
+.ropeproject
 .rpt2_cache/
 .rts2_cache_cjs/
 .rts2_cache_es/
 .rts2_cache_umd/
-
-# 선택적 REPL 히스토리
-.node_repl_history
-
-# 'npm pack' 출력
-*.tgz
-
-# Yarn 무결성 파일
-.yarn-integrity
-
-# dotenv 환경 변수 파일
-.env
-.env.test
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# parcel-bundler 캐시 (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# Next.js 빌드 출력
-.next
-
-# Nuxt.js 빌드 / 생성 출력
-.nuxt
-dist
-
-# Gatsby 파일
-.cache/
-public
-
-# Storybook 빌드 출력
-.out
+.scrapy
+.Spotlight-V100
+.spyderproject
+.spyproject
 .storybook-out
-
-# 임시 폴더
-tmp/
-temp/
-
-# 데이터베이스
-*.db
-*.sqlite
-*.sqlite3
-
-# 업로드
-uploads/
-media/
-
-# 정적 파일 (이미지)
+.tox/
+.Trashes
+.venv
+.vercel
+.webassets-cache
+.yarn/*
+.yarn-integrity
+/.next/
+/.pnp
+/build
+/coverage
+/frontend/*.tsbuildinfo
+/frontend/.env*
+/frontend/.next/
+/frontend/.pnp
+/frontend/.pnp.*
+/frontend/.pnpm-debug.log*
+/frontend/.vercel
+/frontend/.yarn/*
+/frontend/build
+/frontend/next-env.d.ts
+/frontend/node_modules/
+/frontend/npm-debug.log*
+/frontend/out/
+/frontend/yarn-debug.log*
+/frontend/yarn-error.log*
+/out/
+/site
+__pycache__/
+__pypackages__/
 backend/static/
-
-# 민감한 데이터가 포함된 설정 파일
+bower_components
+build/
+build/Release
+celerybeat.pid
+celerybeat-schedule
 config.ini
 config.json
-secrets.json
+coverage
+coverage.xml
+db.sqlite3
+db.sqlite3-journal
+develop-eggs/
+dist
+dist/
+dmypy.json
+docs/_build/
+downloads/
+eggs/
+ehthumbs.db
+env.bak/
+env/
+ENV/
+htmlcov/
+instance/
+ipython_config.py
+jspm_packages/
+lib/
+lib64/
+lib-cov
+local_settings.py
+logs
+MANIFEST
+media/
+next-env.d.ts
+node_modules/
+nosetests.xml
+npm-debug.log*
+parts/
+pids
+pip-delete-this-directory.txt
+pip-log.txt
+pip-wheel-metadata/
+profile_default/
+public
+sdist/
+secrets.json/node_modules
+share/python-wheels/
+target/
+temp/
+Thumbs.db
+tmp/
+typings/
+uploads/
+var/
+venv.bak/
+venv/
+wheels/
+yarn-debug.log*
+yarn-error.log*
