@@ -109,32 +109,6 @@ export default function InfoPage() {
           </div>
         </section>
 
-        {/* 성별 */}
-        <section className="bg-orange-50 p-6 rounded-2xl mt-6">
-          <h3 className="text-xl font-bold text-gray-800">성별</h3>
-          <p className="text-gray-500 mt-1">사용자의 성별을 선택해 주세요.</p>
-          <div className="grid grid-cols-2 gap-4 mt-3">
-            {GENDER_TYPES.map(t => (
-              <button key={t} type="button" onClick={() => toggle('gender', t)} className={btn(form.gender === t)}>
-                {t}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* 나이 */}
-        <section className="bg-orange-50 p-6 rounded-2xl mt-6">
-          <h3 className="text-xl font-bold text-gray-800">나이</h3>
-          <p className="text-gray-500 mt-1">사용자의 연령대를 선택해 주세요.</p>
-          <div className="grid grid-cols-3 gap-3 mt-3">
-            {AGE_GROUPS.map(a => (
-              <button key={a} type="button" onClick={() => toggle('ageGroup', a)} className={btn(form.ageGroup === a)}>
-                {a}대
-              </button>
-            ))}
-          </div>
-        </section>
-
         {msg && <p className="mt-4 text-sm text-red-600">{msg}</p>}
 
         <div className="px-6 pt-6 bg-white">

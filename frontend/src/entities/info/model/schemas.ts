@@ -25,8 +25,6 @@ export const UpdateSkinInfoOutput = z.object({
     skin_type: z.string(),
     min_price: z.number(),
     max_price: z.number(),
-    gender: z.string(),
-    age_group: z.number(),
   }),
   timestamp: z.string(),
 });
