@@ -30,7 +30,7 @@ class RecommendationService:
         Returns:
             Recommendation 리스트
         """
-        logger.info(f"========== RAG 파이프라인 시작 (analysis_id: {analysis_id}) ==========")
+        logger.info(f"==== RAG 파이프라인 시작 (analysis_id: {analysis_id}) ====")
         
         # 1. 진단 결과 조회
         diagnosis = DiagnosisRepository.get_by_analysis_id(db, analysis_id)
@@ -52,18 +52,12 @@ class RecommendationService:
         max_price = member.max_price or 999999
         logger.info(f"회원 정보: skin_type={skin_type}, price_range={min_price}~{max_price}")
         
-        # 3. Query 텍스트 생성
-        query_text = f"{disease_name} 피부입니다. {summary}"
-        logger.info(f"Query 텍스트 생성 완료 (길이: {len(query_text)}자)")
-        
-        # 4. Vector 검색 (Qdrant)
-        logger.info("Qdrant Vector 검색 시작...")
-        search_results = VectorStoreService.search_similar(
-            query_text=query_text,
-            disease_name=disease_name,
-            min_price=min_price,
-            max_price=max_price,
-            skin_type=skin_type,
+        # 3. 하이브리드 검색 (Qdrant)
+        logger.info("Qdrant 하이브리드 검색 시작...")
+        search_results = VectorStoreService.search_by_analysis(
+            db=db,
+            analysis_id=analysis_id,
+            member_id=member_id,
             limit=10
         )
         
@@ -78,11 +72,11 @@ class RecommendationService:
         for i, result in enumerate(search_results, 1):
             logger.info(f"  {i}. {result['name']} ({result['brand']}) - {result['price']}원 (유사도: {result['score']:.4f})")
         
-        # 5. MySQL에서 상세 정보 조회
+        # 4. MySQL에서 상세 정보 조회
         cosmetic_ids = [r['cosmetic_id'] for r in search_results]
         cosmetics = CosmeticRepository.get_by_ids(db, cosmetic_ids)
         
-        # 6. LLM에게 Top 10 전달하여 최종 3개 선정
+        # 5. LLM에게 Top 10 전달하여 최종 3개 선정
         logger.info("LLM에게 Top 10 전달...")
         final_recommendations = RecommendationService._select_top3_with_llm(
             diagnosis=diagnosis,
@@ -94,7 +88,7 @@ class RecommendationService:
         for rec in final_recommendations:
             logger.info(f"  {rec['ranking']}. cosmetic_id={rec['cosmetic_id']} - {rec['reason'][:50]}...")
         
-        # 7. MySQL recommendation 테이블 저장
+        # 6. MySQL recommendation 테이블 저장
         recommendations_data = [
             {
                 "analysis_id": analysis_id,
@@ -211,4 +205,3 @@ class RecommendationService:
         # ]
         # return RecommendationRepository.create_bulk(db, recommendations_data)
         # ====================================================================
-

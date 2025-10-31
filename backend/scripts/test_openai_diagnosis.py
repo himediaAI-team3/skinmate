@@ -30,6 +30,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# httpx HTTP 요청 로그 숨기기 (중복 제거)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 
 def find_image_file(base_path: str, filename: str) -> str:
     """
@@ -115,8 +118,8 @@ def main():
     print("=" * 80)
     
     # 테스트 이미지 설정
-    image_base_path = r"C:\Users\201\Desktop\원천데이터\VS_여드름_정면"
-    image_filename = "H2_2361_P3_L0"
+    image_base_path = r"C:\Users\201\Desktop\원천데이터\VS_주사_정면"
+    image_filename = "H1_385246_P1_L0"
     
     db = SessionLocal()
     
@@ -148,7 +151,7 @@ def main():
             
             print(f"\n[진단 완료!]")
             print(f"   질환: {disease_name}")
-            print(f"   요약: {summary[:150]}{'...' if len(summary) > 150 else ''}")
+            # 상세 요약과 가공 내용은 아래 RAG 파이프라인 로그에서 출력됨
             
         except Exception as e:
             print(f"[ERROR] 진단 실패: {e}")
@@ -222,7 +225,6 @@ def main():
         print(f"   - analysis_id: {analysis_id}")
         print(f"   - 진단: {disease_name}")
         print(f"   - 추천 제품 수: {len(recommendations)}개")
-        print(f"   - 입출력 형식: 기존 코드와 100% 동일")
         
     except Exception as e:
         print(f"\n[ERROR] 테스트 실패: {e}")

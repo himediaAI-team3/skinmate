@@ -1,4 +1,4 @@
-"""데이터 확인 스크립트"""
+"""데이터 확인 스크립트 (하이브리드 검색)"""
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -24,37 +24,44 @@ print(f"가격범위 (1~500,000원): {in_range}개")
 print(f"여드름 관련: {acne_related}개")
 print(f"지성 피부용: {oily_skin}개")
 
-# Qdrant 데이터 확인
+# Qdrant 하이브리드 컬렉션 확인
 print("\n" + "=" * 80)
-print("[Qdrant Vector DB 확인]")
+print("[Qdrant 하이브리드 컬렉션 확인]")
 print("=" * 80)
 
 try:
     collection_info = VectorStoreService.get_collection_info()
+    print(f"컬렉션명: {collection_info['name']}")
     print(f"Points 개수: {collection_info['points_count']}")
     print(f"Vectors 개수: {collection_info['vectors_count']}")
+    print(f"Dense 차원: {collection_info['vector_dimension']}")
     print(f"상태: {collection_info['status']}")
 except Exception as e:
     print(f"[ERROR] {e}")
 
-# 실제 검색 테스트 (필터 없이)
+# 하이브리드 검색 테스트 (필터 없이)
 print("\n" + "=" * 80)
-print("[Vector 검색 테스트 - 필터 없음]")
+print("[하이브리드 검색 테스트 - 필터 없음]")
 print("=" * 80)
 
-results_no_filter = VectorStoreService.search_similar(
-    query_text="여드름 피부입니다. 붉은 구진과 농포가 관찰됩니다.",
+dense_query = "여드름 피부입니다. 붉은 구진과 농포가 관찰됩니다."
+sparse_query = "여드름 진정 클렌징"
+
+results_no_filter = VectorStoreService.search_hybrid(
+    query_dense_text=dense_query,
+    query_sparse_text=sparse_query,
     limit=10
 )
 print(f"검색 결과: {len(results_no_filter)}개")
 
 # 가격 필터만 적용
 print("\n" + "=" * 80)
-print("[Vector 검색 테스트 - 가격 필터만]")
+print("[하이브리드 검색 테스트 - 가격 필터만]")
 print("=" * 80)
 
-results_price_only = VectorStoreService.search_similar(
-    query_text="여드름 피부입니다. 붉은 구진과 농포가 관찰됩니다.",
+results_price_only = VectorStoreService.search_hybrid(
+    query_dense_text=dense_query,
+    query_sparse_text=sparse_query,
     min_price=1,
     max_price=500000,
     limit=10
@@ -65,11 +72,12 @@ for i, r in enumerate(results_price_only[:5], 1):
 
 # 모든 필터 적용
 print("\n" + "=" * 80)
-print("[Vector 검색 테스트 - 모든 필터]")
+print("[하이브리드 검색 테스트 - 모든 필터]")
 print("=" * 80)
 
-results_all_filters = VectorStoreService.search_similar(
-    query_text="여드름 피부입니다. 붉은 구진과 농포가 관찰됩니다.",
+results_all_filters = VectorStoreService.search_hybrid(
+    query_dense_text=dense_query,
+    query_sparse_text=sparse_query,
     disease_name="여드름",
     min_price=1,
     max_price=500000,
