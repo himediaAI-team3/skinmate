@@ -31,7 +31,7 @@ class LikedCosmeticItem(BaseModel):
     name: str
     brand: str
     price: Optional[Decimal] = None
-    file_id: Optional[int] = None
+    file_path: Optional[str] = None
     is_liked: bool = True
 
     class Config:
