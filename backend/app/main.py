@@ -6,6 +6,7 @@ from app.core.config.database import engine
 from app.core.config.file import STATIC_DIR
 from app.models import Base
 from app.core.exception import ApiException, api_exception_handler
+from app.core.middleware.auth_middleware import JWTMiddleware
 from app.router import member_router, analysis_router, file_router, like_router, cosmetic_router
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -38,6 +39,9 @@ app.add_middleware(
     allow_methods=["*"],  # GET, POST, PUT, DELETE, OPTIONS 전부 허용
     allow_headers=["*"],  # 모든 헤더 허용
 )
+
+# JWT 검증 미들웨어 등록
+app.add_middleware(JWTMiddleware)
 
 # 전역 예외 핸들러 등록
 app.add_exception_handler(ApiException, api_exception_handler)
