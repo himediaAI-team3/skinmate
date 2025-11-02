@@ -3,6 +3,7 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 from app.core.config.database import lifespan
 from app.core.config.file import STATIC_DIR
+from app.core.config.cors import get_cors_config
 from app.core.exception import ApiException, api_exception_handler
 from app.core.middleware.auth_middleware import JWTMiddleware
 from app.router import member_router, analysis_router, file_router, like_router, cosmetic_router
@@ -17,13 +18,7 @@ app = FastAPI(
 )
 
 # CORS 설정
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # ex ["http://localhost:3000", "http://192.168.0.249:3000"]
-    allow_credentials=True,
-    allow_methods=["*"],  # GET, POST, PUT, DELETE, OPTIONS 전부 허용
-    allow_headers=["*"],  # 모든 헤더 허용
-)
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 # JWT 검증 미들웨어 등록
 app.add_middleware(JWTMiddleware)
