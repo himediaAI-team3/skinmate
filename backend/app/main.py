@@ -1,27 +1,12 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import uvicorn
-from contextlib import asynccontextmanager
-from app.core.config.database import engine
+from app.core.config.database import lifespan
 from app.core.config.file import STATIC_DIR
-from app.models import Base
 from app.core.exception import ApiException, api_exception_handler
 from app.core.middleware.auth_middleware import JWTMiddleware
 from app.router import member_router, analysis_router, file_router, like_router, cosmetic_router
 from fastapi.middleware.cors import CORSMiddleware
-
-
-# 앱 시작 시 테이블 생성 (VIEW 제외)
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # 시작 시 실행 - VIEW를 제외하고 테이블만 생성
-    tables_to_create = [
-        table for table in Base.metadata.sorted_tables 
-        if not table.info.get('is_view', False)
-    ]
-    Base.metadata.create_all(bind=engine, tables=tables_to_create)
-    yield
-    # 종료 시 실행 (필요시)
 
 # FastAPI 애플리케이션 생성 (Swagger 표시 설정)
 app = FastAPI(
