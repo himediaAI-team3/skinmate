@@ -2,17 +2,30 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { LogOut, User2, Menu, User, History, Heart, Settings, LogIn } from 'lucide-react';
+import { LogOut, User2, Menu, User, History, Heart, LogIn } from 'lucide-react';
 
-export type Me = { id: number | string; name?: string; email?: string; image_url?: string; };
+// ✅ 외부에서 사용할 사용자 타입 export
+export type Me = { id: number | string; name?: string; email?: string; image_url?: string };
 
 type Props = {
-  me: Me | null;
+  me?: Me | null;                 // 외부에서 주입 가능 (없으면 데모 사용)
   loading?: boolean;
   onLogout?: () => Promise<void> | void;
 };
 
-export default function AppHeader({ me, loading = false, onLogout }: Props) {
+export default function AppHeader({ me = null, loading = false, onLogout }: Props) {
+  // 데모 사용자 (fallback)
+  const DEMO_ME: Me = {
+    id: '1',
+    name: '박진우',
+    email: 'jinwoopz@naver.com',
+    image_url: '/images/2.webp',
+  };
+  const ver = '20251103'; // 캐시 무력화용
+
+  // 외부 me가 있으면 우선 사용, 없으면 데모
+  const effectiveMe = me ?? DEMO_ME;
+
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -29,6 +42,11 @@ export default function AppHeader({ me, loading = false, onLogout }: Props) {
       window.removeEventListener('keydown', onEsc);
     };
   }, [open]);
+
+  useEffect(() => {
+    // 디버그: 현재 적용된 me 확인
+    // console.log('[AppHeader] effectiveMe', effectiveMe);
+  }, [effectiveMe]);
 
   const handleLogout = async () => { try { await onLogout?.(); } finally { setOpen(false); } };
 
@@ -62,19 +80,27 @@ export default function AppHeader({ me, loading = false, onLogout }: Props) {
             <div className="px-4 py-3 border-b">
               {loading ? (
                 <div className="h-10 bg-gray-100 rounded animate-pulse" />
-              ) : me ? (
+              ) : effectiveMe ? (
                 <div className="flex items-center gap-3">
-                  {me.image_url ? (
+                  {effectiveMe.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={me.image_url} alt="avatar" className="w-10 h-10 rounded-full object-cover" />
+                    <img
+                      src={`${effectiveMe.image_url}?v=${ver}`}
+                      alt="avatar"
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
                       <User2 size={18} />
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{me.name || me.email || '사용자'}</p>
-                    {me.email && <p className="text-xs text-gray-500 truncate">{me.email}</p>}
+                    <p className="text-sm font-semibold text-gray-800 truncate">
+                      {effectiveMe.name || effectiveMe.email || '사용자'}
+                    </p>
+                    {effectiveMe.email && (
+                      <p className="text-xs text-gray-500 truncate">{effectiveMe.email}</p>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -85,7 +111,7 @@ export default function AppHeader({ me, loading = false, onLogout }: Props) {
               )}
             </div>
 
-            {!me ? (
+            {!effectiveMe ? (
               <div className="p-2">
                 <Link href="/login" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-900" role="menuitem" onClick={() => setOpen(false)}>
                   <LogIn size={18} /> 로그인

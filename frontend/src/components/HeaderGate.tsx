@@ -5,10 +5,10 @@ import AppHeader, { type Me } from '@/components/AppHeader';
 import TabBar from '@/components/TabBar';
 
 const TEMP_ME: Me = {
-  id: 999,
-  name: 'Test User',
-  email: 'test@example.com',
-  image_url: '/images/1.webp',
+  id: 1,
+  name: '박진우',
+  email: 'jinwoopz@naver.com',
+  image_url: '/images/2.webp',
 };
 
 const MY_PREFIXES = ['/account', '/history', '/likes', '/me', '/mypage'];
