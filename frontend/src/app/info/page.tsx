@@ -2,30 +2,24 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { infoApi } from '@/features/info';
-import { SkinTypeEnum, GenderEnum, AgeGroupEnum } from '@/entities/info';
+import { SkinTypeEnum } from '@/entities/info';
 
 const SKIN_TYPES = SkinTypeEnum.options;
-const GENDER_TYPES = GenderEnum.options;
-const AGE_GROUPS = AgeGroupEnum.options;
 
 type SkinType = typeof SKIN_TYPES[number];
-type GenderType = typeof GENDER_TYPES[number];
-type AgeGroup = typeof AGE_GROUPS[number];
 
 export default function InfoPage() {
   const router = useRouter();
   const [form, setForm] = useState<{
     skinType: SkinType | '';
-    gender: GenderType | '';
-    ageGroup: AgeGroup | '';
     priceMin: string;
     priceMax: string;
-  }>({ skinType: '', gender: '', ageGroup: '', priceMin: '', priceMax: '' });
+  }>({ skinType: '', priceMin: '', priceMax: '' });
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  const toggle = <K extends 'skinType' | 'gender' | 'ageGroup'>(k: K, v: any) =>
+  const toggle = <K extends 'skinType'>(k: K, v: any) =>
     setForm(p => ({ ...p, [k]: p[k] === v ? '' : v }));
 
   const onNum = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,8 +29,6 @@ export default function InfoPage() {
 
   const validate = () => {
     if (!form.skinType) return '피부 타입을 선택해주세요.';
-    if (!form.gender) return '성별을 선택해주세요.';
-    if (!form.ageGroup) return '연령대를 선택해주세요.';
     const min = Number(form.priceMin ?? 0);
     const max = Number(form.priceMax ?? 0);
     if (!Number.isFinite(min) || !Number.isFinite(max)) return '가격은 숫자여야 합니다.';
@@ -55,8 +47,6 @@ export default function InfoPage() {
       const memberId = 1; // TODO: 실제 로그인 사용자 ID
       await infoApi.update(memberId, {
         skin_type: form.skinType as SkinType,
-        gender: form.gender as GenderType,
-        age_group: form.ageGroup as AgeGroup,
         min_price: Number(form.priceMin),
         max_price: Number(form.priceMax),
       });
