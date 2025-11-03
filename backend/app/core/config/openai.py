@@ -24,7 +24,7 @@ class OpenAIConfig:
             kwargs = {
                 "model": cls.MODEL,
                 "api_key": cls.API_KEY,
-                "temperature": 0.2,
+                "temperature": 0.5,
             }
 
 
