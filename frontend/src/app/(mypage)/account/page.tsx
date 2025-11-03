@@ -1,33 +1,40 @@
 'use client';
 
-import { useState } from 'react';
-import { Mail, User2, Info } from 'lucide-react';
-import { MOCK_USER } from '@/lib/mypage.mock';
-
-const GENDER_TYPES = ['남성', '여성', '기타'] as const;
-const AGE_GROUPS = [10, 20, 30, 40, 50, 60] as const;
-
-type Gender = (typeof GENDER_TYPES)[number] | null;
-type AgeGroup = (typeof AGE_GROUPS)[number] | null;
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { Mail, User2, Info, Heart, History, Sparkles, ChevronRight } from 'lucide-react';
+import { MOCK_USER, MOCK_HISTORY, MOCK_LIKES } from '@/lib/mypage.mock';
+import { loadProfile } from '@/lib/mypage.store';
 
 export default function AccountPage() {
-  const [form, setForm] = useState<{ gender: Gender; ageGroup: AgeGroup }>({
-    gender: null,
-    ageGroup: null,
-  });
+  const [profile, setProfile] = useState(MOCK_USER);
 
-  const toggle = (field: 'gender' | 'ageGroup', value: any) =>
-    setForm((prev) => ({
-      ...prev,
-      [field]: prev[field] === value ? null : value,
-    }));
+  useEffect(() => {
+    try {
+      setProfile(loadProfile());
+    } catch {
+      setProfile(MOCK_USER);
+    }
+  }, []);
 
-  const btn = (active: boolean) =>
-    `w-full rounded-xl border px-4 py-3 text-sm font-semibold transition
-     ${active ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'}`;
+  // 프로필 완성도 (피부타입/성별/나이 채워짐 비율)
+  const completeness = useMemo(() => {
+    const map = Object.fromEntries((profile.info || []).map((i: any) => [i.label, i.value]));
+    const fields = ['피부타입', '성별', '나이'];
+    const filled = fields.filter((f) => {
+      const v = map[f];
+      return v && v !== '미입력';
+    }).length;
+    return Math.round((filled / fields.length) * 100);
+  }, [profile]);
+
+  // 프리뷰 데이터(최신 2건)
+  const recentHistory = (MOCK_HISTORY || []).slice(0, 2);
+  const recentLikes = (MOCK_LIKES || []).slice(0, 2);
 
   return (
-    <>
+    <main className="max-w-md mx-auto px-7">
+      {/* 프로필 카드 */}
       <section className="mt-2">
         <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
           {/* 상단 비주얼 배너 */}
@@ -44,8 +51,8 @@ export default function AccountPage() {
             <div className="flex items-end gap-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={MOCK_USER.avatar}
-                alt={`${MOCK_USER.name} 프로필`}
+                src={profile.avatar}
+                alt={`${profile.name} 프로필`}
                 className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white border border-gray-200 shadow"
               />
 
@@ -53,32 +60,30 @@ export default function AccountPage() {
                 <div className="flex items-center gap-2">
                   <User2 size={16} className="text-gray-500" />
                   <p className="text-[15px] font-extrabold tracking-tight text-gray-900">
-                    {MOCK_USER.name}
+                    {profile.name}
                   </p>
                 </div>
                 <div className="mt-1 flex items-center gap-2 text-gray-700">
                   <Mail size={16} className="text-gray-500" />
-                  <p className="text-sm truncate">{MOCK_USER.email}</p>
+                  <p className="text-sm truncate">{profile.email}</p>
                 </div>
               </div>
 
-              {/*
               <Link
-                href="/mypage/edit"
+                href="/account/edit"
                 className="rounded-full px-3 py-1.5 text-xs font-semibold bg-gray-900 text-white shadow-sm hover:opacity-95"
               >
                 정보 수정
               </Link>
-              */}
             </div>
           </div>
 
-          {/* 정보 타일 섹션 */}
+          {/* 내 정보 + 요약/바로가기/프리뷰 */}
           <div className="px-5 pb-5">
+            {/* 내 정보 */}
             <h2 className="text-sm font-bold text-gray-900">내 정보</h2>
-
             <div className="mt-3 grid grid-cols-2 gap-3">
-              {MOCK_USER.info.map((it: any, i: number) => (
+              {profile.info?.map((it: any, i: number) => (
                 <div
                   key={i}
                   className="rounded-xl border border-gray-100 bg-white p-3 shadow-[0_1px_0_rgba(0,0,0,0.03)]"
@@ -92,42 +97,78 @@ export default function AccountPage() {
               ))}
             </div>
 
-            <div className="mt-5 border-t border-gray-100 pt-3" />
+            {/* 구분선 */}
+            <div className="mt-5 border-t border-gray-100 pt-4" />
+
+            {/* 요약 카드: 프로필 완성도 + 활동 수치 */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-gray-100 bg-white p-3 shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+                  <Sparkles size={12} className="text-gray-400" />
+                  프로필 완성도
+                </div>
+                <div className="mt-2">
+                  <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      className="h-full bg-gray-900 transition-all"
+                      style={{ width: `${completeness}%` }}
+                    />
+                  </div>
+                  <p className="mt-1.5 text-xs text-gray-600">{completeness}% 완료</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-white p-3 shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+                  <History size={12} className="text-gray-400" />
+                  나의 활동
+                </div>
+                <div className="mt-1 text-sm font-medium text-gray-900 flex items-center justify-between">
+                  <span>이력 {MOCK_HISTORY.length}건</span>
+                  <span>좋아요 {MOCK_LIKES.length}건</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 빠른 메뉴 */}
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <Link
+                href="/history"
+                className="rounded-xl border border-gray-100 bg-white p-3 shadow-[0_1px_0_rgba(0,0,0,0.03)] hover:bg-gray-50 transition"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center">
+                    <History size={16} className="text-gray-700" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">분석 이력</p>
+                    <p className="text-[11px] text-gray-500">최근 기록 확인</p>
+                  </div>
+                </div>
+              </Link>
+
+              <Link
+                href="/likes"
+                className="rounded-xl border border-gray-100 bg-white p-3 shadow-[0_1px_0_rgba(0,0,0,0.03)] hover:bg-gray-50 transition"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center">
+                    <Heart size={16} className="text-gray-700" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">좋아요</p>
+                    <p className="text-[11px] text-gray-500">찜한 제품 보기</p>
+                  </div>
+                </div>
+              </Link>
+            </div>
+
           </div>
         </div>
       </section>
 
-      <section className="bg-orange-50 p-6 rounded-2xl mt-6">
-        <h3 className="text-xl font-bold text-gray-800">성별</h3>
-        <div className="grid grid-cols-2 gap-4 mt-3">
-          {GENDER_TYPES.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => toggle('gender', t)}
-              className={btn(form.gender === t)}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="bg-orange-50 p-6 rounded-2xl mt-6">
-        <h3 className="text-xl font-bold text-gray-800">나이</h3>
-        <div className="grid grid-cols-3 gap-3 mt-3">
-          {AGE_GROUPS.map((a) => (
-            <button
-              key={a}
-              type="button"
-              onClick={() => toggle('ageGroup', a)}
-              className={btn(form.ageGroup === a)}
-            >
-              {a}대
-            </button>
-          ))}
-        </div>
-      </section>
-    </>
+      {/* 하단 여백(탭바/푸터 대비) */}
+      <div className="h-8" />
+    </main>
   );
 }

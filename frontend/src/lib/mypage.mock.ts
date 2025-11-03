@@ -1,12 +1,11 @@
 import type { DiagnoseItem, LikedItem, UserProfile } from './mypage.types';
 
 export const MOCK_USER: UserProfile = {
-  avatar: '/images/1.webp',
-  name: '홍길동',
-  email: 'gildong@example.com',
+  avatar: '/images/2.webp',
+  name: '박진우',
+  email: 'jinwoopz@naver.com',
   info: [
     { label: '피부타입', value: '건성' },
-    { label: '선호 가격대', value: '1000원 ~ 30000원' },
     { label: '성별', value: '남성' },
     { label: '나이', value: '20대' },
   ],
