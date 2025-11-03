@@ -2,6 +2,7 @@
 import os
 import jwt
 from typing import Optional, Dict, Tuple
+from datetime import datetime
 from fastapi import Request
 from dotenv import load_dotenv
 
@@ -10,10 +11,15 @@ load_dotenv()
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 JWT_ALGORITHM = "HS256"
 
+# JWT_SECRET 검증
+if not JWT_SECRET:
+    raise ValueError("JWT_SECRET이 설정되지 않았습니다. .env 파일에 JWT_SECRET을 설정하세요.")
+
 # 화이트리스트 경로 (JWT 검증 제외)
 PUBLIC_PATHS = [
     "/api",  # 서버 확인용 (정확히 /api만)
     "/api/health",  # 헬스 체크
+    "/api/test-token",  # 테스트 토큰 생성 (개발용)
     "/docs",  # Swagger UI
     "/openapi.json",  # Swagger JSON
     "/media",  # 정적 파일 서빙
@@ -58,9 +64,31 @@ def validate_and_decode_token(token: str) -> Tuple[bool, Optional[str], Optional
         - (True, None, claims): 유효한 토큰
         - (False, "TOKEN_EXPIRED", None): 만료된 토큰
         - (False, "INVALID_TOKEN", None): 잘못된 토큰
+        - (False, "INVALID_SIGNATURE", None): 서명이 일치하지 않음 (JWT_SECRET 불일치)
     """
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        # 1단계: 토큰 페이로드 확인 (서명 검증 없이) - 만료 시간 확인용
+        payload_without_verify = jwt.decode(token, options={"verify_signature": False})
+        exp_timestamp = payload_without_verify.get("exp")
+        iat_timestamp = payload_without_verify.get("iat")
+        
+        # 2단계: 만료 시간 검증
+        current_timestamp = int(datetime.utcnow().timestamp())
+        if exp_timestamp and exp_timestamp < current_timestamp:
+            # 실제로 만료됨
+            return False, "TOKEN_EXPIRED", None
+        
+        # 3단계: 서명 검증 (만료는 이미 확인했으므로 verify_exp=False)
+        payload = jwt.decode(
+            token, 
+            JWT_SECRET, 
+            algorithms=[JWT_ALGORITHM],
+            options={
+                "verify_signature": True,
+                "verify_exp": False,  # 수동으로 이미 검증
+                "verify_iat": False,  # IAT 검증 비활성화 (시계 차이 허용)
+            }
+        )
         claims = {
             "memberId": int(payload.get("sub", 0)),
             "role": payload.get("role", ""),
@@ -69,6 +97,8 @@ def validate_and_decode_token(token: str) -> Tuple[bool, Optional[str], Optional
         return True, None, claims
     except jwt.ExpiredSignatureError:
         return False, "TOKEN_EXPIRED", None
+    except jwt.InvalidSignatureError:
+        return False, "INVALID_SIGNATURE", None
     except jwt.InvalidTokenError:
         return False, "INVALID_TOKEN", None
 

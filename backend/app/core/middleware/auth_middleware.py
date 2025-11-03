@@ -33,6 +33,8 @@ class JWTMiddleware(BaseHTTPMiddleware):
         if not is_valid:
             if error_code == "TOKEN_EXPIRED":
                 message = "토큰이 만료되었습니다"
+            elif error_code == "INVALID_SIGNATURE":
+                message = "토큰 서명이 일치하지 않습니다."
             else:  # INVALID_TOKEN
                 message = "유효하지 않은 토큰입니다"
             
