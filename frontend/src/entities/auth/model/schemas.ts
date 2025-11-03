@@ -9,17 +9,17 @@ export interface OAuthProviderMeta {
 
 export const OAUTH_PROVIDERS: Record<SocialProvider, OAuthProviderMeta> = {
   Google: {
-    authorizePath: 'http://192.168.0.235:8080/oauth2/authorization/google',
+    authorizePath: '/auth/oauth2/authorization/google',
     label: 'Google로 시작하기',
     enabled: false,
   },
   Naver: {
-    authorizePath: 'http://192.168.0.235:8080/oauth2/authorization/naver',
+    authorizePath: '/auth/oauth2/authorization/naver',
     label: '네이버로 시작하기',
     enabled: false,
   },
   Kakao: {
-    authorizePath: 'https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=a7c27574c30bb99e563d2b584d58de73&redirect_uri=http://192.168.0.249:3000/login/oauth2/code/kakao&scope=profile_nickname&state=skinmate',
+    authorizePath: '/auth/oauth2/authorization/kakao',
     label: '카카오로 시작하기',
     enabled: true,
   },
