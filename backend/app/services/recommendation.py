@@ -13,7 +13,6 @@ from app.core.config.embedding import embedding_model
 from app.core.config.qdrant import qdrant_client, QdrantConfig
 from app.rag.query_generator import generate_query_from_diagnosis, generate_product_reason
 from app.rag.vocabulary import load_vocabulary
-from app.services.member import MemberService
 from qdrant_client.models import Filter, FieldCondition, Range, NamedVector, NamedSparseVector, SparseVector
 
 # IDF 캐시 (전역)
@@ -91,18 +90,18 @@ class RecommendationService:
             # 1-1) 사용자 정보 로드
             analysis = AnalysisRepository.get_by_id(db, analysis_id)
             user_info = {}
-            min_price = None
-            max_price = None
             
-            if analysis and getattr(analysis, "member_id", None):
-                member = MemberService.get_member(db, analysis.member_id)
-                if member:
-                    user_info['skin_type'] = getattr(member, "skin_type", None)
-                    min_price = getattr(member, "min_price", None)
-                    max_price = getattr(member, "max_price", None)
-                    user_info['min_price'] = min_price
-                    user_info['max_price'] = max_price
-                    print(f"[DEBUG] 사용자 정보: {user_info}")
+            if analysis:
+                # 모든 사용자 정보는 analysis에서만 가져오기 (없으면 None)
+                user_info['skin_type'] = getattr(analysis, "skin_type", None)
+                min_price = getattr(analysis, "min_price", None)
+                max_price = getattr(analysis, "max_price", None)
+                user_info['min_price'] = min_price
+                user_info['max_price'] = max_price
+                print(f"[DEBUG] 사용자 정보: {user_info}")
+            else:
+                min_price = None
+                max_price = None
 
             # 2) LLM 쿼리 생성
             print(f"[DEBUG] LLM 쿼리 생성: disease={disease_name}")

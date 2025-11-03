@@ -26,8 +26,3 @@ class MemberService:
         updated_member = MemberRepository.update(db, member_id, update_data)
         
         return updated_member
-
-    @staticmethod
-    def get_member(db: Session, member_id: int) -> Member | None:
-        """회원 단건 조회 (추천 로직에서 사용자 속성 사용용)"""
-        return db.query(Member).filter(Member.member_id == member_id).first()
