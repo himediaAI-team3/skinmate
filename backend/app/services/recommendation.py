@@ -122,28 +122,29 @@ class RecommendationService:
             # ⭐ BM25 Sparse 벡터 생성
             from app.rag.vector_builder import create_search_bm25_sparse_vector
             sparse_vector = create_search_bm25_sparse_vector(keywords, vocabulary, idf)
-            # Sparse 벡터 생성
-            sparse_indices = []
-            sparse_values = []
             
-            for keyword in keywords:
-                keyword = keyword.strip()
-                if keyword in vocabulary:
-                    idx = vocabulary[keyword]
-                    
-                    # ===== must_keywords 가중치 적용 =====
-                    if USE_MUST_KEYWORDS_WEIGHT:
+            # ===== must_keywords 가중치 적용 (BM25 값에 곱하기) =====
+            if USE_MUST_KEYWORDS_WEIGHT:
+                # 인덱스 → 키워드 매핑 생성 (reverse lookup)
+                idx_to_keyword = {idx: keyword for keyword, idx in vocabulary.items()}
+                
+                new_indices = []
+                new_values = []
+                
+                for i, idx in enumerate(sparse_vector.indices):
+                    keyword = idx_to_keyword.get(idx)
+                    if keyword:
+                        # BM25 값에 가중치 곱하기
                         weight = 2.0 if keyword in must_keywords else 1.0
-                        print(f"[DEBUG] '{keyword}' 가중치: {weight}")
-                    else:
-                        weight = 1.0  # Baseline: 모두 동일
-                    # ====================================
-                    
-                    sparse_indices.append(idx)
-                    sparse_values.append(weight)
+                        new_indices.append(idx)
+                        new_values.append(sparse_vector.values[i] * weight)
+                        if keyword in must_keywords:
+                            print(f"[DEBUG] '{keyword}' BM25 값: {sparse_vector.values[i]:.4f} → {new_values[-1]:.4f} (가중치 {weight}x)")
+                
+                sparse_vector = SparseVector(indices=new_indices, values=new_values)
+            # ====================================
             
-            sparse_vector = SparseVector(indices=sparse_indices, values=sparse_values)
-            print(f"[DEBUG] Sparse 벡터: {len(sparse_indices)}개 키워드")
+            print(f"[DEBUG] BM25 Sparse 벡터: {len(sparse_vector.indices)}개 키워드")
 
             # 4) 가격 필터
             must_conditions = []
