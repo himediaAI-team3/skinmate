@@ -1,48 +1,14 @@
 // src/lib/auth.ts
+// 주의: 현재 프로젝트는 NextAuth를 사용하지 않습니다.
+// 인증은 별도의 Auth 서버(`/auth/*` 프록시)와 토큰 저장 유틸로 처리합니다.
+// 남겨둔 이 파일은 레거시 참조 방지를 위한 더미(export 형태)입니다.
+
 import type { NextAuthOptions } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-import NaverProvider from "next-auth/providers/naver";
-import KakaoProvider from "next-auth/providers/kakao";
 
 export const authOptions: NextAuthOptions = {
+  // 비활성 (사용하지 않음)
   session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET, // 필수
-
-  providers: [
-    // Google
-    GoogleProvider({
-      clientId: process.env.GOOGLE_ID!,
-      clientSecret: process.env.GOOGLE_SECRET!,
-    }),
-
-    // Naver
-    NaverProvider({
-      clientId: process.env.NAVER_CLIENT_ID!,
-      clientSecret: process.env.NAVER_CLIENT_SECRET!,
-    }),
-
-    // Kakao
-    KakaoProvider({
-      clientId: process.env.KAKAO_CLIENT_ID!,
-      clientSecret: process.env.KAKAO_CLIENT_SECRET!,
-    }),
-  ],
-
-  callbacks: {
-    async jwt({ token, account, user }) {
-      // 최초 로그인 시 provider 정보/사용자 id 보관
-      if (account) token.provider = account.provider;
-      if (user?.id) token.userId = user.id;
-      return token;
-    },
-    async session({ session, token }) {
-      // 클라이언트에서도 provider, userId 접근 가능
-      (session as any).provider = token.provider;
-      (session as any).userId = token.userId;
-      return session;
-    },
-  },
-
-  // 필요 시 커스텀 로그인 페이지 사용
-  // pages: { signIn: "/login" },
+  // NextAuth 미사용: providers 비움
+  providers: [],
+  callbacks: {},
 };

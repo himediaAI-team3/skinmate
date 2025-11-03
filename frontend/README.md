@@ -1,5 +1,11 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Auth (NextAuth 비활성화 안내)
+- 본 프론트엔드는 NextAuth를 사용하지 않습니다.
+- 인증은 별도의 Auth 서버(`/auth/*` → `NEXT_PUBLIC_AUTH_URL`)와의 OAuth 코드 교환으로 처리하며,
+  수신한 토큰은 `features/auth`의 유틸로 저장/첨부됩니다.
+- 레거시 호환을 위해 `src/lib/auth.ts`는 더미 export만 제공합니다.
+
 ## Getting Started
 
 First, run the development server:
