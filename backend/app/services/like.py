@@ -82,7 +82,7 @@ class LikeService:
                 name=item['name'] or "",
                 brand=item['brand'] or "",
                 price=item['price'],
-                file_id=item.get('file_id'),
+                file_path=item.get('file_path'),
                 is_liked=True
             ))
         

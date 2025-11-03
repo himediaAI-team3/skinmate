@@ -11,12 +11,22 @@ router = APIRouter(prefix="/api/skin-analysis", tags=["skin-analysis"])
 @router.post("", response_model=ApiResponse, status_code=status.HTTP_201_CREATED)
 def create_skin_analysis(
     member_id: int = Form(...),
+    skin_type: str = Form(""),
+    min_price: int = Form(0),
+    max_price: int = Form(0),
     image: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
     
     # Service 호출 (analysis_id만 반환)
-    analysis_id = AnalysisService.create_analysis(db, member_id, image)
+    analysis_id = AnalysisService.create_analysis(
+        db=db,
+        member_id=member_id,
+        image_file=image,
+        skin_type=skin_type,
+        min_price=min_price,
+        max_price=max_price
+    )
     
     # ApiResponse로 감싸서 반환
     return ApiResponse(

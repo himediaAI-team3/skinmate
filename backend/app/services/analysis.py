@@ -13,7 +13,14 @@ from app.core.exception import ApiException
 class AnalysisService:
     
     @staticmethod
-    def create_analysis(db: Session, member_id: int, image_file: UploadFile) -> int:
+    def create_analysis(
+        db: Session,
+        member_id: int,
+        image_file: UploadFile,
+        skin_type: str = "",
+        min_price: int = 0,
+        max_price: int = 0
+    ) -> int:
         """
         피부 분석 생성 (POST용)
         
@@ -25,8 +32,13 @@ class AnalysisService:
         Returns:
             analysis_id (생성된 분석 ID)
         """
-        # 1. skin_analysis 생성
-        analysis = AnalysisRepository.create(db, {"member_id": member_id})
+        # 1. skin_analysis 생성 (사용자 선택 데이터 포함)
+        analysis = AnalysisRepository.create(db, {
+            "member_id": member_id,
+            "skin_type": skin_type or None,
+            "min_price": min_price or None,
+            "max_price": max_price or None,
+        })
         analysis_id = analysis.analysis_id
         
         # 2. 파일 업로드 (FileService 호출)

@@ -6,6 +6,7 @@ from app.models.like import Like
 from app.models.cosmetic import Cosmetic
 from app.models.file import File
 from app.models.entity_type import EntityType
+from app.core.config.file import get_static_file_url
 
 
 class LikeRepository:
@@ -65,8 +66,8 @@ class LikeRepository:
         """좋아요한 화장품 목록 조회 (페이징)"""
         offset = (page - 1) * size
         
-        # 서브쿼리: 대표 이미지 file_id
-        file_id_sq = select(File.file_id).where(
+        # 서브쿼리: 대표 이미지 file_path
+        file_path_sq = select(File.file_path).where(
             File.entity_type == EntityType.COSMETIC,
             File.entity_id == Cosmetic.cosmetic_id
         ).order_by(File.file_id.asc()).limit(1).scalar_subquery()
@@ -77,7 +78,7 @@ class LikeRepository:
             Cosmetic.name,
             Cosmetic.brand,
             Cosmetic.price,
-            file_id_sq.label('file_id')
+            file_path_sq.label('file_path')
         ).join(
             Like, Like.cosmetic_id == Cosmetic.cosmetic_id
         ).filter(
@@ -95,7 +96,7 @@ class LikeRepository:
                 'name': row.name,
                 'brand': row.brand,
                 'price': row.price,
-                'file_id': row.file_id,
+                'file_path': get_static_file_url(row.file_path),
                 'is_liked': True
             })
         
