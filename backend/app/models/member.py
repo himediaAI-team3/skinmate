@@ -14,8 +14,6 @@ class Member(Base, Common):
     role = Column(String(20), nullable=True, default="USER")
 
     skin_type = Column(String(50), nullable=True)           # 건성, 지성, 복합성, 민감성 등
-    min_price = Column(Integer, nullable=True) 
-    max_price = Column(Integer, nullable=True)
     gender = Column(String(10), nullable=True)              # 성별
     age_group = Column(Integer, nullable=True)           # 나이대
 

@@ -13,7 +13,14 @@ from app.core.exception import ApiException
 class AnalysisService:
     
     @staticmethod
-    def create_analysis(db: Session, member_id: int, image_file: UploadFile) -> int:
+    def def create_analysis(
+        db: Session,
+        member_id: int,
+        image_file: UploadFile,
+        skin_type: str = "",
+        min_price: int = 0,
+        max_price: int = 0
+    ) -> int:
         """
         피부 분석 생성 (POST용)
         

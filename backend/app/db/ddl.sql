@@ -10,8 +10,6 @@ CREATE TABLE member (
     email VARCHAR(100),
     role VARCHAR(20) DEFAULT 'USER',
     skin_type VARCHAR(50),
-    min_price INT,
-    max_price INT,
     gender VARCHAR(10),
     age_group INT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -24,6 +22,9 @@ CREATE TABLE member (
 CREATE TABLE skin_analysis (
     analysis_id INT AUTO_INCREMENT PRIMARY KEY,
     member_id INT,
+    skin_type VARCHAR(50), 
+    min_price INT,
+    max_price INT, 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_id INT,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
