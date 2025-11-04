@@ -19,8 +19,9 @@ class MemberService:
         if not MemberRepository.exists(db, member_id):
             raise ApiException(status.HTTP_404_NOT_FOUND, "회원을 찾을 수 없습니다")
         
-        # 데이터 변환
+        # 데이터 변환 (dict로 변환: immutable → mutable)
         update_data = data.model_dump()
+        update_data["updated_id"] = member_id  # 수정자 ID (현재 접속자 ID)
         
         # Repository 호출
         updated_member = MemberRepository.update(db, member_id, update_data)
