@@ -121,7 +121,7 @@ SELECT
     c.brand,
     c.price,
     c.buy_url,
-    cf.file_id as cosmetic_file_id,
+    cf.file_path as cosmetic_file_path,
     r.reason,
     r.ranking
 FROM skin_analysis sa
