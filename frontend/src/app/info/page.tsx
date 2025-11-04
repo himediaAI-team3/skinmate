@@ -1,7 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { infoApi } from '@/features/info';
 import { SkinTypeEnum } from '@/entities/info';
 
 const SKIN_TYPES = SkinTypeEnum.options;
@@ -44,15 +43,16 @@ export default function InfoPage() {
 
     setLoading(true);
     try {
-      const memberId = 1; // TODO: 실제 로그인 사용자 ID
-      await infoApi.update(memberId, {
+      // member 업데이트 없이 sessionStorage에 정보만 저장
+      const skinInfo = {
         skin_type: form.skinType as SkinType,
         min_price: Number(form.priceMin),
         max_price: Number(form.priceMax),
-      });
+      };
+      sessionStorage.setItem('skinMateSkinInfo', JSON.stringify(skinInfo));
       router.push('/upload');
     } catch (e: any) {
-      setMsg(e?.message ?? '서버 요청 중 오류가 발생했습니다.');
+      setMsg(e?.message ?? '오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
