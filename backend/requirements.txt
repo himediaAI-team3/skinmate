@@ -31,6 +31,9 @@ langchain-qdrant==0.1.1
 langchain-huggingface==0.0.3
 langchain-community==0.2.16
 
+# BM25 검색 (키워드 기반 리트리버)
+rank-bm25==0.2.2
+
 # 벡터 DB 클라이언트
 qdrant-client==1.9.0
 

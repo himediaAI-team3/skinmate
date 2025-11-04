@@ -16,7 +16,6 @@ except ImportError:
         from langchain_community.vectorstores import Qdrant as QdrantVectorStore
 from langchain_huggingface import HuggingFaceEmbeddings
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance
 import mysql.connector
 from dotenv import load_dotenv
 import os
@@ -134,7 +133,6 @@ def build_qdrant_knowledge_base():
         api_key=os.getenv('QDRANT_API_KEY'),
         collection_name=collection_name,
         force_recreate=True,
-        distance=Distance.COSINE,
     )
     
     print(f"      ✓ {len(documents)}개 제품 인덱싱 완료")
