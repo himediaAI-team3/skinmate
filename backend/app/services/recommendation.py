@@ -81,14 +81,21 @@ class RecommendationService:
         final_recommendations = RecommendationService._select_top3_with_llm(
             diagnosis=diagnosis,
             cosmetics=cosmetics,
-            search_scores={r['cosmetic_id']: r['score'] for r in search_results}
+            search_scores={r['cosmetic_id']: r['score'] for r in search_results},
+            member=member
         )
         
-        logger.info("LLM 최종 선정 완료:")
+        # 6. 결과 처리
+        if len(final_recommendations) == 0:
+            logger.warning("LLM이 적합한 제품이 없다고 판단했습니다.")
+            logger.info(f"========== RAG 파이프라인 완료 (추천 제품 0개) ==========")
+            return []
+        
+        logger.info(f"LLM 최종 선정 완료 ({len(final_recommendations)}개):")
         for rec in final_recommendations:
             logger.info(f"  {rec['ranking']}. cosmetic_id={rec['cosmetic_id']} - {rec['reason'][:50]}...")
         
-        # 6. MySQL recommendation 테이블 저장
+        # 7. MySQL recommendation 테이블 저장
         recommendations_data = [
             {
                 "analysis_id": analysis_id,
@@ -106,7 +113,7 @@ class RecommendationService:
         return saved_recommendations
     
     @staticmethod
-    def _select_top3_with_llm(diagnosis, cosmetics: List, search_scores: dict) -> List[dict]:
+    def _select_top3_with_llm(diagnosis, cosmetics: List, search_scores: dict, member) -> List[dict]:
         """
         LLM을 사용하여 Top 10 중 최종 3개 선정
         
@@ -114,6 +121,7 @@ class RecommendationService:
             diagnosis: 진단 정보
             cosmetics: 화장품 리스트 (Top 10)
             search_scores: {cosmetic_id: score} 유사도 점수
+            member: 회원 정보 (피부타입, 나이대 등)
             
         Returns:
             List[dict]: [{"ranking": 1, "cosmetic_id": 1, "reason": "..."}]
@@ -122,7 +130,7 @@ class RecommendationService:
         llm = ChatOpenAI(
             model="gpt-4o-mini",
             api_key=os.getenv("OPENAI_API_KEY"),
-            temperature=0.7,
+            temperature=0.7,  # LLM이 자율적으로 판단하도록 원래대로 복구
         )
         
         # 프롬프트 로드
@@ -146,8 +154,20 @@ class RecommendationService:
                 "similarity_score": round(search_scores.get(cosmetic.cosmetic_id, 0), 4)
             })
         
+        # 사용자 정보 포맷팅
+        user_info = []
+        if member.skin_type:
+            user_info.append(f"- 피부타입: {member.skin_type}")
+        if member.age_group:
+            user_info.append(f"- 나이대: {member.age_group}대")
+        
+        user_info_text = "\n".join(user_info) if user_info else "- 정보 없음"
+        
         # 사용자 입력 구성
         user_input = f"""
+**사용자 정보:**
+{user_info_text}
+
 **사용자 피부 진단:**
 - 질환: {diagnosis.disease_name}
 - 증상: {diagnosis.summary}
@@ -155,7 +175,7 @@ class RecommendationService:
 **추천 후보 화장품 (Top 10):**
 {json.dumps(cosmetics_info, ensure_ascii=False, indent=2)}
 
-위 10개 중 가장 적합한 3개를 선정하고 각각의 추천 이유를 작성하세요.
+위 10개 중 사용자에게 가장 적합한 3개를 선정하고 각각의 추천 이유를 작성하세요.
 """
         
         # LLM 호출
@@ -177,9 +197,14 @@ class RecommendationService:
             result = json.loads(response_text)
             recommendations = result.get("recommendations", [])
             
-            # 검증
-            if len(recommendations) != 3:
-                raise ValueError(f"LLM이 3개가 아닌 {len(recommendations)}개를 반환했습니다.")
+            # 유연한 검증: 0~3개 모두 허용
+            if len(recommendations) == 0:
+                logger.warning(f"LLM이 적합한 제품이 없다고 판단했습니다.")
+            elif len(recommendations) > 3:
+                logger.warning(f"LLM이 {len(recommendations)}개 반환. 상위 3개만 사용합니다.")
+                recommendations = recommendations[:3]
+            else:
+                logger.info(f"LLM이 {len(recommendations)}개 제품을 선정했습니다.")
             
             return recommendations
             
@@ -187,15 +212,12 @@ class RecommendationService:
             logger.error(f"LLM 응답 파싱 실패: {e}")
             logger.error(f"LLM 응답 원문: {response.content}")
             
-            # 실패 시 상위 3개 반환 (fallback)
-            return [
-                {
-                    "ranking": i + 1,
-                    "cosmetic_id": cosmetic.cosmetic_id,
-                    "reason": f"{cosmetic.main_effect} 효과로 {diagnosis.disease_name} 케어에 적합합니다."
-                }
-                for i, cosmetic in enumerate(cosmetics[:3])
-            ]
+            # 파싱 실패 시: Vector 검색 결과는 있으나 LLM 파싱 오류
+            # 빈 배열 반환하고 에러 메시지에서 원인 명시
+            raise ValueError(
+                f"LLM 응답 파싱 실패. Vector 검색 결과는 {len(cosmetics)}개 있으나 "
+                f"LLM이 올바른 JSON 형식을 반환하지 않았습니다."
+            )
     
         # ==================== 기존 하드코딩 방식 (제거됨) ====================
         # recommendations_data = [

@@ -7,7 +7,7 @@ from app.core.config.cors import get_cors_config
 from app.core.config.openapi import custom_openapi
 from app.core.exception import ApiException, api_exception_handler
 from app.core.middleware.auth_middleware import JWTMiddleware
-from app.router import member_router, analysis_router, file_router, like_router, cosmetic_router, test_router
+from app.router import member_router, analysis_router, file_router, like_router, cosmetic_router, test_router, chat_router
 from fastapi.middleware.cors import CORSMiddleware
 
 # FastAPI 애플리케이션 생성 (Swagger 표시 설정)
@@ -37,6 +37,7 @@ app.include_router(file_router)
 app.include_router(like_router)
 app.include_router(cosmetic_router)
 app.include_router(test_router)
+app.include_router(chat_router)
 
 # 정적 파일 서빙 - /media 경로로 마운트 (업로드된 미디어 파일)
 app.mount("/media", StaticFiles(directory=STATIC_DIR), name="media")

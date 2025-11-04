@@ -210,6 +210,10 @@ class VectorStoreService:
         data = json.loads(content)
         
         logger.info(f"검색 쿼리 생성 완료: dense={data['dense_query'][:50]}...")
+        try:
+            logger.info(f"검색 쿼리 생성 완료: sparse={data['sparse_keywords'][:80]}...")
+        except Exception:
+            pass
         
         return {
             "disease_name": data["disease_name"],
