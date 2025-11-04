@@ -1,5 +1,4 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
 from datetime import datetime, timedelta
 from app.models.skin_analysis import SkinAnalysis
 from app.models.diagnosis import Diagnosis

@@ -3,8 +3,7 @@ import type {
   Paged,
   GetHistoryParams,
 } from '@/entities/history';
-
-const API = process.env.API_PROXY_TARGET || 'http://192.168.0.182:8000';
+import { http } from '@/lib/http';
 
 /** 공용 페이지 응답 정규화 */
 function normalizePage<T>(raw: any): Paged<T> {
@@ -75,18 +74,12 @@ export async function getAnalysisHistory(
   if (disease_name) usp.set('disease_name', disease_name);
   if (period) usp.set('period', period);
 
-  const url = `${API}/api/skin-analysis/history/${member}?${usp.toString()}`;
-  const res = await fetch(url, {
+  const url = `/api/skin-analysis/history/${member}?${usp.toString()}`;
+  const data = await http<any>(url, {
     method: 'GET',
-    cache: 'no-store',
-    headers: { 'Content-Type': 'application/json' },
-    ...init,
+    // fetch 옵션 전달 필요 시 아래로 전달
+    // signal: init?.signal as any,
   });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`히스토리 조회 실패(${res.status}): ${text}`);
-  }
-  const data = await res.json();
 
   const normalized = normalizePage<AnalysisHistory>(data);
   // 필드 매핑: analysis_id → id, created_at → analyzed_at, summary fallback
@@ -105,14 +98,8 @@ export async function deleteAnalysis(
   analysis_id: number,
   init?: RequestInit,
 ): Promise<void> {
-  const url = `${API}/api/skin-analysis/${analysis_id}`;
-  const res = await fetch(url, {
+  const url = `/api/skin-analysis/${analysis_id}`;
+  await http<void>(url, {
     method: 'DELETE',
-    cache: 'no-store',
-    ...init,
   });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`삭제 실패(${res.status}): ${text}`);
-  }
 }

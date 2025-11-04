@@ -1,15 +1,22 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
+from typing import Dict
 from app.core.config.database import get_db
 from app.services.member import MemberService
 from app.schemas.member import MemberCreate, MemberResponse
 from app.schemas.response import ApiResponse
+from app.utils.security import get_current_user
 
 router = APIRouter(prefix="/api/members", tags=["members"])
 
-
-@router.put("/{member_id}", response_model=ApiResponse)
-def update_member(member_id: int, data: MemberCreate, db: Session = Depends(get_db)):
+@router.put("/me", response_model=ApiResponse)
+def update_my_info(
+    data: MemberCreate,
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
+):
+    member_id = current_user.get("member_id")
+    
     # Service 호출
     updated_member = MemberService.update_member(db, member_id, data)
     
@@ -18,6 +25,6 @@ def update_member(member_id: int, data: MemberCreate, db: Session = Depends(get_
         code=status.HTTP_200_OK,
         success=True,
         message="회원 정보가 업데이트되었습니다",
-        data=MemberResponse.from_orm(updated_member)
+        data=MemberResponse.model_validate(updated_member) # SQLAlchemy 모델 → Pydantic 자동 변환 (역직렬화)
     )
 

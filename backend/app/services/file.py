@@ -4,7 +4,6 @@ from app.repository.file import FileRepository
 from app.models.file import File
 from app.models.entity_type import EntityType
 from app.core.config.file import get_upload_path, ALLOWED_EXTENSIONS, MAX_FILE_SIZE
-from app.core.exception import ApiException
 import os
 import uuid
 

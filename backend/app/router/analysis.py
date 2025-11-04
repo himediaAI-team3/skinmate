@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile, status, Query
 from sqlalchemy.orm import Session
 from app.core.config.database import get_db
 from app.services.analysis import AnalysisService
-from app.schemas.analysis import AnalysisCreateResponse, AnalysisHistoryResponse
+from app.schemas.analysis import AnalysisCreateResponse
 from app.schemas.response import ApiResponse
 
 router = APIRouter(prefix="/api/skin-analysis", tags=["skin-analysis"])
