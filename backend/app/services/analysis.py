@@ -8,6 +8,7 @@ from app.services.recommendation import RecommendationService
 from app.schemas.analysis import AnalysisResponse, AnalysisHistoryResponse, AnalysisHistoryItem
 from app.schemas.recommendation import Recommendation as RecommendationSchema
 from app.core.exception import ApiException
+from app.core.config.file import get_static_file_url
 
 
 class AnalysisService:
@@ -74,7 +75,7 @@ class AnalysisService:
                     name=row.cosmetic_name or "",
                     brand=row.brand or "",
                     price=float(row.price) if row.price else 0,
-                    file_id=row.cosmetic_file_id or 0,
+                    file_path=get_static_file_url(row.cosmetic_file_path) if row.cosmetic_file_path else None,
                     buy_url=row.buy_url or "",
                     reason=row.reason or ""
                 ))
