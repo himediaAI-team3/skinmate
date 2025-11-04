@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 from app.core.config.database import get_db
 from app.services.cosmetic import CosmeticService
-from app.schemas.cosmetic import CosmeticSearchResponse, CosmeticDetailResponse, CosmeticSearchParams
+from app.schemas.cosmetic import CosmeticSearchParams
 from app.schemas.response import ApiResponse
+from app.utils.security import get_current_user
 
 router = APIRouter(prefix="/api/cosmetics", tags=["cosmetics"])
 
@@ -30,12 +31,14 @@ def search_cosmetics(
 @router.get("/{cosmetic_id}", response_model=ApiResponse)
 def get_cosmetic_detail(
     cosmetic_id: int,
-    db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
 ):
     """화장품 상세 정보 조회"""
     
-    # 임시 하드코딩 (TODO: JWT 인증 구현 시 토큰에서 추출)
-    member_id = 1
+    # JWT 토큰에서 추출한 member_id 사용
+    member_id = current_user.get("member_id")
     
     # 서비스 호출
     result = CosmeticService.get_cosmetic_detail(db, cosmetic_id, member_id)
