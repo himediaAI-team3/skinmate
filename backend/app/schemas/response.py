@@ -1,9 +1,11 @@
 from pydantic import BaseModel
-from typing import Any, Optional
+from typing import Any, Optional, Generic, TypeVar
 from datetime import datetime
 
+T = TypeVar('T')
 
-class ApiResponse(BaseModel):
+
+class ApiResponse(BaseModel, Generic[T]):
     """
     success : 요청 성공 여부
     code    : HTTP 상태 코드 또는 내부 코드
@@ -14,7 +16,7 @@ class ApiResponse(BaseModel):
     code: int
     success: bool
     message: str
-    data: Optional[Any] = None
+    data: Optional[T] = None
     timestamp: datetime = datetime.utcnow()
 
     class Config:
