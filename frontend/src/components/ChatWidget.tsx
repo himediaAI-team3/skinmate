@@ -4,33 +4,30 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Msg = { role: 'user' | 'assistant'; text: string };
 
-const ICON = '/cute-bot.svg'; // public 폴더 아이콘 사용
+const ICON = '/chatbot.svg'; // public 폴더 아이콘
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([
-    { role: 'assistant', text: '안녕하세요! 스킨케어 도우미 스키니입니다 🧴 무엇을 도와드릴까요?' },
+    { role: 'assistant', text: '안녕하세요! 스킨케어 도우미입니다! 무엇을 도와드릴까요?' },
   ]);
   const [input, setInput] = useState('');
   const bodyRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // AppHeader와 같은 정렬 (max-w-md + px-7). 뷰포트 우측 여백과 컨텐츠 우측 여백 중 큰 값을 사용
+  // AppHeader( max-w-md + px-7 ) 우측 정렬 규칙
   const rightRule = useMemo(
     () => ({
-      right: 'max(16px, calc((100vw - 28rem) / 2 + 1.75rem))', // 28rem = max-w-md, 1.75rem = px-7
+      right: 'max(12px, calc((100vw - 28rem) / 2 + 1.75rem))',
     }),
     []
   );
 
   useEffect(() => {
-    // 스크롤 맨 아래로
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight });
-    // 열릴 때 입력창 포커스
     if (open) inputRef.current?.focus();
   }, [open, msgs.length]);
 
-  // ESC로 닫기
   useEffect(() => {
     if (!open) return;
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
@@ -43,7 +40,6 @@ export default function ChatWidget() {
     const userMsg: Msg = { role: 'user', text: input.trim() };
     setMsgs((m) => [...m, userMsg]);
 
-    // 데모 응답(에코 + 가이드). 이후 실제 API 연동으로 교체 가능
     const reply: Msg = {
       role: 'assistant',
       text:
@@ -57,37 +53,51 @@ export default function ChatWidget() {
     if (e.key === 'Enter') send();
   };
 
+  // iOS 안전영역 하단 패딩
+  const safeBottom = 'env(safe-area-inset-bottom, 0px)';
+
+  // 👉 오른쪽으로 더 이동시키는 픽셀(양수 = 우측으로)
+  const offsetX = 10; // 필요시 6, 12 등으로 조정
+
   return (
     <>
-      {/* 플로팅 버튼 */}
+      {/* 플로팅 버튼 (영역 자체 이동) */}
       <button
         type="button"
-        aria-label="스키니 챗봇 열기"
+        aria-label="챗봇 열기"
         onClick={() => setOpen(true)}
         className={[
-          'fixed bottom-5 z-50',
+          'fixed z-[70] bottom-[56px]',
           'rounded-full shadow-lg border border-orange-100',
-          'bg-white w-14 h-14 flex items-center justify-center',
+          'bg-white w-12 h-12 flex items-center justify-center',
           'hover:shadow-xl transition',
         ].join(' ')}
-        style={rightRule}
+        style={{ ...rightRule, transform: `translateX(${offsetX}px)` }}
       >
         <div className="relative">
-          {/* public 아이콘 사용 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={ICON} alt="스키니 챗봇" width={28} height={28} />
-          <span className="absolute -top-2 -right-2 text-[10px] rounded-full bg-orange-500 text-white px-1.5 py-0.5 shadow">
+          <img src={ICON} alt="챗봇" width={24} height={24} />
+          <span
+            className="absolute top-0 right-0 transform translate-x-[20px] -translate-y-[10px]
+                       text-[10px] rounded-full bg-orange-500 text-white px-1 py-5.5
+                       shadow pointer-events-none"
+          >
             Beta
           </span>
         </div>
       </button>
 
-      {/* 챗 패널 */}
+      {/* 챗 패널 (영역 자체 이동 + 폭/높이 축소) */}
       <div
         role="dialog"
         aria-modal="true"
-        className={['fixed z-50', open ? 'pointer-events-auto' : 'pointer-events-none'].join(' ')}
-        style={{ ...rightRule, bottom: '90px', width: 'min(100vw - 32px, 28rem)' }}
+        className={['fixed z-[70]', open ? 'pointer-events-auto' : 'pointer-events-none'].join(' ')}
+        style={{
+          ...rightRule,
+          transform: `translateX(${offsetX}px)`,
+          bottom: `calc(120px + ${safeBottom})`,
+          width: 'min(100vw - 24px, 24rem)',
+        }}
       >
         <div
           className={[
@@ -96,14 +106,14 @@ export default function ChatWidget() {
             open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3',
             'flex flex-col overflow-hidden',
           ].join(' ')}
-          style={{ height: 'min(70vh, 640px)' }}
+          style={{ height: 'min(60vh, 520px)' }}
         >
           {/* 헤더 */}
-          <div className="h-12 px-4 bg-gradient-to-r from-orange-50 to-pink-50 border-b flex items-center justify-between">
+          <div className="h-11 px-3 bg-gradient-to-r from-orange-50 to-pink-50 border-b flex items-center justify-between">
             <div className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={ICON} alt="" width={20} height={20} aria-hidden />
-              <p className="text-sm font-semibold text-gray-800">스키니 챗봇</p>
+              <img src={ICON} alt="" width={18} height={18} aria-hidden />
+              <p className="text-sm font-semibold text-gray-800">챗봇</p>
             </div>
             <button
               className="text-xs text-gray-600 hover:text-gray-900"
@@ -114,12 +124,12 @@ export default function ChatWidget() {
           </div>
 
           {/* 본문 */}
-          <div ref={bodyRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+          <div ref={bodyRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
             {msgs.map((m, i) => (
               <div key={i} className={m.role === 'user' ? 'text-right' : 'text-left'}>
                 <div
                   className={[
-                    'inline-block px-3 py-2 rounded-2xl text-sm',
+                    'inline-block px-3 py-2 rounded-2xl text-[13px] leading-5',
                     m.role === 'user'
                       ? 'bg-gray-900 text-white rounded-br-sm'
                       : 'bg-gray-100 text-gray-800 rounded-bl-sm',
@@ -153,17 +163,17 @@ export default function ChatWidget() {
                 전송
               </button>
             </div>
-            <p className="mt-1 text-[11px] text-gray-500">
+            <p className="mt-1 text-[10px] text-gray-500">
               ※ 데모 버전입니다. 이후 실제 AI 응답으로 교체할 수 있어요.
             </p>
           </div>
         </div>
       </div>
 
-      {/* 배경 딤 (모바일 집중도 ↑) */}
+      {/* 배경 딤 */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1px]"
+          className="fixed inset-0 z-[60] bg-black/10 backdrop-blur-[1px]"
           onClick={() => setOpen(false)}
         />
       )}

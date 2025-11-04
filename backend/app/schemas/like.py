@@ -3,11 +3,6 @@ from typing import List, Optional
 from decimal import Decimal
 
 
-class LikeToggleRequest(BaseModel):
-    """좋아요 토글 요청"""
-    member_id: int
-
-
 class LikeToggleResponse(BaseModel):
     """좋아요 토글 응답"""
     is_liked: bool
