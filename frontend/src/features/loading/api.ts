@@ -1,7 +1,7 @@
 import { SkinAnalysisOutput } from '@/entities/loading';
 import { http } from '@/lib/http';
 
-const API = 'http://192.168.0.235:8000';
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // 결과 조회: GET /api/skin-analysis/:analysis_id
 export async function get(analysisId: number) {
@@ -11,10 +11,19 @@ export async function get(analysisId: number) {
 }
 
 // 업로드+LLM: POST 후 받은 analysis_id로 바로 GET까지 이어서 실행
-export async function submit(memberId: number, file: File) {
+export async function submit(
+  memberId: number, 
+  file: File, 
+  skinType: string = '', 
+  minPrice: number = 0, 
+  maxPrice: number = 0
+) {
   const form = new FormData();
   form.append('member_id', String(memberId));
   form.append('image', file);
+  form.append('skin_type', skinType);
+  form.append('min_price', String(minPrice));
+  form.append('max_price', String(maxPrice));
 
   const res = await fetch(`${API}/api/skin-analysis`, { method: 'POST', body: form });
   const json = await res.json();

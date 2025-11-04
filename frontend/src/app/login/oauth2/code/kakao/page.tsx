@@ -4,10 +4,6 @@ import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { saveTokens } from '@/features/auth';
 
-// 환경변수: 프론트에서 써야 하므로 NEXT_PUBLIC_ 접두사
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://192.168.0.235:8080';
-const FRONT_BASE = process.env.NEXT_PUBLIC_FRONT_BASE ?? 'http://192.168.0.249:3000';
-
 export default function KakaoCallbackPage() {
   const router = useRouter();
   const params = useSearchParams();
@@ -30,9 +26,10 @@ export default function KakaoCallbackPage() {
 
       try {
         // 일부 백엔드는 redirectUri 검증을 요구함
-        const redirectUri = `${FRONT_BASE}/login/oauth2/code/kakao`;
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const redirectUri = `${origin}/login/oauth2/code/kakao`;
 
-        const res = await fetch(`${API_BASE}/auth/kakao-login`, {
+        const res = await fetch(`/auth/kakao-login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           // 백엔드 스펙에 맞춰 전달: code (필수), state/redirectUri(옵션)

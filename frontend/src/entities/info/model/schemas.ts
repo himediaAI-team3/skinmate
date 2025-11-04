@@ -8,8 +8,6 @@ export const UpdateSkinInfoInput = z.object({
   min_price: z.number().int().positive(),
   max_price: z.number().int().positive(),
   skin_type: SkinTypeEnum,
-  gender: GenderEnum,
-  age_group: AgeGroupEnum,
 }).superRefine((v, ctx) => {
   if (v.min_price > v.max_price) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['min_price'], message: '최소 금액이 최대 금액보다 클 수 없습니다.' });

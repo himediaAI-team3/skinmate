@@ -12,10 +12,14 @@ const API_BASE = '/api/cosmetics';
 // 이미지 URL 생성 함수
 function createImageUrl(filePath?: string): string {
   if (!filePath) return 'https://placehold.co/640x640/E5E7EB/9CA3AF?text=No+Image';
-  
-  // file_path가 절대 경로면 백엔드 서버 URL과 결합
+
+  // 이미 완전한 URL이면 그대로 사용
+  if (/^https?:\/\//i.test(filePath)) return filePath;
+
+  // 백엔드 베이스와 안전하게 결합
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  return `${baseUrl}${filePath}`;
+  const path = filePath.startsWith('/') ? filePath : `/${filePath}`;
+  return `${baseUrl}${path}`;
 }
 
 // 화장품 목록 조회
@@ -34,7 +38,6 @@ export async function fetchCosmetics(params: CosmeticSearchParams = {}): Promise
   
   const response = await http<ApiResponse<CosmeticListResponse>>(url, {
     method: 'GET',
-    credentials: 'include', // JWT 쿠키 포함
   });
 
   // 응답 데이터에 image_url 추가
@@ -58,7 +61,6 @@ export async function fetchCosmeticDetail(
   
   const response = await http<ApiResponse<CosmeticDetail>>(url, {
     method: 'GET',
-    credentials: 'include', // JWT 쿠키 포함
   });
 
   // 응답 데이터에 image_url 추가

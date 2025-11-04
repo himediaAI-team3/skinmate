@@ -16,6 +16,7 @@ function dataURLtoFile(dataURL: string, fileName: string) {
 }
 
 type PendingUpload = { member_id: number; image_data_url: string; file_name?: string };
+type SkinInfo = { skin_type: string; min_price: number; max_price: number };
 
 export default function LoadingPage() {
   const router = useRouter();
@@ -29,19 +30,36 @@ export default function LoadingPage() {
         const raw: string = raw0;
         const pending: PendingUpload = JSON.parse(raw) as PendingUpload;
 
+        // sessionStorage에서 피부 정보 가져오기
+        const skinInfoRaw = sessionStorage.getItem('skinMateSkinInfo');
+        const skinInfo: SkinInfo = skinInfoRaw 
+          ? JSON.parse(skinInfoRaw) as SkinInfo
+          : { skin_type: '', min_price: 0, max_price: 0 };
+
         const file = dataURLtoFile(pending.image_data_url, pending.file_name || 'upload.jpg');
 
         // 동기 실행: 결과 나올 때까지 서버 대기
-        const res: SkinAnalysisOutputT = await analysisApi.submit(pending.member_id, file);
+        const res: SkinAnalysisOutputT = await analysisApi.submit(
+          pending.member_id, 
+          file,
+          skinInfo.skin_type,
+          skinInfo.min_price,
+          skinInfo.max_price
+        );
         if (!res.success) throw new Error(res.message || '분석 실패');
 
         // 결과 저장(+ 복원 대비)
         try { sessionStorage.setItem('skinMateAnalysis', JSON.stringify(res)); } catch {}
-        router.push(`/result?analysis=${res.data.analysis_id}`);
+        
+        // 사용한 데이터 정리
+        sessionStorage.removeItem('skinMatePendingUpload');
+        sessionStorage.removeItem('skinMateSkinInfo');
+        
+        router.push(`/result/${res.data.analysis_id}`);
       } catch (e: any) {
         setError(e?.message ?? '분석 요청 중 오류가 발생했습니다.');
       } finally {
-        // 한 번 사용한 pending은 정리(선택)
+        // 에러 발생 시에도 pending은 정리
         sessionStorage.removeItem('skinMatePendingUpload');
       }
     };
