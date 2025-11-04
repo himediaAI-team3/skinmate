@@ -55,7 +55,7 @@ export default function LoadingPage() {
         sessionStorage.removeItem('skinMatePendingUpload');
         sessionStorage.removeItem('skinMateSkinInfo');
         
-        router.push(`/result?analysis=${res.data.analysis_id}`);
+        router.push(`/result/${res.data.analysis_id}`);
       } catch (e: any) {
         setError(e?.message ?? '분석 요청 중 오류가 발생했습니다.');
       } finally {

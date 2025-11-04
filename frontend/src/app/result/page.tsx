@@ -1,19 +1,21 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { analysisApi } from '@/features/loading';
 import type { SkinAnalysisOutputT } from '@/entities/loading';
 import { ExternalLink } from 'lucide-react';
 
 export default function ResultPage() {
-  const params = useSearchParams();
-  const analysisId = Number(params.get('analysis'));
+  const seg = useParams();
+  const analysisId = Number((seg as any)?.analysis);
 
   const [data, setData] = useState<SkinAnalysisOutputT['data'] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // 이미지 베이스 URL
-  const IMG_BASE = 'http://192.168.0.235:8000/api/files';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const IMG_BASE = `${API_BASE}/api/files`;  // 피부 이미지용
+  const COSMETIC_IMG_BASE = `${API_BASE}/media`;  // 화장품 이미지용 (정적 파일)
 
   // 결과 데이터 로드
   useEffect(() => {
@@ -202,7 +204,7 @@ export default function ResultPage() {
               <div className="flex items-start gap-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`${IMG_BASE}/${p.file_id}`}
+                  src={p.file_path ? `${COSMETIC_IMG_BASE}/${p.file_path}` : `${IMG_BASE}/${p.file_id}`}
                   alt={p.name}
                   className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
                 />

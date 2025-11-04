@@ -5,6 +5,7 @@ export const ProductSchema = z.object({
   brand: z.string(),
   price: z.number().int().nonnegative(),
   file_id: z.number().int().nonnegative(),
+  file_path: z.string().optional(),  // 화장품 이미지 경로 (예: 'cosmetic/1.jpg')
   buy_url: z.string().min(1),
   reason: z.string(),
 });
