@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import UploadFile, status
+from typing import Optional
 from app.repository.analysis import AnalysisRepository
 from app.repository.analysis_view import AnalysisViewRepository
 from app.services.file import FileService
@@ -17,28 +18,21 @@ class AnalysisService:
     def create_analysis(
         db: Session,
         member_id: int,
-        image_file: UploadFile,
-        skin_type: str = "",
-        min_price: int = 0,
-        max_price: int = 0
+
+        image_file: UploadFile, #필수값
+
+        skin_type: Optional[str] = None, # 옵셔널
+        min_price: Optional[int] = None, # 옵셔널
+        max_price: Optional[int] = None, # 옵셔널
     ) -> int:
-        """
-        피부 분석 생성 (POST용)
         
-        Args:
-            db: 데이터베이스 세션
-            member_id: 회원 ID
-            image_file: 업로드 이미지
-            
-        Returns:
-            analysis_id (생성된 분석 ID)
-        """
-        # 1. skin_analysis 생성 (사용자 선택 데이터 포함)
+        # 1. skin_analysis 생성 (옵셔널 데이터)
         analysis = AnalysisRepository.create(db, {
             "member_id": member_id,
             "skin_type": skin_type or None,
             "min_price": min_price or None,
             "max_price": max_price or None,
+            "created_id": member_id,
         })
         analysis_id = analysis.analysis_id
         
