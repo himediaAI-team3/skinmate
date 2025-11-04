@@ -1,28 +1,36 @@
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status, Query
 from sqlalchemy.orm import Session
+from typing import Dict, Optional
 from app.core.config.database import get_db
 from app.services.analysis import AnalysisService
 from app.schemas.analysis import AnalysisCreateResponse
 from app.schemas.response import ApiResponse
+from app.utils.security import get_current_user
 
 router = APIRouter(prefix="/api/skin-analysis", tags=["skin-analysis"])
 
 
 @router.post("", response_model=ApiResponse, status_code=status.HTTP_201_CREATED)
 def create_skin_analysis(
-    member_id: int = Form(...),
-    skin_type: str = Form(""),
-    min_price: int = Form(0),
-    max_price: int = Form(0),
-    image: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    skin_type: Optional[str] = Form(None), # 옵셔널
+    min_price: Optional[int] = Form(None), # 옵셔널
+    max_price: Optional[int] = Form(None), # 옵셔널
+
+    image: UploadFile = File(...), # 필수값
+
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
 ):
+    # JWT에서 member_id 추출
+    member_id = current_user.get("member_id")
     
     # Service 호출 (analysis_id만 반환)
     analysis_id = AnalysisService.create_analysis(
         db=db,
         member_id=member_id,
+
         image_file=image,
+
         skin_type=skin_type,
         min_price=min_price,
         max_price=max_price
@@ -42,12 +50,7 @@ def get_skin_analysis_result(
     analysis_id: int,
     db: Session = Depends(get_db)
 ):
-    """
-    피부 분석 결과 조회
-    
-    - **analysis_id**: 분석 ID
-    """
-    # 전체 결과 조회
+    # 분석 결과 조회
     result = AnalysisService.get_analysis_result(db, analysis_id)
     
     # ApiResponse로 감싸서 반환
