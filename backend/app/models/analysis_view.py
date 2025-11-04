@@ -19,7 +19,7 @@ class AnalysisResultView(Base):
     brand = Column(String(100))
     price = Column(DECIMAL(10, 2))
     buy_url = Column(String(2048))
-    cosmetic_file_id = Column(Integer)
+    cosmetic_file_path = Column(String(255))
     reason = Column(String(255))
     ranking = Column(Integer)
 

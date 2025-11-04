@@ -8,6 +8,7 @@ from app.services.recommendation import RecommendationService
 from app.schemas.analysis import AnalysisResponse, AnalysisHistoryResponse, AnalysisHistoryItem
 from app.schemas.recommendation import Recommendation as RecommendationSchema
 from app.core.exception import ApiException
+from app.core.config.file import get_static_file_url
 
 
 class AnalysisService:
@@ -47,8 +48,8 @@ class AnalysisService:
         # 3. 진단 생성 (파인튜닝 모델 호출)
         DiagnosisService.create_diagnosis(db, analysis_id)
         
-        # 4. 추천 생성 (더미 데이터 -> 추후 RAG 파이프라인 구축)
-        RecommendationService.create_recommendations(db, analysis_id, member_id)
+        # 4. 추천 생성 (RAG 파이프라인 사용)
+        RecommendationService.create_rag_recommendations(db, analysis_id)
         
         # 5. analysis_id만 반환
         return analysis_id
@@ -74,7 +75,7 @@ class AnalysisService:
                     name=row.cosmetic_name or "",
                     brand=row.brand or "",
                     price=float(row.price) if row.price else 0,
-                    file_id=row.cosmetic_file_id or 0,
+                    file_path=get_static_file_url(row.cosmetic_file_path) if row.cosmetic_file_path else None,
                     buy_url=row.buy_url or "",
                     reason=row.reason or ""
                 ))

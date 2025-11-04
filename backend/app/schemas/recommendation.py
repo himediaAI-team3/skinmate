@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 
 class Recommendation(BaseModel):
@@ -6,7 +7,7 @@ class Recommendation(BaseModel):
     name: str
     brand: str
     price: float
-    file_id: int      # 화장품 이미지 file_id
+    file_path: Optional[str] = None  # 화장품 이미지 경로
     buy_url: str      # 구매 링크
     reason: str
     
