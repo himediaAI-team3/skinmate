@@ -15,7 +15,6 @@ export default function ResultPage() {
   // 이미지 베이스 URL
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const IMG_BASE = `${API_BASE}/api/files`;  // 피부 이미지용
-  const COSMETIC_IMG_BASE = `${API_BASE}/media`;  // 화장품 이미지용 (정적 파일)
 
   // 결과 데이터 로드
   useEffect(() => {
@@ -204,7 +203,7 @@ export default function ResultPage() {
               <div className="flex items-start gap-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={p.file_path ? `${COSMETIC_IMG_BASE}/${p.file_path}` : `${IMG_BASE}/${p.file_id}`}
+                  src={p.file_path ? `${API_BASE}${p.file_path}` : (imageUrl || '')}
                   alt={p.name}
                   className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
                 />
