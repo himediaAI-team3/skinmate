@@ -1,6 +1,8 @@
+// /src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import HeaderGate from "@/components/HeaderGate";
+import ChatWidget from "@/components/ChatWidget";
 
 export const dynamic = "force-dynamic";
 
@@ -28,10 +30,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        {/* 메인 컨테이너 (앱 헤더/페이지 컨텐츠) */}
         <div className="max-w-md mx-auto bg-white min-h-screen relative">
           <HeaderGate />
           <main className="pb-16">{children}</main>
         </div>
+
+        {/* 전 페이지 공통 플로팅 챗봇 */}
+        <ChatWidget />
       </body>
     </html>
   );
