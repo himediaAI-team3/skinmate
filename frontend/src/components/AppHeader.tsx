@@ -24,7 +24,7 @@ export default function AppHeader({ me = null, loading = false, onLogout }: Prop
   const ver = '20251103'; // 캐시 무력화용
 
   // 외부 me가 있으면 우선 사용, 없으면 데모
-  const effectiveMe = me ?? DEMO_ME;
+  const effectiveMe = DEMO_ME ?? me;
 
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
