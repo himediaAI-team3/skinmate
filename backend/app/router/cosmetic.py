@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from app.core.config.database import get_db
 from app.services.cosmetic import CosmeticService
@@ -11,7 +11,6 @@ router = APIRouter(prefix="/api/cosmetics", tags=["cosmetics"])
 
 @router.get("", response_model=ApiResponse)
 def search_cosmetics(
-    request: Request,
     params: CosmeticSearchParams = Depends(),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
@@ -37,7 +36,6 @@ def search_cosmetics(
 @router.get("/{cosmetic_id}", response_model=ApiResponse)
 def get_cosmetic_detail(
     cosmetic_id: int,
-    request: Request,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):

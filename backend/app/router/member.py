@@ -6,10 +6,8 @@ from app.services.member import MemberService
 from app.schemas.member import MemberCreate, MemberResponse
 from app.schemas.response import ApiResponse
 from app.utils.security import get_current_user
-from app.core.exception import ApiException
 
 router = APIRouter(prefix="/api/members", tags=["members"])
-
 
 @router.put("/me", response_model=ApiResponse)
 def update_my_info(

@@ -5,7 +5,6 @@ from app.utils.security import JWT_SECRET, JWT_ALGORITHM
 
 router = APIRouter(prefix="/api", tags=["test"])
 
-
 @router.get("/test-token")
 async def generate_test_token(
     member_id: int = Query(1, description="회원 ID"),
