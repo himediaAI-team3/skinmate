@@ -5,7 +5,7 @@ import type {
   LikedProductDTO,
 } from '@/entities/likes';
 
-const API = process.env.NEXT_PUBLIC_API_PROXY_TARGET;
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 /* =========================
    커서형: POST /api/likes

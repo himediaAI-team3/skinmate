@@ -28,5 +28,5 @@ class MemberResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True  # SQLAlchemy 모델 → Pydantic 자동 변환
+        from_attributes = True  # ORM 객체 속성 읽기 허용 설정
 

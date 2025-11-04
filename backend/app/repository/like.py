@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List
 from sqlalchemy.orm import Session
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
