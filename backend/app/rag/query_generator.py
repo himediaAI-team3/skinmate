@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -9,31 +9,26 @@ from langchain_core.runnables import Runnable
 
 from app.core.config.openai import get_llm
 from app.rag.prompts import QUERY_SYSTEM_PROMPT
+from app.schemas.rag import DiagnosisInfo, QuerySpec, PriceFilter
 
 
 SYSTEM_PROMPT = QUERY_SYSTEM_PROMPT
 
 
-def _fallback_query(diagnosis_info: Dict[str, Any]) -> Dict[str, Any]:
-    disease_name = (diagnosis_info.get("disease_name") or "").strip() or "피부"
-    skin_type = (diagnosis_info.get("skin_type") or "").strip() or "일반"
-    min_price = diagnosis_info.get("min_price")
-    max_price = diagnosis_info.get("max_price")
+def _fallback_query(diagnosis_info: DiagnosisInfo) -> QuerySpec:
+    disease_name = (diagnosis_info.disease_name or "").strip() or "피부"
+    skin_type = (diagnosis_info.skin_type or "").strip() or "일반"
 
-    price_filter: Optional[Dict[str, int]] = None
-    if isinstance(min_price, (int, float)) and isinstance(max_price, (int, float)):
-        price_filter = {"gte": int(min_price), "lte": int(max_price)}
+    pf: Optional[PriceFilter] = None
+    if diagnosis_info.min_price is not None and diagnosis_info.max_price is not None:
+        pf = PriceFilter(gte=int(diagnosis_info.min_price), lte=int(diagnosis_info.max_price))
 
     text_query = (
         f"{skin_type} 피부의 {disease_name} 증상 완화를 위한 저자극 데일리 케어 제품으로, "
         "핵심 증상에 맞춘 보습·진정 중심의 사용을 고려"
     )
 
-    return {
-        "text_query": text_query,
-        "keywords": ["보습", "진정"],
-        "price_filter": price_filter,
-    }
+    return QuerySpec(text_query=text_query, keywords=["보습", "진정"], price_filter=pf)
 
 
 def _build_chain() -> Runnable:
@@ -54,60 +49,47 @@ def _build_chain() -> Runnable:
     return chain
 
 
-def generate_search_query(diagnosis_info: Dict[str, Any]) -> Dict[str, Any]:
+def generate_search_query(diagnosis_info: DiagnosisInfo | Dict[str, Any]) -> QuerySpec:
     """Generate search query spec from diagnosis info using LLM.
 
     Args:
-        diagnosis_info (Dict[str, Any]):
-            {
-              "disease_name": str,
-              "summary": str,
-              "skin_type": Optional[str],
-              "min_price": Optional[int],
-              "max_price": Optional[int]
-            }
+        diagnosis_info (DiagnosisInfo | dict): 질환 및 사용자 컨텍스트
 
     Returns:
-        Dict[str, Any]:
-            {
-              "text_query": str,
-              "keywords": List[str],
-              "price_filter": Optional[Dict[str, int]]
-            }
+        QuerySpec: 검색 질의 스펙
 
     Notes:
         - Retries once on failure, then returns fallback.
     """
 
+    # Ensure pydantic model
+    diag_model = diagnosis_info if isinstance(diagnosis_info, DiagnosisInfo) else DiagnosisInfo.model_validate(diagnosis_info)
+
     chain = _build_chain()
-    payload = {"input_json": json.dumps(diagnosis_info, ensure_ascii=True)}
+    payload = {"input_json": json.dumps(diag_model.model_dump(), ensure_ascii=True)}
 
     try:
         result = chain.invoke(payload)
-        if not isinstance(result, dict):  # parser guarantees dict, but guard anyway
+        if not isinstance(result, dict):
             raise ValueError("LLM 출력 형식 오류")
-        # Normalize price_filter if present
+        # Validate with pydantic
+        # Coerce price_filter if present
         pf = result.get("price_filter")
-        if pf is not None and isinstance(pf, dict):
-            try:
-                gte = pf.get("gte")
-                lte = pf.get("lte")
-                if isinstance(gte, (int, float)) and isinstance(lte, (int, float)):
-                    result["price_filter"] = {"gte": int(gte), "lte": int(lte)}
-                else:
-                    result["price_filter"] = None
-            except Exception:
+        if isinstance(pf, dict) and pf:
+            gte = pf.get("gte")
+            lte = pf.get("lte")
+            if gte is None or lte is None:
                 result["price_filter"] = None
-        return result
+        return QuerySpec.model_validate(result)
     except Exception:
         # retry once
         try:
             result = chain.invoke(payload)
             if not isinstance(result, dict):
                 raise ValueError("LLM 출력 형식 오류")
-            return result
+            return QuerySpec.model_validate(result)
         except Exception:
-            return _fallback_query(diagnosis_info)
+            return _fallback_query(diag_model)
 
 
 __all__ = ["generate_search_query"]

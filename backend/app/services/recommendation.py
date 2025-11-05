@@ -3,6 +3,7 @@ from app.repository.recommendation import RecommendationRepository
 from typing import List
 
 from app.rag.pipeline import recommend_products
+from app.schemas.rag import RecommendationItem
 
 class RecommendationService:
     
@@ -62,16 +63,10 @@ class RecommendationService:
         recommendations_data = recommend_products(db, analysis_id)
 
         # DB 저장 (Repository는 내부에서 commit 수행)
-        return RecommendationRepository.create_bulk(
-            db,
-            [
-                {
-                    "analysis_id": analysis_id,
-                    "cosmetic_id": rec.get("cosmetic_id"),
-                    "ranking": rec.get("ranking"),
-                    "reason": rec.get("reason") or "",
-                }
-                for rec in recommendations_data
-            ],
-        )
+        payload = [
+            {"analysis_id": analysis_id, **rec.model_dump()} if isinstance(rec, RecommendationItem)
+            else {"analysis_id": analysis_id, **RecommendationItem.model_validate(rec).model_dump()}
+            for rec in recommendations_data
+        ]
+        return RecommendationRepository.create_bulk(db, payload)
 

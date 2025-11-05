@@ -12,6 +12,7 @@ from app.rag.query_generator import generate_search_query
 from app.rag.retriever import get_ensemble_retriever
 from app.rag.reranker import rerank_documents
 from app.rag.reason_generator import generate_recommendation_reason
+from app.schemas.rag import DiagnosisInfo, QuerySpec, RecommendationItem, PriceFilter
 
 
 def _to_float(value: Any) -> float | None:
@@ -37,9 +38,18 @@ def apply_price_filter(state: Dict[str, Any]) -> Dict[str, Any]:
     documents: List[Document] = state["documents"]
 
     # Prefer query_spec filter
-    qpf = (state.get("query_spec") or {}).get("price_filter") or {}
-    min_price = qpf.get("gte") if isinstance(qpf, dict) else None
-    max_price = qpf.get("lte") if isinstance(qpf, dict) else None
+    min_price = None
+    max_price = None
+    qspec = state.get("query_spec")
+    if isinstance(qspec, QuerySpec):
+        if isinstance(qspec.price_filter, PriceFilter):
+            min_price = qspec.price_filter.gte
+            max_price = qspec.price_filter.lte
+    else:
+        qpf = (qspec or {}).get("price_filter") if isinstance(qspec, dict) else None
+        if isinstance(qpf, dict):
+            min_price = qpf.get("gte")
+            max_price = qpf.get("lte")
 
     # Fallback to diagnosis_info
     if min_price is None and max_price is None:
@@ -78,12 +88,19 @@ def _load_info(x: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _apply_query(x: Dict[str, Any]) -> Dict[str, Any]:
-    return {**x, "query_spec": generate_search_query(x["diagnosis_info"])}
+    diag = x["diagnosis_info"]
+    diag_model = diag if isinstance(diag, DiagnosisInfo) else DiagnosisInfo.model_validate(diag)
+    return {**x, "query_spec": generate_search_query(diag_model)}
 
 
 def _run_search(x: Dict[str, Any]) -> Dict[str, Any]:
     retriever = get_ensemble_retriever(k=20)
-    docs = retriever.invoke(x["query_spec"]["text_query"]) if x.get("query_spec") else []
+    qspec = x.get("query_spec")
+    if isinstance(qspec, QuerySpec):
+        query_text = qspec.text_query
+    else:
+        query_text = (qspec or {}).get("text_query") if isinstance(qspec, dict) else None
+    docs = retriever.invoke(query_text) if query_text else []
     return {**x, "documents": docs}
 
 
@@ -96,15 +113,18 @@ def _generate_reasons_for_all(state: Dict[str, Any]) -> Dict[str, Any]:
     top3: List[Document] = state.get("top3") or []
     diagnosis_info: Dict[str, Any] = state["diagnosis_info"]
 
-    recommendations: List[Dict[str, Any]] = []
+    recommendations: List[RecommendationItem] = []
     for rank, doc in enumerate(top3, start=1):
         reason = generate_recommendation_reason(doc, diagnosis_info, rank)
+        md = doc.metadata or {}
+        cid = md.get("cosmetic_id")
+        try:
+            cosmetic_id_int = int(cid)
+        except Exception:
+            # Skip if cosmetic_id is invalid
+            continue
         recommendations.append(
-            {
-                "cosmetic_id": (doc.metadata or {}).get("cosmetic_id"),
-                "ranking": rank,
-                "reason": reason,
-            }
+            RecommendationItem(cosmetic_id=cosmetic_id_int, ranking=rank, reason=reason)
         )
 
     return {**state, "recommendations": recommendations}
@@ -128,11 +148,15 @@ def create_rag_pipeline() -> Runnable:
     return pipeline
 
 
-def recommend_products(db: Session, analysis_id: int) -> List[Dict[str, Any]]:
-    """Run the RAG pipeline and return recommendations as list of dicts."""
+def recommend_products(db: Session, analysis_id: int) -> List[RecommendationItem]:
+    """Run the RAG pipeline and return recommendations as list of RecommendationItem."""
     pipeline = create_rag_pipeline()
     result: Dict[str, Any] = pipeline.invoke({"analysis_id": analysis_id, "db": db})
-    return result.get("recommendations") or []
+    recs = result.get("recommendations") or []
+    # Ensure type
+    if recs and isinstance(recs[0], RecommendationItem):
+        return recs
+    return [RecommendationItem.model_validate(r) for r in recs]
 
 
 __all__ = [
