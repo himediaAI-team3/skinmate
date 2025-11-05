@@ -8,21 +8,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable
 
 from app.core.config.openai import get_llm
+from app.rag.prompts import REASON_SYSTEM_PROMPT
 
 
-SYSTEM_PROMPT = (
-    "당신은 화장품 추천 전문가입니다.\n"
-    "고객에게 이 제품을 추천하는 이유를 제품의 고유한 특성 중심으로 200자 이내로 작성하세요.\n\n"
-    "## 작성 원칙\n"
-    "1. 제품의 특징과 효능을 먼저 언급 (질환 설명은 최소화)\n"
-    "2. 브랜드/제품의 특별한 점 강조\n"
-    "3. 200자 엄수\n"
-    "4. 자연스러운 문장 구조\n"
-    "5. 순위별로 다양한 표현 사용\n\n"
-    "## 나쁜 예시\n"
-    "- '아토피의 핵심은...' (질환 설명으로 시작 - 피해야 함)\n"
-    "- '케어에 적합한 제품입니다' (너무 일반적)\n"
-)
+SYSTEM_PROMPT = REASON_SYSTEM_PROMPT
 
 
 def _truncate_200(text: str) -> str:
@@ -46,8 +35,9 @@ def _build_chain() -> Runnable:
                 "human",
                 (
                     "제품 정보:\n{page_content}\n\n"
-                    "브랜드: {brand}\n카테고리: {category}\n가격: {price}원\n"
-                    "고객 정보:\n질환: {disease_name}\n피부타입: {skin_type}\n순위: {rank}위\n\n"
+                    "브랜드: {brand}\n제품명: {product_name}\n카테고리: {category}\n가격: {price}원\n"
+                    "제품 권장 피부타입(메타): {product_skin_type}\n"
+                    "고객 정보:\n질환: {disease_name}\n피부타입(고객): {skin_type}\n순위: {rank}위\n\n"
                     "추천 이유를 200자 이내로 작성하세요."
                 ),
             ),
@@ -76,8 +66,10 @@ def generate_recommendation_reason(product: Document, diagnosis_info: Dict[str, 
             {
                 "page_content": product.page_content or "",
                 "brand": md.get("brand") or "",
+                "product_name": md.get("name") or "",
                 "category": md.get("category") or "",
                 "price": md.get("price") or 0,
+                "product_skin_type": md.get("skin_type") or "",
                 "disease_name": diagnosis_info.get("disease_name") or "",
                 "skin_type": diagnosis_info.get("skin_type") or "",
                 "rank": rank,

@@ -4,23 +4,11 @@ import re
 from typing import Dict, List, Optional
 
 from langchain_core.documents import Document
+from app.rag.constants import DISEASE_SYNONYMS, COMPATIBLE_SKIN_TYPES
 
 
-_DISEASE_SYNONYMS: Dict[str, List[str]] = {
-    "아토피": ["아토피", "아토피 피부염", "atopic dermatitis"],
-    "여드름": ["여드름", "acne"],
-    "주사": ["주사", "rosacea"],
-    "지루": ["지루", "지루피부염", "seborrheic dermatitis"],
-    "건선": ["건선", "psoriasis"],
-    "정상": ["정상"],
-}
-
-_COMPATIBLE_SKIN_TYPES: Dict[str, List[str]] = {
-    "건성": ["건성", "중건성", "민감성"],
-    "지성": ["지성", "복합성", "민감성"],
-    "복합성": ["복합성", "지성", "건성"],
-    "민감성": ["민감성", "건성", "복합성"],
-}
+_DISEASE_SYNONYMS = DISEASE_SYNONYMS
+_COMPATIBLE_SKIN_TYPES = COMPATIBLE_SKIN_TYPES
 
 
 def _contains_any(text: str, candidates: List[str]) -> bool:
