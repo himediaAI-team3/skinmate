@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from langchain_core.documents import Document
 from langchain_core.runnables import Runnable, RunnableLambda, RunnablePassthrough
@@ -13,6 +13,8 @@ from app.rag.retriever import get_ensemble_retriever
 from app.rag.reranker import rerank_documents
 from app.rag.reason_generator import generate_recommendation_reason
 from app.schemas.rag import DiagnosisInfo, QuerySpec, RecommendationItem, PriceFilter
+from app.core.config.logging import get_logger
+logger = get_logger(__name__)
 
 
 def _to_float(value: Any) -> float | None:
@@ -94,7 +96,7 @@ def _apply_query(x: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _run_search(x: Dict[str, Any]) -> Dict[str, Any]:
-    retriever = get_ensemble_retriever(k=20)
+    retriever = get_ensemble_retriever(k=10)
     qspec = x.get("query_spec")
     if isinstance(qspec, QuerySpec):
         query_text = qspec.text_query
@@ -112,22 +114,35 @@ def _apply_rerank(x: Dict[str, Any]) -> Dict[str, Any]:
 def _generate_reasons_for_all(state: Dict[str, Any]) -> Dict[str, Any]:
     top3: List[Document] = state.get("top3") or []
     diagnosis_info: Dict[str, Any] = state["diagnosis_info"]
+    # LCEL map으로 병렬 실행
+    inputs = [
+        {"rank": rank, "doc": doc, "diagnosis": diagnosis_info}
+        for rank, doc in enumerate(top3, start=1)
+    ]
 
-    recommendations: List[RecommendationItem] = []
-    for rank, doc in enumerate(top3, start=1):
-        reason = generate_recommendation_reason(doc, diagnosis_info, rank)
+    def _reason_lambda(x: Dict[str, Any]) -> Dict[str, Any]:
+        rank = x["rank"]
+        doc = x["doc"]
+        diagnosis = x["diagnosis"]
+        reason = generate_recommendation_reason(doc, diagnosis, rank)
         md = doc.metadata or {}
         cid = md.get("cosmetic_id")
-        try:
-            cosmetic_id_int = int(cid)
-        except Exception:
-            # Skip if cosmetic_id is invalid
-            continue
-        recommendations.append(
-            RecommendationItem(cosmetic_id=cosmetic_id_int, ranking=rank, reason=reason)
-        )
+        return {"rank": rank, "cosmetic_id": cid, "reason": reason}
 
-    return {**state, "recommendations": recommendations}
+    reason_map = RunnableLambda(_reason_lambda).map().with_config(run_name="reason_generation_map", max_concurrency=3)
+    results: List[Dict[str, Any]] = reason_map.invoke(inputs) if inputs else []
+
+    items: List[RecommendationItem] = []
+    for r in results:
+        try:
+            cid_int = int(r.get("cosmetic_id"))
+        except Exception:
+            continue
+        items.append(RecommendationItem(cosmetic_id=cid_int, ranking=int(r.get("rank", 0)), reason=r.get("reason") or ""))
+
+    items.sort(key=lambda x: x.ranking)
+    logger.info(f"reason_generation_all (LCEL map) produced {len(items)} items")
+    return {**state, "recommendations": items}
 
 
 def _format_recommendations(state: Dict[str, Any]) -> Dict[str, Any]:
