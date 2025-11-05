@@ -9,24 +9,13 @@ from app.repository.diagnosis import DiagnosisRepository
 
 
 def load_diagnosis_info(db: Session, analysis_id: int) -> Dict[str, Optional[object]]:
-    """Load diagnosis and user preference info by analysis_id.
-
-    Args:
-        db (Session): SQLAlchemy session injected by caller.
-        analysis_id (int): Skin analysis identifier.
+    """analysis_id로 진단/사용자 선호 정보를 조회합니다.
 
     Returns:
-        Dict[str, Optional[object]]: Dictionary containing disease and user context.
-            {
-                "disease_name": str,
-                "summary": str,
-                "skin_type": str | None,
-                "min_price": int | None,
-                "max_price": int | None,
-            }
+        {"disease_name", "summary", "skin_type", "min_price", "max_price"}
 
-    Raises:
-        ValueError: If analysis or diagnosis record is missing.
+    예외:
+        분석/진단 데이터가 없으면 ValueError
     """
 
     analysis = AnalysisRepository.get_by_id(db, analysis_id)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from langchain_core.documents import Document
 from langchain_core.runnables import Runnable, RunnableLambda, RunnablePassthrough
@@ -32,9 +32,9 @@ def _to_float(value: Any) -> float | None:
 
 
 def apply_price_filter(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Filter documents by price based on query_spec or diagnosis_info.
+    """query_spec 또는 diagnosis_info의 가격 범위로 문서를 필터링합니다.
 
-    Priority: query_spec.price_filter -> diagnosis_info(min/max)
+    우선순위: query_spec.price_filter → diagnosis_info(min/max)
     """
     diagnosis_info: Dict[str, Any] = state["diagnosis_info"]
     documents: List[Document] = state["documents"]
@@ -114,34 +114,20 @@ def _apply_rerank(x: Dict[str, Any]) -> Dict[str, Any]:
 def _generate_reasons_for_all(state: Dict[str, Any]) -> Dict[str, Any]:
     top3: List[Document] = state.get("top3") or []
     diagnosis_info: Dict[str, Any] = state["diagnosis_info"]
-    # LCEL map으로 병렬 실행
-    inputs = [
-        {"rank": rank, "doc": doc, "diagnosis": diagnosis_info}
-        for rank, doc in enumerate(top3, start=1)
-    ]
-
-    def _reason_lambda(x: Dict[str, Any]) -> Dict[str, Any]:
-        rank = x["rank"]
-        doc = x["doc"]
-        diagnosis = x["diagnosis"]
-        reason = generate_recommendation_reason(doc, diagnosis, rank)
-        md = doc.metadata or {}
-        cid = md.get("cosmetic_id")
-        return {"rank": rank, "cosmetic_id": cid, "reason": reason}
-
-    reason_map = RunnableLambda(_reason_lambda).map().with_config(run_name="reason_generation_map", max_concurrency=3)
-    results: List[Dict[str, Any]] = reason_map.invoke(inputs) if inputs else []
 
     items: List[RecommendationItem] = []
-    for r in results:
+    for rank, doc in enumerate(top3, start=1):
+        reason = generate_recommendation_reason(doc, diagnosis_info, rank)
+        md = doc.metadata or {}
+        cid = md.get("cosmetic_id")
         try:
-            cid_int = int(r.get("cosmetic_id"))
+            cosmetic_id_int = int(cid)
         except Exception:
             continue
-        items.append(RecommendationItem(cosmetic_id=cid_int, ranking=int(r.get("rank", 0)), reason=r.get("reason") or ""))
+        items.append(
+            RecommendationItem(cosmetic_id=cosmetic_id_int, ranking=rank, reason=reason)
+        )
 
-    items.sort(key=lambda x: x.ranking)
-    logger.info(f"reason_generation_all (LCEL map) produced {len(items)} items")
     return {**state, "recommendations": items}
 
 
@@ -164,14 +150,20 @@ def create_rag_pipeline() -> Runnable:
 
 
 def recommend_products(db: Session, analysis_id: int) -> List[RecommendationItem]:
-    """Run the RAG pipeline and return recommendations as list of RecommendationItem."""
+    """RAG 파이프라인을 실행해 추천 목록을 반환합니다."""
     pipeline = create_rag_pipeline()
+    import time
+    started = time.perf_counter()
     result: Dict[str, Any] = pipeline.invoke({"analysis_id": analysis_id, "db": db})
     recs = result.get("recommendations") or []
     # Ensure type
     if recs and isinstance(recs[0], RecommendationItem):
-        return recs
-    return [RecommendationItem.model_validate(r) for r in recs]
+        items = recs
+    else:
+        items = [RecommendationItem.model_validate(r) for r in recs]
+    elapsed_ms = int((time.perf_counter() - started) * 1000)
+    logger.info(f"rag_pipeline completed in {elapsed_ms} ms with {len(items)} recommendations")
+    return items
 
 
 __all__ = [

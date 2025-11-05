@@ -18,14 +18,16 @@ from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
-_LLM_CACHE: Dict[float, ChatOpenAI] = {}
+_LLM_CACHE: Dict[tuple[float, int | None, int | None], ChatOpenAI] = {}
 
 
-def get_llm(temperature: float = 0.3) -> ChatOpenAI:
+def get_llm(temperature: float = 0.3, max_tokens: int | None = None, timeout: int | None = None) -> ChatOpenAI:
     """Return a cached ChatOpenAI instance for the given temperature.
 
     Args:
         temperature (float): Sampling temperature.
+        max_tokens (int | None): Maximum tokens to generate. If None, uses model default.
+        timeout (int | None): Request timeout in seconds. If None, uses default.
 
     Returns:
         ChatOpenAI: LLM client instance.
@@ -33,8 +35,9 @@ def get_llm(temperature: float = 0.3) -> ChatOpenAI:
     Raises:
         EnvironmentError: If OPENAI_API_KEY is missing.
     """
-    if temperature in _LLM_CACHE:
-        return _LLM_CACHE[temperature]
+    cache_key = (temperature, max_tokens, timeout)
+    if cache_key in _LLM_CACHE:
+        return _LLM_CACHE[cache_key]
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -42,13 +45,19 @@ def get_llm(temperature: float = 0.3) -> ChatOpenAI:
 
     model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
-    llm = ChatOpenAI(
-        model=model,
-        temperature=temperature,
-        api_key=api_key,
-    )
+    llm_kwargs = {
+        "model": model,
+        "temperature": temperature,
+        "api_key": api_key,
+    }
+    if max_tokens is not None:
+        llm_kwargs["max_tokens"] = max_tokens
+    if timeout is not None:
+        llm_kwargs["timeout"] = timeout
 
-    _LLM_CACHE[temperature] = llm
+    llm = ChatOpenAI(**llm_kwargs)
+
+    _LLM_CACHE[cache_key] = llm
     return llm
 
 

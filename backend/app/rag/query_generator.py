@@ -50,19 +50,19 @@ def _build_chain() -> Runnable:
 
 
 def generate_search_query(diagnosis_info: DiagnosisInfo | Dict[str, Any]) -> QuerySpec:
-    """Generate search query spec from diagnosis info using LLM.
+    """진단 정보를 기반으로 검색 질의 스펙을 생성합니다.
 
     Args:
-        diagnosis_info (DiagnosisInfo | dict): 질환 및 사용자 컨텍스트
+        diagnosis_info (DiagnosisInfo | dict): 질환/피부타입/가격대 등 컨텍스트
 
     Returns:
-        QuerySpec: 검색 질의 스펙
+        QuerySpec: 텍스트 쿼리, 키워드, 가격 필터를 포함한 스펙
 
-    Notes:
-        - Retries once on failure, then returns fallback.
+    동작:
+        - LLM 한 번 호출, 실패 시 한 번 재시도 후 폴백 반환
     """
 
-    # Ensure pydantic model
+    # 입력을 pydantic 모델로 정규화
     diag_model = diagnosis_info if isinstance(diagnosis_info, DiagnosisInfo) else DiagnosisInfo.model_validate(diagnosis_info)
 
     chain = _build_chain()

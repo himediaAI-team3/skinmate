@@ -27,7 +27,7 @@ class QuerySpec(BaseModel):
 class RecommendationItem(BaseModel):
     cosmetic_id: int
     ranking: int = Field(ge=1)
-    reason: str = Field(min_length=1, max_length=200)
+    reason: str = Field(min_length=1, max_length=170)
 
 
 __all__ = [

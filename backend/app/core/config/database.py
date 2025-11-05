@@ -24,7 +24,7 @@ engine = create_engine(
     DATABASE_URL,
     pool_size=5,          # 연결 풀 크기
     max_overflow=10,      # 초과 연결 허용 수
-    echo=True            # SQL 로그 출력
+    echo=False            # SQL 로그 비활성화 (개발 중 필요 시 True)
 )
 
 # 세션 팩토리 생성

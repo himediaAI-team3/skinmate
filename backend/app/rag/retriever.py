@@ -1,8 +1,7 @@
-"""Retrievers for RAG (Dense, BM25, Ensemble).
+"""RAG 검색기 모음(Dense, BM25, Ensemble).
 
-Provides factory functions returning retrievers with simple singleton caching.
-BM25 documents are prebuilt and stored as a pickle file by
-`backend/scripts/prepare_bm25_documents.py`.
+간단한 캐시를 사용해 재생성을 줄입니다.
+BM25 문서는 사전 구축되어 `scripts/prepare_bm25_documents.py`로 생성합니다.
 """
 
 from __future__ import annotations
@@ -19,32 +18,19 @@ from langchain_core.documents import Document
 from app.core.config.qdrant import get_vector_store
 
 
-# Caches per k to respect different top-k settings without re-instantiation.
+# 검색 k 값 별로 인스턴스를 캐시합니다.
 _DENSE_CACHE: Dict[int, object] = {}
 _BM25_CACHE: Dict[int, BM25Retriever] = {}
 _ENSEMBLE_CACHE: Dict[int, EnsembleRetriever] = {}
 
 
 def _bm25_pickle_path() -> Path:
-    """Return absolute path to the BM25 pickle file under backend/scripts.
-
-    Returns:
-        Path: Absolute file path to bm25_documents.pkl
-    """
-    # This file is at backend/app/rag/retriever.py
-    # Move up two levels to backend/, then into scripts/
+    """BM25 문서 피클 파일 경로를 반환합니다."""
     return Path(__file__).resolve().parents[2] / "scripts" / "bm25_documents.pkl"
 
 
 def get_dense_retriever(k: int = 20):
-    """Return a dense retriever from Qdrant VectorStore.
-
-    Args:
-        k (int): Number of top results to retrieve.
-
-    Returns:
-        BaseRetriever: LangChain retriever wrapping Qdrant vector store.
-    """
+    """Qdrant 기반 벡터 리트리버를 반환합니다."""
     if k in _DENSE_CACHE:
         return _DENSE_CACHE[k]
 
@@ -55,16 +41,9 @@ def get_dense_retriever(k: int = 20):
 
 
 def get_bm25_retriever(k: int = 20) -> BM25Retriever:
-    """Return a BM25 retriever built from precomputed documents.
+    """사전 구축된 문서로 BM25 리트리버를 생성합니다.
 
-    Args:
-        k (int): Number of top results to retrieve.
-
-    Returns:
-        BM25Retriever: BM25-based keyword retriever.
-
-    Raises:
-        FileNotFoundError: If bm25_documents.pkl file is missing.
+    파일이 없으면 FileNotFoundError를 발생시킵니다.
     """
     if k in _BM25_CACHE:
         return _BM25_CACHE[k]
@@ -87,14 +66,7 @@ def get_bm25_retriever(k: int = 20) -> BM25Retriever:
 
 
 def get_ensemble_retriever(k: int = 20) -> EnsembleRetriever:
-    """Return an ensemble retriever combining dense and BM25.
-
-    Args:
-        k (int): Number of top results to retrieve for each retriever.
-
-    Returns:
-        EnsembleRetriever: Ensemble with reciprocal rank fusion.
-    """
+    """Dense와 BM25를 결합한 앙상블 리트리버를 반환합니다."""
     if k in _ENSEMBLE_CACHE:
         return _ENSEMBLE_CACHE[k]
 

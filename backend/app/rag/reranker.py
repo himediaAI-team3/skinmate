@@ -17,11 +17,11 @@ def _contains_any(text: str, candidates: List[str]) -> bool:
 
 
 def _extract_skin_type_from_text(text: str) -> Optional[str]:
-    # Simple keyword-based extraction
+    # 간단한 키워드 기반 추출
     for st in {"건성", "지성", "복합성", "민감성", "중성"}:
         if st in text:
             return st
-    # common phrases like "건성 피부", "지성 피부"
+    # "건성 피부", "지성 피부" 같은 표현
     m = re.search(r"(건성|지성|복합성|민감성|중성)\s*피부", text)
     if m:
         return m.group(1)
@@ -73,15 +73,10 @@ def rerank_documents(
     diagnosis_info: Dict[str, Optional[object]],
     top_k: int = 3,
 ) -> List[Document]:
-    """Rerank retrieved documents using custom scoring rules.
-
-    Args:
-        documents (List[Document]): Retrieved documents (about 20).
-        diagnosis_info (Dict[str, Optional[object]]): Contains disease_name, skin_type.
-        top_k (int): Number of top documents to return.
+    """간단한 점수 규칙으로 문서를 재정렬합니다.
 
     Returns:
-        List[Document]: Top-k reranked documents with metadata['rerank_score'] set.
+        상위 top_k 문서 목록(메타데이터에 'rerank_score' 포함)
     """
 
     if not documents:
@@ -96,14 +91,14 @@ def rerank_documents(
 
         score = base
 
-        # disease boost
+        # 질환 일치 가산점
         if _disease_matches(doc, disease_name):
             score += 0.1
 
-        # skin-type compatibility
+        # 피부타입 호환 가산점
         score += _skin_type_score(doc, user_skin_type if isinstance(user_skin_type, str) else None)
 
-        # attach for debugging
+        # 점수 확인용 메타데이터 기록
         if doc.metadata is None:
             doc.metadata = {}
         doc.metadata["rerank_score"] = float(score)

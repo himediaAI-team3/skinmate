@@ -14,20 +14,20 @@ from app.rag.prompts import REASON_SYSTEM_PROMPT
 SYSTEM_PROMPT = REASON_SYSTEM_PROMPT
 
 
-def _truncate_200(text: str) -> str:
-    if len(text) <= 200:
+def _truncate_170(text: str) -> str:
+    if len(text) <= 170:
         return text
-    return text[:197] + "..."
+    return text[:167] + "..."
 
 
 def _fallback_reason(product: Document, diagnosis_info: Dict[str, Any]) -> str:
     brand = (product.metadata or {}).get("brand") or "이"
     disease = (diagnosis_info.get("disease_name") or "피부")
-    return _truncate_200(f"{brand} 제품은 {disease} 케어에 효과적입니다.")
+    return _truncate_170(f"{brand} 제품은 {disease} 케어에 효과적입니다.")
 
 
 def _build_chain() -> Runnable:
-    llm = get_llm(temperature=0.5)
+    llm = get_llm(temperature=0.5, max_tokens=150, timeout=10)
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", SYSTEM_PROMPT),
@@ -38,7 +38,7 @@ def _build_chain() -> Runnable:
                     "브랜드: {brand}\n제품명: {product_name}\n카테고리: {category}\n가격: {price}원\n"
                     "제품 권장 피부타입(메타): {product_skin_type}\n"
                     "고객 정보:\n질환: {disease_name}\n피부타입(고객): {skin_type}\n순위: {rank}위\n\n"
-                    "추천 이유를 200자 이내로 작성하세요."
+                    "추천 이유를 170자 이내로 작성하세요."
                 ),
             ),
         ]
@@ -48,15 +48,15 @@ def _build_chain() -> Runnable:
 
 
 def generate_recommendation_reason(product: Document, diagnosis_info: Dict[str, Any], rank: int) -> str:
-    """Generate a short recommendation reason for a product.
+    """지정 제품에 대한 간단한 추천 이유를 생성합니다.
 
     Args:
-        product (Document): Selected product document with metadata and page_content.
-        diagnosis_info (Dict[str, Any]): Disease/user context.
-        rank (int): Rank (1..3).
+        product (Document): 제품 문서(메타데이터/내용 포함)
+        diagnosis_info (Dict[str, Any]): 질환/피부타입 등 사용자 컨텍스트
+        rank (int): 순위(1..3)
 
     Returns:
-        str: Reason text (<=200 chars), with fallback on failure.
+        str: 170자 이내 추천 이유(실패 시 안전한 폴백)
     """
 
     chain = _build_chain()
@@ -75,7 +75,7 @@ def generate_recommendation_reason(product: Document, diagnosis_info: Dict[str, 
                 "rank": rank,
             }
         )
-        return _truncate_200(text or "")
+        return _truncate_170(text or "")
     except Exception:
         return _fallback_reason(product, diagnosis_info)
 

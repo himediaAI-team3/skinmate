@@ -42,8 +42,8 @@ class AnalysisService:
         # 3. 진단 생성 (파인튜닝 모델 호출)
         DiagnosisService.create_diagnosis(db, analysis_id)
         
-        # 4. 추천 생성 (더미 데이터 -> 추후 RAG 파이프라인 구축)
-        RecommendationService.create_recommendations(db, analysis_id, member_id)
+        # 4. 추천 생성 (RAG 파이프라인 실행 및 저장)
+        RecommendationService.create_rag_recommendations(db, analysis_id)
         
         # 5. analysis_id만 반환
         return analysis_id
