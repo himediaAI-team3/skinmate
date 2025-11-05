@@ -15,13 +15,24 @@ from langchain.retrievers import EnsembleRetriever
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 
-from app.core.config.qdrant import get_vector_store
+from app.core.config.qdrant import get_vector_store, get_qdrant_client
+from app.core.config.embedding import get_embeddings
+
+# QdrantVectorStore import (qdrant.py와 동일한 방식)
+try:
+    from langchain_qdrant import QdrantVectorStore  # type: ignore
+except Exception:  # pragma: no cover - fallback
+    try:
+        from langchain_qdrant import Qdrant as QdrantVectorStore  # type: ignore
+    except Exception:  # pragma: no cover - last resort
+        from langchain_community.vectorstores import Qdrant as QdrantVectorStore  # type: ignore
 
 
 # 검색 k 값 별로 인스턴스를 캐시합니다.
 _DENSE_CACHE: Dict[int, object] = {}
 _BM25_CACHE: Dict[int, BM25Retriever] = {}
 _ENSEMBLE_CACHE: Dict[int, EnsembleRetriever] = {}
+_ENSEMBLE_FILTER_CACHE: Dict[tuple[int, str], EnsembleRetriever] = {}
 
 
 def _bm25_pickle_path() -> Path:
@@ -81,10 +92,52 @@ def get_ensemble_retriever(k: int = 20) -> EnsembleRetriever:
     return ensemble
 
 
+def get_ensemble_retriever_with_filter(k: int, payload_filter: dict) -> EnsembleRetriever:
+    """Qdrant payload filter를 적용한 Dense + BM25 앙상블을 생성합니다.
+
+    LangChain QdrantVectorStore 표준 retriever를 사용하고, filter를 그대로 전달합니다.
+    """
+    import os
+    import json as _json
+
+    try:
+        filter_key = _json.dumps(payload_filter, sort_keys=True, ensure_ascii=True)
+    except Exception:
+        filter_key = str(payload_filter)
+    cache_key = (k, filter_key)
+    if cache_key in _ENSEMBLE_FILTER_CACHE:
+        return _ENSEMBLE_FILTER_CACHE[cache_key]
+
+    # get_vector_store()와 동일한 방식으로 생성
+    url = os.getenv("QDRANT_URL")
+    api_key = os.getenv("QDRANT_API_KEY")
+    collection_name = os.getenv("QDRANT_COLLECTION_NAME", "cosmetics")
+    
+    if not url:
+        raise EnvironmentError("QDRANT_URL 환경 변수가 필요합니다.")
+
+    dense_vs = QdrantVectorStore.from_existing_collection(
+        embedding=get_embeddings(),
+        url=url,
+        api_key=api_key,
+        collection_name=collection_name,
+    )
+    dense = dense_vs.as_retriever(search_kwargs={"k": k, "filter": payload_filter})
+    bm25 = get_bm25_retriever(k)
+
+    ensemble = EnsembleRetriever(
+        retrievers=[dense, bm25],
+        weights=[0.5, 0.5],
+    )
+    _ENSEMBLE_FILTER_CACHE[cache_key] = ensemble
+    return ensemble
+
+
 __all__ = [
     "get_dense_retriever",
     "get_bm25_retriever",
     "get_ensemble_retriever",
+    "get_ensemble_retriever_with_filter",
 ]
 
 

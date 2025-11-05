@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.rag.data_loader import load_diagnosis_info
 from app.rag.query_generator import generate_search_query
-from app.rag.retriever import get_ensemble_retriever
+from app.rag.retriever import get_ensemble_retriever, get_ensemble_retriever_with_filter
 from app.rag.reranker import rerank_documents
 from app.rag.reason_generator import generate_recommendation_reason
 from app.schemas.rag import DiagnosisInfo, QuerySpec, RecommendationItem, PriceFilter
@@ -95,13 +95,64 @@ def _apply_query(x: Dict[str, Any]) -> Dict[str, Any]:
     return {**x, "query_spec": generate_search_query(diag_model)}
 
 
+def _build_qdrant_filter(x: Dict[str, Any]) -> Dict[str, Any] | None:
+    """QuerySpec/diagnosis에서 가격 정보를 추출해 Qdrant 필터를 생성합니다.
+    
+    LangChain QdrantVectorStore가 이해할 수 있는 필터 형식으로 변환합니다.
+    """
+    qspec = x.get("query_spec")
+    price_min = None
+    price_max = None
+    if isinstance(qspec, QuerySpec) and isinstance(qspec.price_filter, PriceFilter):
+        price_min = qspec.price_filter.gte
+        price_max = qspec.price_filter.lte
+    elif isinstance(qspec, dict):
+        pf = qspec.get("price_filter")
+        if isinstance(pf, dict):
+            price_min = pf.get("gte")
+            price_max = pf.get("lte")
+
+    if price_min is None and price_max is None:
+        return None
+
+    # LangChain QdrantVectorStore가 이해할 수 있는 형식: Qdrant Filter 모델 사용
+    from qdrant_client.models import Filter, FieldCondition, Range
+    
+    conditions = []
+    if price_min is not None or price_max is not None:
+        range_params = {}
+        if price_min is not None:
+            range_params["gte"] = int(price_min)
+        if price_max is not None:
+            range_params["lte"] = int(price_max)
+        conditions.append(
+            FieldCondition(
+                key="price",
+                range=Range(**range_params)
+            )
+        )
+    
+    if not conditions:
+        return None
+    
+    qdrant_filter = Filter(must=conditions)
+    # LangChain QdrantVectorStore는 Filter 객체를 직접 받을 수 있음
+    return qdrant_filter
+
+
 def _run_search(x: Dict[str, Any]) -> Dict[str, Any]:
-    retriever = get_ensemble_retriever(k=10)
     qspec = x.get("query_spec")
     if isinstance(qspec, QuerySpec):
         query_text = qspec.text_query
     else:
         query_text = (qspec or {}).get("text_query") if isinstance(qspec, dict) else None
+
+    payload_filter = _build_qdrant_filter(x)
+    if payload_filter:
+        retriever = get_ensemble_retriever_with_filter(k=10, payload_filter=payload_filter)
+    else:
+        retriever = get_ensemble_retriever(k=10)
+
     docs = retriever.invoke(query_text) if query_text else []
     return {**x, "documents": docs}
 

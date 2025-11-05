@@ -112,7 +112,7 @@ def build_qdrant_knowledge_base():
     )
     print("      ✓ 임베딩 모델 로드 완료")
     
-    print("\n[3/4] Qdrant 연결 및 기존 컬렉션 확인 중...")
+    print("\n[3/5] Qdrant 연결 및 기존 컬렉션 확인 중...")
     qdrant_client = QdrantClient(
         url=os.getenv('QDRANT_URL'),
         api_key=os.getenv('QDRANT_API_KEY')
@@ -126,7 +126,7 @@ def build_qdrant_knowledge_base():
     except Exception:
         print(f"      ✓ 기존 컬렉션 없음 (신규 생성)")
     
-    print(f"\n[4/4] '{collection_name}' 컬렉션 생성 및 벡터 인덱싱 중...")
+    print(f"\n[4/5] '{collection_name}' 컬렉션 생성 및 벡터 인덱싱 중...")
     print("      (임베딩 생성 중... 몇 분 소요될 수 있습니다)")
     
     vector_store = QdrantVectorStore.from_documents(
@@ -139,6 +139,24 @@ def build_qdrant_knowledge_base():
     )
     
     print(f"      ✓ {len(documents)}개 제품 인덱싱 완료")
+    
+    print("\n[5/5] Payload 필드 인덱스 생성 중...")
+    from qdrant_client.models import PayloadSchemaType
+    
+    try:
+        # price 필드에 대한 정수형 인덱스 생성 (range 필터용)
+        qdrant_client.create_payload_index(
+            collection_name=collection_name,
+            field_name="price",
+            field_schema=PayloadSchemaType.INTEGER,
+        )
+        print("      ✓ 'price' 필드 인덱스 생성 완료")
+    except Exception as e:
+        # 이미 존재하는 경우 무시
+        if "already exists" in str(e).lower():
+            print("      ✓ 'price' 필드 인덱스 이미 존재")
+        else:
+            print(f"      ⚠ 인덱스 생성 경고: {e}")
     
     collection_info = qdrant_client.get_collection(collection_name)
     
