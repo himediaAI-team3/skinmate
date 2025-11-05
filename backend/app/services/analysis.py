@@ -129,13 +129,14 @@ class AnalysisService:
     
     
     @staticmethod
-    def delete_analysis(db: Session, analysis_id: int) -> bool:
+    def delete_analysis(db: Session, analysis_id: int, member_id: int) -> bool:
         """
         분석 이력 삭제
         
         Args:
             db: 데이터베이스 세션
             analysis_id: 분석 ID
+            member_id: 회원 ID (권한 검증용)
             
         Returns:
             bool: 삭제 성공 여부
@@ -145,7 +146,11 @@ class AnalysisService:
         if not analysis:
             raise ApiException(status.HTTP_404_NOT_FOUND, "분석 이력을 찾을 수 없습니다")
         
-        # 2. 삭제 실행
+        # 2. 권한 검증: 본인의 데이터만 삭제 가능
+        if analysis.member_id != member_id:
+            raise ApiException(status.HTTP_403_FORBIDDEN, "본인의 분석 이력만 삭제할 수 있습니다")
+        
+        # 3. 삭제 실행
         success = AnalysisRepository.delete_by_id(db, analysis_id)
         
         if not success:

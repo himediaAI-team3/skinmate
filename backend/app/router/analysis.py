@@ -62,24 +62,26 @@ def get_skin_analysis_result(
     )
 
 
-@router.get("/history/{member_id}", response_model=ApiResponse)
+@router.get("/history", response_model=ApiResponse)
 def get_analysis_history(
-    member_id: int,
     page: int = Query(1, ge=1, description="페이지 번호"),
     size: int = Query(10, ge=1, le=100, description="페이지 크기"),
     disease_name: str = Query(None, description="진단명 필터링 (선택적)"),
     period: str = Query("all", description="기간 필터링 (all/day/week/month)"),
+    current_user: Dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     분석 이력 목록 조회
     
-    - **member_id**: 회원 ID
     - **page**: 페이지 번호 (기본값: 1)
     - **size**: 페이지 크기 (기본값: 10, 최대: 100)
     - **disease_name**: 진단명 필터링 (선택적)
     - **period**: 기간 필터링 (all/day/week/month, 기본값: all)
     """
+    # JWT에서 추출한 사용자 ID 사용
+    member_id = current_user["member_id"]
+    
     # 이력 목록 조회
     result = AnalysisService.get_analysis_history(db, member_id, page, size, disease_name, period)
     
@@ -95,6 +97,7 @@ def get_analysis_history(
 @router.delete("/{analysis_id}", response_model=ApiResponse)
 def delete_analysis(
     analysis_id: int,
+    current_user: Dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -102,8 +105,11 @@ def delete_analysis(
     
     - **analysis_id**: 분석 ID
     """
-    # 이력 삭제
-    AnalysisService.delete_analysis(db, analysis_id)
+    # JWT에서 추출한 사용자 ID 사용
+    member_id = current_user["member_id"]
+    
+    # 이력 삭제 (권한 검증 포함)
+    AnalysisService.delete_analysis(db, analysis_id, member_id)
     
     # commit 처리
     db.commit()
