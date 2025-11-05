@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { sendChatMessage } from '@/features/chat';
 
 type Msg = { role: 'user' | 'assistant'; text: string };
 
@@ -12,6 +13,8 @@ export default function ChatWidget() {
     { role: 'assistant', text: '안녕하세요! 스킨케어 도우미입니다! 무엇을 도와드릴까요?' },
   ]);
   const [input, setInput] = useState('');
+  const [threadId, setThreadId] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -35,18 +38,38 @@ export default function ChatWidget() {
     return () => window.removeEventListener('keydown', onEsc);
   }, [open]);
 
-  const send = () => {
-    if (!input.trim()) return;
-    const userMsg: Msg = { role: 'user', text: input.trim() };
+  const send = async () => {
+    if (!input.trim() || loading) return;
+    
+    const userMessage = input.trim();
+    const userMsg: Msg = { role: 'user', text: userMessage };
     setMsgs((m) => [...m, userMsg]);
-
-    const reply: Msg = {
-      role: 'assistant',
-      text:
-        '메모했어요! 😊\n- 실제 연결 전까지는 데모 응답을 보여드려요.\n- “내 피부타입에 맞는 토너 추천” 처럼 질문해보세요.',
-    };
-    setTimeout(() => setMsgs((m) => [...m, reply]), 200);
     setInput('');
+    setLoading(true);
+
+    try {
+      const response = await sendChatMessage(userMessage, threadId);
+      
+      // thread_id 저장 (다음 대화에서 사용)
+      if (response.thread_id) {
+        setThreadId(response.thread_id);
+      }
+
+      const assistantMsg: Msg = {
+        role: 'assistant',
+        text: response.response,
+      };
+      setMsgs((m) => [...m, assistantMsg]);
+    } catch (error) {
+      console.error('채팅 오류:', error);
+      const errorMsg: Msg = {
+        role: 'assistant',
+        text: '죄송합니다. 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+      };
+      setMsgs((m) => [...m, errorMsg]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -154,18 +177,22 @@ export default function ChatWidget() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKey}
                 placeholder="무엇을 도와드릴까요?"
-                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+                disabled={loading}
+                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <button
                 onClick={send}
-                className="rounded-xl bg-gray-900 text-white px-3 py-2 text-sm font-semibold hover:opacity-95"
+                disabled={loading}
+                className="rounded-xl bg-gray-900 text-white px-3 py-2 text-sm font-semibold hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                전송
+                {loading ? '전송 중...' : '전송'}
               </button>
             </div>
-            <p className="mt-1 text-[10px] text-gray-500">
-              ※ 데모 버전입니다. 이후 실제 AI 응답으로 교체할 수 있어요.
-            </p>
+            {loading && (
+              <p className="mt-1 text-[10px] text-gray-500">
+                AI가 답변을 생성하고 있습니다...
+              </p>
+            )}
           </div>
         </div>
       </div>
