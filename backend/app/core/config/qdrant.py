@@ -17,26 +17,32 @@ QDRANT_HYBRID_COLLECTION = "skinmate_cosmetics_hybrid"  # 하이브리드 컬렉
 # 벡터 차원 (multilingual-e5-large)
 VECTOR_DIMENSION = 1024
 
+# Qdrant Client 싱글톤
+_client = None
+
 
 def get_qdrant_client() -> QdrantClient:
     """
-    Qdrant Cloud 클라이언트 생성
+    Qdrant Cloud 클라이언트 생성 (싱글톤 패턴)
     
     Returns:
         QdrantClient: Qdrant 클라이언트 인스턴스
     """
-    if not QDRANT_URL or not QDRANT_API_KEY:
-        raise ValueError(
-            "Qdrant 설정이 누락되었습니다. "
-            ".env 파일에 QDRANT_URL, QDRANT_API_KEY를 설정하세요."
+    global _client
+    
+    if _client is None:
+        if not QDRANT_URL or not QDRANT_API_KEY:
+            raise ValueError(
+                "Qdrant 설정이 누락되었습니다. "
+                ".env 파일에 QDRANT_URL, QDRANT_API_KEY를 설정하세요."
+            )
+        
+        _client = QdrantClient(
+            url=QDRANT_URL,
+            api_key=QDRANT_API_KEY,
         )
     
-    client = QdrantClient(
-        url=QDRANT_URL,
-        api_key=QDRANT_API_KEY,
-    )
-    
-    return client
+    return _client
 
 
 def create_collection_if_not_exists():

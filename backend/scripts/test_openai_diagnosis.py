@@ -19,6 +19,7 @@ from app.services.recommendation import RecommendationService
 from app.repository.member import MemberRepository
 from app.repository.analysis import AnalysisRepository
 from app.repository.diagnosis import DiagnosisRepository
+from app.models.skin_analysis import SkinAnalysis
 from app.utils.image import encode_image_base64
 from app.utils.prompt import load_prompt
 import logging
@@ -121,11 +122,21 @@ def main():
     image_base_path = r"C:\Users\201\Desktop\원천데이터\VS_주사_정면"
     image_filename = "H1_385246_P1_L0"
     
+    # 테스트 회원 ID
+    member_id = 1
+    
+    # 테스트용 개인정보 (프론트의 메모리/상태 역할)
+    test_skin_type = "건성"
+    test_min_price = 1
+    test_max_price = 500000
+    
+    # 테스트용 예시 - 1번회원: 건성, 1, 500000 / 2번회원: 지성, 1, 200000 / 3번회원: 건성, 15000, 100000
+
     db = SessionLocal()
     
     try:
         # 1. 회원 정보 확인
-        member = MemberRepository.get_by_id(db, 1)
+        member = MemberRepository.get_by_id(db, member_id)
         if not member:
             print("[ERROR] 회원 정보가 없습니다. init.sql을 먼저 실행하세요.")
             return
@@ -133,7 +144,6 @@ def main():
         print(f"\n[회원 정보]")
         print(f"   이름: {member.name}")
         print(f"   피부타입: {member.skin_type}")
-        print(f"   가격대: {member.min_price:,}원 ~ {member.max_price:,}원")
         
         # 2. 이미지 파일 찾기
         print(f"\n[이미지 파일]")
@@ -159,12 +169,19 @@ def main():
             traceback.print_exc()
             return
         
-        # 4. DB에 분석 레코드 생성
+        # 4. 새 분석 레코드 생성 (실제 서비스와 동일)
         print(f"\n[MySQL에 분석 레코드 생성 중...]")
-        analysis = AnalysisRepository.create(db, {"member_id": 1})
+        analysis = AnalysisRepository.create(db, {
+            "member_id": member_id,
+            "skin_type": test_skin_type,
+            "min_price": test_min_price,
+            "max_price": test_max_price
+        })
         db.flush()
         analysis_id = analysis.analysis_id
         print(f"   analysis_id: {analysis_id}")
+        print(f"   피부타입: {analysis.skin_type}")
+        print(f"   가격대: {analysis.min_price:,}원 ~ {analysis.max_price:,}원")
         
         # 5. DB에 진단 결과 저장
         diagnosis_data = {
@@ -183,8 +200,7 @@ def main():
         try:
             recommendations = RecommendationService.create_recommendations(
                 db=db,
-                analysis_id=analysis_id,
-                member_id=1
+                analysis_id=analysis_id
             )
             
             print(f"\n[추천 완료! (총 {len(recommendations)}개)]")

@@ -74,4 +74,3 @@ async def chat(
             http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             f"채팅 중 오류가 발생했습니다: {str(e)}"
         )
-

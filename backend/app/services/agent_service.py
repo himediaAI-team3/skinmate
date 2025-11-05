@@ -1,15 +1,14 @@
 """
 LangGraph 기반 AI Agent 서비스
 """
-import os
 import secrets
 from typing import Tuple
 from sqlalchemy.orm import Session
-from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
 from app.services.chat_tools import TOOLS, set_tool_context
 from app.utils.prompt import load_prompt
+from app.core.config.llm import get_llm, TEMPERATURE_CHAT
 
 
 class AgentService:
@@ -21,11 +20,7 @@ class AgentService:
     @staticmethod
     def _create_agent():
         """Agent 생성 (LLM + Tools + Checkpointer)"""
-        llm = ChatOpenAI(
-            model="gpt-4o-mini",
-            temperature=0.7,
-            api_key=os.getenv("OPENAI_API_KEY")
-        )
+        llm = get_llm(TEMPERATURE_CHAT)
         
         # 프롬프트 로드
         system_prompt = load_prompt("chat.yaml")
@@ -109,4 +104,3 @@ class AgentService:
         ai_response = result["messages"][-1].content
         
         return ai_response, thread_id
-

@@ -5,10 +5,9 @@ from app.core.exception import ApiException
 from app.repository.cosmetic import CosmeticRepository
 from app.schemas.cosmetic import CosmeticSearchParams, CosmeticSearchResponse, CosmeticSearchItem, CosmeticDetailResponse
 from app.utils.prompt import load_prompt
-from langchain_openai import ChatOpenAI
+from app.utils.llm import parse_llm_json
+from app.core.config.llm import get_llm, TEMPERATURE_COSMETIC
 from langchain_core.messages import HumanMessage
-import os
-import json
 
 
 class CosmeticService:
@@ -76,31 +75,6 @@ class CosmeticService:
             deduped = deduped[:max_items]
         return ", ".join(deduped) if deduped else None
 
-    @staticmethod
-    def _parse_llm_json(text: str) -> Dict[str, Any]:
-        # 코드블록 제거 시도
-        stripped = text.strip()
-        if stripped.startswith("```"):
-            # ```json ... ``` 또는 ``` ... ``` 형태
-            try:
-                stripped = stripped.strip('`')
-                # 첫 줄 태그 제거
-                lines = stripped.splitlines()
-                if lines and lines[0].startswith('json'):
-                    lines = lines[1:]
-                stripped = "\n".join(lines)
-            except Exception:
-                pass
-        # 순수 JSON 파싱
-        try:
-            return json.loads(stripped)
-        except Exception:
-            # 중괄호 구간만 추출 시도
-            start = stripped.find('{')
-            end = stripped.rfind('}')
-            if start != -1 and end != -1 and end > start:
-                return json.loads(stripped[start:end+1])
-            raise ValueError("LLM 응답을 JSON으로 파싱할 수 없습니다.")
 
     @staticmethod
     def generate_cosmetic_llm_fields(db: Session, cosmetic_id: int) -> Dict[str, Any]:  # LLM 생성값으로 기존 6개 컬럼 덮어쓰기
@@ -117,14 +91,10 @@ class CosmeticService:
             ingredients=base.get('ingredients', ''),
         )
 
-        llm = ChatOpenAI(
-            model="gpt-4o-mini",
-            api_key=os.getenv("OPENAI_API_KEY"),
-            temperature=0.1,
-        )
+        llm = get_llm(TEMPERATURE_COSMETIC)
         messages = [HumanMessage(content=filled)]
         resp = llm.invoke(messages)
-        data = CosmeticService._parse_llm_json(resp.content)
+        data = parse_llm_json(resp.content)
 
         # 정규화
         data_out = {

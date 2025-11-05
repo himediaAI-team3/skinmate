@@ -1,11 +1,26 @@
 """
 Vector Store 서비스: Qdrant 하이브리드 검색 (dense + BM25 sparse)
 """
-from typing import List, Optional, Dict, Any
+from functools import lru_cache
+from typing import List, Dict, Any
 from sqlalchemy.orm import Session
+
 from qdrant_client.models import PointStruct, Filter, FieldCondition, Range, MatchValue, Prefetch
-from app.core.config.qdrant import get_qdrant_client, QDRANT_HYBRID_COLLECTION
 from fastembed import TextEmbedding, SparseTextEmbedding
+
+from app.core.config.qdrant import get_qdrant_client, QDRANT_HYBRID_COLLECTION
+
+
+@lru_cache(maxsize=1)
+def get_dense_model() -> TextEmbedding:
+    """Dense 임베딩 모델 싱글톤 (LRU 캐시)"""
+    return TextEmbedding("intfloat/multilingual-e5-large")
+
+
+@lru_cache(maxsize=1)
+def get_sparse_model() -> SparseTextEmbedding:
+    """Sparse 임베딩 모델 싱글톤 (LRU 캐시)"""
+    return SparseTextEmbedding("Qdrant/bm25")
 
 
 class VectorStoreService:
@@ -18,10 +33,10 @@ class VectorStoreService:
     
     @staticmethod
     def create_sparse_text(cosmetic) -> str:
-        """Sparse(BM25) 임베딩용 텍스트: brand + 핵심성분 + 케어증상"""
+        """Sparse(BM25) 임베딩용 텍스트: 질환명 + 핵심성분 + 케어증상"""
         parts = []
-        if cosmetic.brand:
-            parts.append(cosmetic.brand)
+        if cosmetic.skin_disease:
+            parts.append(cosmetic.skin_disease)
         if cosmetic.key_ingredient:
             parts.append(cosmetic.key_ingredient)
         if cosmetic.care_symptom:
@@ -65,9 +80,9 @@ class VectorStoreService:
         dense_texts = [VectorStoreService.create_dense_text(c) for c in cosmetics]
         sparse_texts = [VectorStoreService.create_sparse_text(c) for c in cosmetics]
         
-        # 3. FastEmbed 임베딩
-        dense_model = TextEmbedding("intfloat/multilingual-e5-large")
-        sparse_model = SparseTextEmbedding("Qdrant/bm25")
+        # 3. FastEmbed 임베딩 (싱글톤 모델 사용)
+        dense_model = get_dense_model()
+        sparse_model = get_sparse_model()
         
         dense_vectors = list(dense_model.embed(dense_texts))
         sparse_vectors = list(sparse_model.embed(sparse_texts))
@@ -104,9 +119,9 @@ class VectorStoreService:
         """하이브리드 검색: Prefetch(dense+sparse) + 필터링"""
         client = get_qdrant_client()
         
-        # 1. 쿼리 임베딩
-        dense_model = TextEmbedding("intfloat/multilingual-e5-large")
-        sparse_model = SparseTextEmbedding("Qdrant/bm25")
+        # 1. 쿼리 임베딩 (싱글톤 모델 사용)
+        dense_model = get_dense_model()
+        sparse_model = get_sparse_model()
         
         dense_query = list(dense_model.query_embed(query_dense_text))[0]
         sparse_query = list(sparse_model.query_embed(query_sparse_text))[0]
@@ -170,83 +185,6 @@ class VectorStoreService:
             })
         
         return output
-    
-    @staticmethod
-    def _build_search_query_from_diagnosis(db: Session, analysis_id: int) -> dict:
-        """진단 결과를 검색 쿼리로 변환 (LLM 호출)"""
-        from app.repository.diagnosis import DiagnosisRepository
-        from app.utils.prompt import load_prompt
-        from langchain_openai import ChatOpenAI
-        from langchain_core.messages import HumanMessage
-        import json
-        import os
-        import logging
-        
-        logger = logging.getLogger(__name__)
-        
-        diagnosis = DiagnosisRepository.get_by_analysis_id(db, analysis_id)
-        if not diagnosis:
-            raise ValueError(f"진단 결과를 찾을 수 없습니다: analysis_id={analysis_id}")
-        
-        instruction = load_prompt("summary_refine.yaml")
-        filled = instruction.format(
-            disease_name=diagnosis.disease_name,
-            summary=diagnosis.summary
-        )
-        
-        llm = ChatOpenAI(
-            model="gpt-4o-mini",
-            api_key=os.getenv("OPENAI_API_KEY"),
-            temperature=0.1,
-        )
-        
-        resp = llm.invoke([HumanMessage(content=filled)])
-        
-        # JSON 파싱 (코드블록 제거)
-        content = resp.content.strip()
-        if content.startswith("```"):
-            content = content.strip("`").strip("json").strip()
-        
-        data = json.loads(content)
-        
-        logger.info(f"검색 쿼리 생성 완료: dense={data['dense_query'][:50]}...")
-        try:
-            logger.info(f"검색 쿼리 생성 완료: sparse={data['sparse_keywords'][:80]}...")
-        except Exception:
-            pass
-        
-        return {
-            "disease_name": data["disease_name"],
-            "dense_query": data["dense_query"],
-            "sparse_keywords": data["sparse_keywords"],
-        }
-    
-    @staticmethod
-    def search_by_analysis(
-        db: Session, 
-        analysis_id: int, 
-        member_id: int, 
-        limit: int = 10
-    ) -> List[Dict[str, Any]]:
-        """진단 결과 기반 검색: 진단→쿼리 생성→하이브리드 검색"""
-        from app.repository.member import MemberRepository
-        
-        # 1. 쿼리 생성
-        query_data = VectorStoreService._build_search_query_from_diagnosis(db, analysis_id)
-        
-        # 2. 회원 정보 조회
-        member = MemberRepository.get_by_id(db, member_id)
-        
-        # 3. 하이브리드 검색
-        return VectorStoreService.search_hybrid(
-            query_dense_text=query_data["dense_query"],
-            query_sparse_text=query_data["sparse_keywords"],
-            min_price=member.min_price if member else None,
-            max_price=member.max_price if member else None,
-            skin_type=member.skin_type if member else None,
-            disease_name=query_data.get("disease_name"),
-            limit=limit
-        )
     
     @staticmethod
     def delete_cosmetic(cosmetic_id: int) -> bool:

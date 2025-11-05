@@ -7,8 +7,6 @@ INSERT INTO member (
     email, 
     role,
     skin_type,
-    min_price,
-    max_price,
     gender,
     age_group,
     created_at,
@@ -22,9 +20,7 @@ INSERT INTO member (
     '김지수',                       -- name
     'jisoo.kim@gmail.com',        -- email
     'USER',                         -- role
-    '복합성',                       -- skin_type (복합성 피부)
-    15000,                          -- min_price (1만5천원)
-    50000,                          -- max_price (5만원)
+    '건성',                       -- skin_type
     '여성',                         -- gender
     20,                           -- age_group (20대)
     '2025-01-15 10:30:00',          -- created_at
@@ -32,6 +28,10 @@ INSERT INTO member (
     NULL,                           -- created_id
     NULL                            -- updated_id
 );
+
+-- 추가(희망하면 넣기)
+-- (2, 'kakao', 'kakao_789012', '이지은', 'jieun.lee@example.com', 'USER', '지성', '여성', 30, '2025-01-15 10:30:00', '2025-10-24 15:57:23',NULL,NULL), 
+-- (3, 'kakao', 'kakao_345678', '박서준', 'seojun.park@example.com', 'USER', '건성', '남성', NULL, '2025-01-15 10:30:00', '2025-10-24 15:57:23',NULL,NULL);
 
 -- cosmetic 테이블 데이터 INSERT 
 INSERT INTO cosmetic (name, brand, category, price, ingredients, short_description, buy_url, skin_type, skin_disease, main_effect, care_symptom, key_ingredient, description)
