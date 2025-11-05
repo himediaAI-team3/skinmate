@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface MemberRepository extends JpaRepository<Member, Long> {
+public interface MemberRepository extends JpaRepository<Member, Integer> {
     
     /**
      * OAuth Provider와 OAuth ID로 회원 조회
@@ -29,5 +29,5 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
      * @param memberId 회원 ID
      * @return 회원 정보
      */
-    Optional<Member> findById(Long memberId);
+    Optional<Member> findById(Integer memberId);
 }

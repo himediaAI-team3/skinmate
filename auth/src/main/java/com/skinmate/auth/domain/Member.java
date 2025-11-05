@@ -16,7 +16,7 @@ public class Member {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "member_id")
-    private Long memberId;
+    private Integer memberId;
     
     @Column(name = "oauth_provider")
     private String oauthProvider;
@@ -36,11 +36,11 @@ public class Member {
     @Column(name = "skin_type")
     private String skinType;
     
-    @Column(name = "min_price")
-    private Integer minPrice;
+    // @Column(name = "min_price")
+    // private Integer minPrice;
     
-    @Column(name = "max_price")
-    private Integer maxPrice;
+    // @Column(name = "max_price")
+    // private Integer maxPrice;
     
     @Column(name = "gender")
     private String gender;

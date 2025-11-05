@@ -98,7 +98,7 @@ interface RawLikedCosmeticItemV2 {
   name: string;
   brand: string;
   price: number;
-  file_id: number;
+  file_path?: string | null;
   is_liked: boolean;
 }
 interface RawLikedCosmeticsPageV2 {
@@ -116,12 +116,13 @@ interface ApiEnvelopeV2<T> {
 }
 
 // 파일(이미지) URL 생성
-function buildImageUrlV2(file_id?: number): string {
-  if (file_id === undefined || file_id === null) {
+function buildImageUrlV2(file_path?: string | null): string {
+  if (!file_path) {
     return 'https://placehold.co/640x640/E5E7EB/9CA3AF?text=No+Image';
   }
   const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  return `${base}/api/files/${file_id}`;
+  // 서버는 '/media/...' 같은 상대 경로를 줄 수 있음
+  return file_path.startsWith('http') ? file_path : `${base}${file_path}`;
 }
 
 // V2 원시 아이템 -> UI 항목
@@ -131,7 +132,7 @@ function mapRawLikedToItemV2(dto: RawLikedCosmeticItemV2): LikedItem {
     brand: dto.brand,
     name: dto.name,
     price: dto.price,
-    image: buildImageUrlV2(dto.file_id),
+    image: buildImageUrlV2(dto.file_path ?? undefined),
     href: `/cosmetics/${dto.cosmetic_id}`,
   };
 }
@@ -141,15 +142,14 @@ function mapRawLikedToItemV2(dto: RawLikedCosmeticItemV2): LikedItem {
  * GET /api/cosmetics/likes/{member_id}?page=&size=
  */
 export async function fetchMemberLikedCosmeticsV2(
-  opts?: { memberId?: number; page?: number; size?: number }
+  opts?: { page?: number; size?: number }
 ): Promise<LikedItem[]> {
-  const memberId = opts?.memberId ?? 1;
   const page = opts?.page ?? 1;
   const size = opts?.size ?? 20;
 
   const usp = new URLSearchParams({ page: String(page), size: String(size) });
   const base = (typeof API === 'string' && API) ? API : '';
-  const url = `${base}/api/cosmetics/likes/${memberId}?${usp.toString()}`;
+  const url = `${base}/api/cosmetics/likes?${usp.toString()}`;
 
   const res = await fetch(url, {
     method: 'GET',
@@ -173,15 +173,14 @@ export async function fetchMemberLikedCosmeticsV2(
  * GET /api/cosmetics/likes/{member_id}?page=&size=
  */
 export async function fetchMemberLikedCosmeticsPage(opts?: {
-  memberId?: number; page?: number; size?: number;
+  page?: number; size?: number;
 }): Promise<{ items: LikedItem[]; total: number; page: number; size: number }> {
-  const memberId = opts?.memberId ?? 1;
   const page = opts?.page ?? 1;
   const size = opts?.size ?? 10;
 
   const usp = new URLSearchParams({ page: String(page), size: String(size) });
   const base = (typeof API === 'string' && API) ? API : '';
-  const url = `${base}/api/cosmetics/likes/${memberId}?${usp.toString()}`;
+  const url = `${base}/api/cosmetics/likes?${usp.toString()}`;
 
   const res = await fetch(url, {
     method: 'GET',

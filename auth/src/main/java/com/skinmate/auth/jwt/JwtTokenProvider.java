@@ -25,7 +25,7 @@ public class JwtTokenProvider {
     }
     
     // Access Token 생성
-    public String generateAccessToken(Long memberId, String role) {
+    public String generateAccessToken(Integer memberId, String role) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenExpiration);
         
@@ -40,7 +40,7 @@ public class JwtTokenProvider {
     }
     
     // Refresh Token 생성
-    public String generateRefreshToken(Long memberId) {
+    public String generateRefreshToken(Integer memberId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshTokenExpiration);
         
@@ -81,12 +81,12 @@ public class JwtTokenProvider {
     }
     
     // 토큰에서 Member ID 추출
-    public Long getMemberIdFromToken(String token) {
+    public Integer getMemberIdFromToken(String token) {
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-        return Long.parseLong(claims.getSubject());
+        return Integer.parseInt(claims.getSubject());
     }
 }
