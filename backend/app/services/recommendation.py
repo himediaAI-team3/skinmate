@@ -42,7 +42,16 @@ class RecommendationService:
             }
         ]
         
-        return RecommendationRepository.create_bulk(db, recommendations_data)
+        # 트랜잭션: 생성 후 커밋 및 리프레시
+        try:
+            recommendations = RecommendationRepository.create_bulk(db, recommendations_data)
+            db.commit()
+            for rec in recommendations:
+                db.refresh(rec)
+            return recommendations
+        except Exception:
+            db.rollback()
+            raise
 
     @staticmethod
     def create_rag_recommendations(db: Session, analysis_id: int) -> List:
@@ -62,11 +71,19 @@ class RecommendationService:
         # 파이프라인 실행
         recommendations_data = recommend_products(db, analysis_id)
 
-        # DB 저장 (Repository는 내부에서 commit 수행)
+        # DB 저장 (Service에서 커밋)
         payload = [
             {"analysis_id": analysis_id, **rec.model_dump()} if isinstance(rec, RecommendationItem)
             else {"analysis_id": analysis_id, **RecommendationItem.model_validate(rec).model_dump()}
             for rec in recommendations_data
         ]
-        return RecommendationRepository.create_bulk(db, payload)
+        try:
+            recommendations = RecommendationRepository.create_bulk(db, payload)
+            db.commit()
+            for rec in recommendations:
+                db.refresh(rec)
+            return recommendations
+        except Exception:
+            db.rollback()
+            raise
 

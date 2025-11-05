@@ -10,9 +10,6 @@ class RecommendationRepository:
         """추천 정보 여러 개 저장 (TOP 3용)"""
         recommendations = [Recommendation(**data) for data in recommendations_data]
         db.add_all(recommendations)
-        db.commit()
-        for rec in recommendations:
-            db.refresh(rec)
         return recommendations
     
     @staticmethod
