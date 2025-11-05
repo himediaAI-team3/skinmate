@@ -16,10 +16,10 @@ public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "refresh_token_id")
-    private Long refreshTokenId;
+    private Integer refreshTokenId;
     
     @Column(name = "member_id")
-    private Long memberId;
+    private Integer memberId;
     
     @Column(name = "refresh_token", unique = true, length = 500)
     private String refreshToken;
@@ -30,8 +30,6 @@ public class RefreshToken {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
-    // Member와의 관계 (JPA 연관관계는 나중에 필요시 추가)
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "member_id")
-    // private Member member;
+    @Column(name = "created_id")
+    private Integer createdId;
 }

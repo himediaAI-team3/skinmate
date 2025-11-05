@@ -9,18 +9,18 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
+public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Integer> {
     
     // 토큰으로 조회
     Optional<RefreshToken> findByRefreshToken(String refreshToken);
     
     // 회원 ID로 조회
-    Optional<RefreshToken> findByMemberId(Long memberId);
+    Optional<RefreshToken> findByMemberId(Integer memberId);
     
     // 회원 ID로 삭제
     @Modifying
     @Query("DELETE FROM RefreshToken rt WHERE rt.memberId = :memberId")
-    void deleteByMemberId(@Param("memberId") Long memberId);
+    void deleteByMemberId(@Param("memberId") Integer memberId);
     
     // 만료된 토큰 삭제
     @Modifying

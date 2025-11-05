@@ -109,7 +109,7 @@ public class AuthService {
     }
     
     // 로그아웃 (Refresh Token 삭제)
-    public void logout(Long memberId) {
+    public void logout(Integer memberId) {
         refreshTokenService.deleteByMemberId(memberId);
     }
 

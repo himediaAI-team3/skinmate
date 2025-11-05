@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -32,6 +33,8 @@ public class MemberService {
                         .oauthId(request.getOauthId())
                         .name(request.getNickname())
                         .role("USER")
+                        .createdAt(LocalDateTime.now())
+                        .createdId(null)
                         .build()
         );
     }
@@ -42,7 +45,7 @@ public class MemberService {
     }
 
     @Transactional(readOnly = true)
-    public Member getById(Long memberId) {
+    public Member getById(Integer memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ResponseCode.MEMBER_NOT_FOUND));
     }
