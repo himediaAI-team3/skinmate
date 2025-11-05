@@ -25,11 +25,15 @@ Pillow==10.1.0
 PyYAML==6.0.1
 
 # LangChain (안정 버전)
-langchain-core==0.2.38
+langchain-core==0.2.39
 langchain-openai==0.1.23
 langchain-qdrant==0.1.1
 langchain-huggingface==0.0.3
 langchain-community==0.2.16
+langchain==0.2.16
+
+# LangGraph (ReAct Agent용)
+langgraph==0.2.28
 
 # BM25 검색 (키워드 기반 리트리버)
 rank-bm25==0.2.2
@@ -39,9 +43,6 @@ qdrant-client==1.9.0
 
 # MySQL 커넥터 (build_knowledge_base.py용)
 mysql-connector-python==8.2.0
-langchain-core==0.2.39
-langchain==0.2.16
-langgraph==0.2.28
 
 # JWT 검증
 PyJWT==2.8.0

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Dict, Optional
 from app.core.config.database import get_db
 from app.services.analysis import AnalysisService
+from app.services.recommendation import RecommendationService
 from app.schemas.analysis import AnalysisCreateResponse
 from app.schemas.response import ApiResponse
 from app.utils.security import get_current_user
@@ -123,4 +124,30 @@ def delete_analysis(
     )
 
     # 분석 이력 조회 및 삭제 엔드포인트
+
+
+@router.post("/{analysis_id}/rag-recommendations", response_model=ApiResponse, status_code=status.HTTP_201_CREATED)
+def create_rag_recommendations(
+    analysis_id: int,
+    current_user: Dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    RAG 파이프라인으로 화장품 추천 생성 및 저장
+    
+    - **analysis_id**: 분석 ID (이미 진단이 완료된 분석)
+    """
+    # JWT에서 추출한 사용자 ID (권한 검증용, 추후 필요 시 사용)
+    member_id = current_user["member_id"]
+    
+    # RAG 파이프라인 실행 및 DB 저장
+    recommendations = RecommendationService.create_rag_recommendations(db, analysis_id)
+    
+    # ApiResponse로 감싸서 반환
+    return ApiResponse(
+        code=status.HTTP_201_CREATED,
+        success=True,
+        message=f"RAG 추천 생성 완료 ({len(recommendations)}개)",
+        data={"recommendations_count": len(recommendations)}
+    )
 

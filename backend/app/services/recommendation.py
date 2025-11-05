@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from app.repository.recommendation import RecommendationRepository
 from typing import List
 
+from app.rag.pipeline import recommend_products
 
 class RecommendationService:
     
@@ -41,4 +42,36 @@ class RecommendationService:
         ]
         
         return RecommendationRepository.create_bulk(db, recommendations_data)
+
+    @staticmethod
+    def create_rag_recommendations(db: Session, analysis_id: int) -> List:
+        """
+        RAG 파이프라인으로 추천 생성 및 DB 저장
+
+        Args:
+            db: 데이터베이스 세션
+            analysis_id: 분석 ID
+
+        Returns:
+            Recommendation 리스트
+        """
+        # 기존 추천 삭제 (같은 analysis_id)
+        RecommendationRepository.delete_by_analysis_id(db, analysis_id)
+
+        # 파이프라인 실행
+        recommendations_data = recommend_products(db, analysis_id)
+
+        # DB 저장 (Repository는 내부에서 commit 수행)
+        return RecommendationRepository.create_bulk(
+            db,
+            [
+                {
+                    "analysis_id": analysis_id,
+                    "cosmetic_id": rec.get("cosmetic_id"),
+                    "ranking": rec.get("ranking"),
+                    "reason": rec.get("reason") or "",
+                }
+                for rec in recommendations_data
+            ],
+        )
 

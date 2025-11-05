@@ -77,6 +77,7 @@ def load_cosmetics_from_db():
         
         metadata = {
             "cosmetic_id": product['cosmetic_id'],
+            "name": product.get('name') or "",
             "price": float(product['price']) if product['price'] else 0.0,
             "brand": product['brand'] or "",
             "category": product['category'] or "",

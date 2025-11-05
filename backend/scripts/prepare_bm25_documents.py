@@ -80,6 +80,7 @@ def load_cosmetics_from_db() -> List[Document]:
         page_content = create_embedding_text(product)
         metadata = {
             "cosmetic_id": product["cosmetic_id"],
+            "name": product.get("name") or "",
             "price": float(product["price"]) if product["price"] else 0.0,
             "brand": product.get("brand") or "",
             "category": product.get("category") or "",

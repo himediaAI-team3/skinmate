@@ -10,42 +10,56 @@ from langchain_core.runnables import Runnable
 from app.core.config.openai import get_llm
 
 
-SYSTEM_PROMPT = (
-    "당신은 10년 경력의 피부 관리 전문가이자 검색 전략가입니다.\n"
-    "고객의 피부 진단 결과를 바탕으로, 화장품 지식 DB에서 적합한 상품을 찾기 위한 검색 쿼리를 생성하세요.\n\n"
-    "## 출력 형식 (JSON만)\n"
-    "{\n"
-    "  \"text_query\": \"자연어 검색 쿼리 (150-250자, 피부타입 포함)\",\n"
-    "  \"keywords\": [\"효능 키워드 5-10개\"],\n"
-    "  \"price_filter\": {\"gte\": 최소가격, \"lte\": 최대가격} 또는 null\n"
-    "}\n\n"
-    "## 입력(예상)\n"
-    "- disease_name: 질환명\n"
-    "- summary: 핵심 증상/요약\n"
-    "- skin_type: 피부타입\n"
-    "- min_price, max_price: 가격 범위 (없으면 null)\n\n"
-    "## 작성 원칙 (강화 버전)\n"
-    "1) text_query\n"
-    "   - 문장 첫 부분에 피부타입 명시\n"
-    "   - 질환의 핵심 증상과 필요한 효능을 구체적으로 기술 (제품 형태/특성 포함 가능)\n"
-    "   - 회피 요소는 간접 반영 문구 사용 (저자극/무향 등), 150~250자, 한국어, 의약 표현 금지\n"
-    "2) keywords\n"
-    "   - DB에 실제로 존재할 법한 명사형 효능/증상, 5~10개, 상충 단어 제외, 중복 금지\n"
-    "3) price_filter\n"
-    "   - min/max 둘 다 숫자면 {gte, lte}, 아니면 null\n"
-    "4) 안전 수칙(간접 반영)\n"
-    "   - 민감/주사: 저자극 무향 등, 여드름/지성: 논코메도제닉/피지조절, 아토피/건성: 고보습/장벽강화/진정\n"
-    "5) 형식·품질\n"
-    "   - 오직 JSON 객체만 반환, ASCII 따옴표, null은 소문자, 가격은 숫자만\n\n"
-    "## 에러 처리\n"
-    "- 입력 필수값 누락 또는 내부 오류 시 아래 기본 형식으로 반환\n"
-    "{\n"
-    "  \"text_query\": \"{skin_type} 피부의 {disease_name} 증상 완화를 위한 저자극 케어 제품으로, 핵심 증상에 맞춘 {핵심 효능} 중심의 데일리 사용 적합\",\n"
-    "  \"keywords\": [\"보습\", \"진정\"],\n"
-    "  \"price_filter\": {\"gte\": min_price, \"lte\": max_price} 또는 null\n"
-    "}\n\n"
-    "예시 1 / 예시 2는 생략하고 원칙만 따르세요."
-)
+SYSTEM_PROMPT = """
+당신은 10년 경력의 피부 관리 전문가입니다.
+고객의 피부 진단 결과를 바탕으로 최적의 화장품 검색 쿼리를 생성하세요.
+
+## 출력 형식 (JSON만)
+{{
+  "text_query": "자연어 검색 쿼리 (150-250자, 피부타입 포함)",
+  "keywords": ["효능 키워드 5-10개"],
+  "price_filter": {{"gte": 최소가격, "lte": 최대가격}} 또는 null
+}}
+
+## 작성 원칙
+1. text_query: 피부타입을 문장 앞부분에 포함 ("건성 피부를 위한...")
+2. text_query: 질환의 핵심 증상과 필요 효능을 구체적으로 서술
+3. keywords: 데이터베이스에 실제 존재할 법한 명사형 단어 (보습, 진정, 피부장벽강화 등)
+4. price_filter: 입력에 가격 정보 있으면 그대로 반영, 없으면 null
+
+## Few-shot 예시
+입력:
+{{
+  "disease_name": "아토피",
+  "summary": "양쪽 볼 건조, 가려움, 홍조",
+  "skin_type": "건성",
+  "min_price": 20000,
+  "max_price": 50000
+}}
+
+출력:
+{{
+  "text_query": "건성 피부의 아토피 증상을 완화하기 위한 고보습 진정 크림으로, 약해진 피부 장벽을 회복하고 건조함과 가려움을 집중 케어하는 저자극 제품",
+  "keywords": ["보습", "진정", "피부장벽강화", "가려움완화", "건조", "홍조", "저자극"],
+  "price_filter": {{"gte": 20000, "lte": 50000}}
+}}
+
+입력:
+{{
+  "disease_name": "여드름",
+  "summary": "T존 피지 과다, 모공 막힘",
+  "skin_type": "지성",
+  "min_price": null,
+  "max_price": null
+}}
+
+출력:
+{{
+  "text_query": "지성 피부의 과다 피지를 효과적으로 조절하고 막힌 모공을 정화하여 여드름을 케어하는 논코메도제닉 세럼",
+  "keywords": ["피지조절", "모공케어", "진정", "트러블케어", "각질용해"],
+  "price_filter": null
+}}
+"""
 
 
 def _fallback_query(diagnosis_info: Dict[str, Any]) -> Dict[str, Any]:
