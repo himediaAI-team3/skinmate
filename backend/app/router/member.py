@@ -15,7 +15,7 @@ def update_my_info(
     db: Session = Depends(get_db),
     current_user: Dict = Depends(get_current_user)
 ):
-    member_id = current_user.get("member_id")
+    member_id = current_user["member_id"]
     
     # Service 호출
     updated_member = MemberService.update_member(db, member_id, data)

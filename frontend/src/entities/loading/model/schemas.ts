@@ -3,10 +3,11 @@ import { z } from 'zod';
 export const ProductSchema = z.object({
   name: z.string(),
   brand: z.string(),
-  price: z.number().int().nonnegative(),
-  file_id: z.number().int().nonnegative(),
+  // 백엔드는 DECIMAL -> float로 내려올 수 있음
+  price: z.number().nonnegative(),
   file_path: z.string().optional(),  // 화장품 이미지 경로 (예: 'cosmetic/1.jpg')
-  buy_url: z.string().min(1),
+  // 백엔드가 빈 문자열을 줄 수 있으므로 선택값 허용
+  buy_url: z.string().optional(),
   reason: z.string(),
 });
 

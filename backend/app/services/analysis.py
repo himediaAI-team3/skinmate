@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import UploadFile, status
+from typing import Optional
 from app.repository.analysis import AnalysisRepository
 from app.repository.analysis_view import AnalysisViewRepository
 from app.services.file import FileService
@@ -17,28 +18,21 @@ class AnalysisService:
     def create_analysis(
         db: Session,
         member_id: int,
-        image_file: UploadFile,
-        skin_type: str = "",
-        min_price: int = 0,
-        max_price: int = 0
+
+        image_file: UploadFile, #필수값
+
+        skin_type: Optional[str] = None, # 옵셔널
+        min_price: Optional[int] = None, # 옵셔널
+        max_price: Optional[int] = None, # 옵셔널
     ) -> int:
-        """
-        피부 분석 생성 (POST용)
         
-        Args:
-            db: 데이터베이스 세션
-            member_id: 회원 ID
-            image_file: 업로드 이미지
-            
-        Returns:
-            analysis_id (생성된 분석 ID)
-        """
-        # 1. skin_analysis 생성 (사용자 선택 데이터 포함)
+        # 1. skin_analysis 생성 (옵셔널 데이터)
         analysis = AnalysisRepository.create(db, {
             "member_id": member_id,
             "skin_type": skin_type or None,
             "min_price": min_price or None,
             "max_price": max_price or None,
+            "created_id": member_id,
         })
         analysis_id = analysis.analysis_id
         
@@ -135,13 +129,14 @@ class AnalysisService:
     
     
     @staticmethod
-    def delete_analysis(db: Session, analysis_id: int) -> bool:
+    def delete_analysis(db: Session, analysis_id: int, member_id: int) -> bool:
         """
         분석 이력 삭제
         
         Args:
             db: 데이터베이스 세션
             analysis_id: 분석 ID
+            member_id: 회원 ID (권한 검증용)
             
         Returns:
             bool: 삭제 성공 여부
@@ -151,7 +146,11 @@ class AnalysisService:
         if not analysis:
             raise ApiException(status.HTTP_404_NOT_FOUND, "분석 이력을 찾을 수 없습니다")
         
-        # 2. 삭제 실행
+        # 2. 권한 검증: 본인의 데이터만 삭제 가능
+        if analysis.member_id != member_id:
+            raise ApiException(status.HTTP_403_FORBIDDEN, "본인의 분석 이력만 삭제할 수 있습니다")
+        
+        # 3. 삭제 실행
         success = AnalysisRepository.delete_by_id(db, analysis_id)
         
         if not success:
