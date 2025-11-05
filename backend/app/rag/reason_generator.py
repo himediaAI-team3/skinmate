@@ -8,10 +8,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable
 
 from app.core.config.openai import get_llm
-from app.rag.prompts import REASON_SYSTEM_PROMPT
+from app.utils.prompt import load_prompt
 
 
-SYSTEM_PROMPT = REASON_SYSTEM_PROMPT
+SYSTEM_PROMPT = load_prompt("reason_generation.yaml")
 
 
 def _truncate_170(text: str) -> str:

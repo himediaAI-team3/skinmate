@@ -10,6 +10,7 @@ from app.models.diagnosis import Diagnosis
 from app.models.entity_type import EntityType
 from app.utils.image import encode_image_base64
 from app.utils.prompt import load_prompt
+from app.core.config.openai import get_llm
 from app.core.exception.exceptions import ApiException
 from fastapi import status as http_status
 
@@ -26,12 +27,16 @@ class DiagnosisService:
         image = Image.open(file.file_path).convert("RGB")
         image_base64 = encode_image_base64(image)
 
-        llm = ChatOpenAI(
-            model=os.getenv("RUNPOD_MODEL_NAME"),
-            api_key=os.getenv("RUNPOD_API_KEY"),
-            base_url=os.getenv("RUNPOD_BASE_URL"),
-            temperature=0.1,
-        )
+        # RUNPOD 엔드포인트 사용 코드 (주석처리)
+        # llm = ChatOpenAI(
+        #     model=os.getenv("RUNPOD_MODEL_NAME"),
+        #     api_key=os.getenv("RUNPOD_API_KEY"),
+        #     base_url=os.getenv("RUNPOD_BASE_URL"),
+        #     temperature=0.1,
+        # )
+
+        # OpenAI API 사용
+        llm = get_llm(temperature=0.1)
 
         messages = [
             HumanMessage(

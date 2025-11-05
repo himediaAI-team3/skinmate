@@ -8,11 +8,11 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable
 
 from app.core.config.openai import get_llm
-from app.rag.prompts import QUERY_SYSTEM_PROMPT
+from app.utils.prompt import load_prompt
 from app.schemas.rag import DiagnosisInfo, QuerySpec, PriceFilter
 
 
-SYSTEM_PROMPT = QUERY_SYSTEM_PROMPT
+SYSTEM_PROMPT = load_prompt("query_generation.yaml")
 
 
 def _fallback_query(diagnosis_info: DiagnosisInfo) -> QuerySpec:
