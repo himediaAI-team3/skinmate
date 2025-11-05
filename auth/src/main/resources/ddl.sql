@@ -7,8 +7,8 @@ CREATE TABLE IF NOT EXISTS member (
     email VARCHAR(100),
     role VARCHAR(20) DEFAULT 'USER',
     skin_type VARCHAR(50),
-    min_price INT,
-    max_price INT,
+    -- min_price INT,
+    -- max_price INT,
     gender VARCHAR(10),
     age_group INT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -23,5 +23,6 @@ CREATE TABLE IF NOT EXISTS refresh_token (
     member_id INT,
     refresh_token VARCHAR(500) UNIQUE,
     expires_at DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_id INT
 );

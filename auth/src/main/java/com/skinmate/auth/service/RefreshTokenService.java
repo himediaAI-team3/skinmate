@@ -19,7 +19,7 @@ public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
     
     // Refresh Token 저장
-    public RefreshToken saveRefreshToken(Long memberId, String refreshToken, LocalDateTime expiresAt) {
+    public RefreshToken saveRefreshToken(Integer memberId, String refreshToken, LocalDateTime expiresAt) {
         // 기존 토큰이 있으면 삭제
         refreshTokenRepository.findByMemberId(memberId)
                 .ifPresent(refreshTokenRepository::delete);
@@ -29,6 +29,7 @@ public class RefreshTokenService {
                 .refreshToken(refreshToken)
                 .expiresAt(expiresAt)
                 .createdAt(LocalDateTime.now())
+                .createdId(memberId)
                 .build();
         
         return refreshTokenRepository.save(tokenEntity);
@@ -42,12 +43,12 @@ public class RefreshTokenService {
     
     // Member ID로 조회
     @Transactional(readOnly = true)
-    public Optional<RefreshToken> findByMemberId(Long memberId) {
+    public Optional<RefreshToken> findByMemberId(Integer memberId) {
         return refreshTokenRepository.findByMemberId(memberId);
     }
     
     // Member ID로 삭제 (로그아웃 시)
-    public void deleteByMemberId(Long memberId) {
+    public void deleteByMemberId(Integer memberId) {
         refreshTokenRepository.deleteByMemberId(memberId);
     }
     
