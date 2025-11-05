@@ -66,7 +66,7 @@ def load_cosmetics_from_db() -> List[Document]:
         """
         SELECT 
             cosmetic_id, name, brand, category, price,
-            skin_type, main_effect, care_symptom,
+            skin_type, skin_disease, main_effect, care_symptom,
             key_ingredient, description
         FROM cosmetic
         """
@@ -83,6 +83,8 @@ def load_cosmetics_from_db() -> List[Document]:
             "price": float(product["price"]) if product["price"] else 0.0,
             "brand": product.get("brand") or "",
             "category": product.get("category") or "",
+            "skin_type": product.get("skin_type") or "",
+            "skin_disease": product.get("skin_disease") or "",
         }
         documents.append(Document(page_content=page_content, metadata=metadata))
 
