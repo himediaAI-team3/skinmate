@@ -1,10 +1,10 @@
-"""OpenAI LLM configuration (singleton by temperature).
+"""OpenAI LLM 설정 (온도별 캐싱).
 
-Provides a cached ChatOpenAI instance keyed by temperature.
+온도별로 캐시된 ChatOpenAI 인스턴스를 제공합니다.
 
-Environment Variables:
-    - OPENAI_API_KEY: API key for OpenAI-compatible endpoint.
-    - OPENAI_MODEL: Model name (default: "gpt-4o-mini").
+환경 변수:
+    - OPENAI_API_KEY: OpenAI 호환 API 키
+    - OPENAI_MODEL: 모델명 (기본값: "gpt-4o-mini")
 """
 
 from __future__ import annotations
@@ -22,18 +22,18 @@ _LLM_CACHE: Dict[tuple[float, int | None, int | None], ChatOpenAI] = {}
 
 
 def get_llm(temperature: float = 0.3, max_tokens: int | None = None, timeout: int | None = None) -> ChatOpenAI:
-    """Return a cached ChatOpenAI instance for the given temperature.
+    """지정된 파라미터로 캐시된 ChatOpenAI 인스턴스를 반환합니다.
 
     Args:
-        temperature (float): Sampling temperature.
-        max_tokens (int | None): Maximum tokens to generate. If None, uses model default.
-        timeout (int | None): Request timeout in seconds. If None, uses default.
+        temperature: 샘플링 온도
+        max_tokens: 최대 생성 토큰 수 (None이면 모델 기본값 사용)
+        timeout: 요청 타임아웃 (초, None이면 기본값 사용)
 
     Returns:
-        ChatOpenAI: LLM client instance.
+        ChatOpenAI: LLM 클라이언트 인스턴스
 
     Raises:
-        EnvironmentError: If OPENAI_API_KEY is missing.
+        EnvironmentError: OPENAI_API_KEY가 없을 때
     """
     cache_key = (temperature, max_tokens, timeout)
     if cache_key in _LLM_CACHE:

@@ -21,10 +21,10 @@ from app.core.config.embedding import get_embeddings
 # QdrantVectorStore import (qdrant.py와 동일한 방식)
 try:
     from langchain_qdrant import QdrantVectorStore  # type: ignore
-except Exception:  # pragma: no cover - fallback
+except Exception:
     try:
         from langchain_qdrant import Qdrant as QdrantVectorStore  # type: ignore
-    except Exception:  # pragma: no cover - last resort
+    except Exception:
         from langchain_community.vectorstores import Qdrant as QdrantVectorStore  # type: ignore
 
 

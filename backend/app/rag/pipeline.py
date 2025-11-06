@@ -25,7 +25,6 @@ def _to_float(value: Any) -> float | None:
             return float(value)
         if isinstance(value, Decimal):
             return float(value)
-        # try parse from string
         return float(str(value))
     except Exception:
         return None
@@ -39,7 +38,6 @@ def apply_price_filter(state: Dict[str, Any]) -> Dict[str, Any]:
     diagnosis_info: Dict[str, Any] = state["diagnosis_info"]
     documents: List[Document] = state["documents"]
 
-    # Prefer query_spec filter
     min_price = None
     max_price = None
     qspec = state.get("query_spec")
@@ -53,7 +51,6 @@ def apply_price_filter(state: Dict[str, Any]) -> Dict[str, Any]:
             min_price = qpf.get("gte")
             max_price = qpf.get("lte")
 
-    # Fallback to diagnosis_info
     if min_price is None and max_price is None:
         min_price = diagnosis_info.get("min_price")
         max_price = diagnosis_info.get("max_price")
@@ -68,7 +65,7 @@ def apply_price_filter(state: Dict[str, Any]) -> Dict[str, Any]:
     for doc in documents:
         p = _to_float((doc.metadata or {}).get("price"))
         if p is None:
-            filtered.append(doc)  # keep when price unknown
+            filtered.append(doc)
             continue
         ok = True
         if min_v is not None and p < min_v:
@@ -115,7 +112,6 @@ def _build_qdrant_filter(x: Dict[str, Any]) -> Dict[str, Any] | None:
     if price_min is None and price_max is None:
         return None
 
-    # LangChain QdrantVectorStore가 이해할 수 있는 형식: Qdrant Filter 모델 사용
     from qdrant_client.models import Filter, FieldCondition, Range
     
     conditions = []
@@ -135,9 +131,7 @@ def _build_qdrant_filter(x: Dict[str, Any]) -> Dict[str, Any] | None:
     if not conditions:
         return None
     
-    qdrant_filter = Filter(must=conditions)
-    # LangChain QdrantVectorStore는 Filter 객체를 직접 받을 수 있음
-    return qdrant_filter
+    return Filter(must=conditions)
 
 
 def _run_search(x: Dict[str, Any]) -> Dict[str, Any]:
@@ -207,7 +201,7 @@ def recommend_products(db: Session, analysis_id: int) -> List[RecommendationItem
     started = time.perf_counter()
     result: Dict[str, Any] = pipeline.invoke({"analysis_id": analysis_id, "db": db})
     recs = result.get("recommendations") or []
-    # Ensure type
+    
     if recs and isinstance(recs[0], RecommendationItem):
         items = recs
     else:

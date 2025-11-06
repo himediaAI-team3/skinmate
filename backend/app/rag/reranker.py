@@ -33,13 +33,11 @@ def _disease_matches(doc: Document, disease_name: str) -> bool:
         return False
     synonyms = _DISEASE_SYNONYMS.get(disease_name, [disease_name])
 
-    # Prefer metadata
     meta_val = (doc.metadata or {}).get("skin_disease")
     if isinstance(meta_val, str) and meta_val:
         if _contains_any(meta_val, synonyms):
             return True
 
-    # Fallback to content
     return _contains_any(doc.page_content or "", synonyms)
 
 
@@ -50,7 +48,6 @@ def _skin_type_score(doc: Document, user_skin_type: Optional[str]) -> float:
     user_skin_type = user_skin_type.strip()
     compat_list = _COMPATIBLE_SKIN_TYPES.get(user_skin_type, [user_skin_type])
 
-    # Prefer metadata
     meta_val = (doc.metadata or {}).get("skin_type")
     doc_skin = None
     if isinstance(meta_val, str) and meta_val:
@@ -83,7 +80,7 @@ def rerank_documents(
         return []
 
     disease_name = str(diagnosis_info.get("disease_name") or "")
-    user_skin_type = diagnosis_info.get("skin_type")  # Optional[str]
+    user_skin_type = diagnosis_info.get("skin_type")
 
     scored: List[Document] = []
     for rank, doc in enumerate(documents):

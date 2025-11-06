@@ -1,12 +1,9 @@
-"""Embedding configuration (singleton).
+"""임베딩 설정 (싱글톤).
 
-Provides a singleton instance of HuggingFaceEmbeddings to avoid repeated
-initialization overhead.
+HuggingFaceEmbeddings 싱글톤 인스턴스를 제공하여 반복 초기화 오버헤드를 방지합니다.
 
-Environment Variables:
-    - EMBEDDING_MODEL: HuggingFace model id (default: "jhgan/ko-sroberta-multitask").
-
-This module is intentionally lightweight and CPU-friendly by default.
+환경 변수:
+    - EMBEDDING_MODEL: HuggingFace 모델 ID (기본값: "jhgan/ko-sroberta-multitask")
 """
 
 from __future__ import annotations
@@ -18,7 +15,7 @@ from dotenv import load_dotenv
 
 try:
     from langchain_huggingface import HuggingFaceEmbeddings
-except Exception as exc:  # pragma: no cover - Import-time guard
+except Exception as exc:
     raise ImportError(
         "langchain-huggingface 패키지가 필요합니다. requirements.txt를 설치하세요."
     ) from exc
@@ -30,13 +27,13 @@ _EMBEDDINGS_SINGLETON: Optional[HuggingFaceEmbeddings] = None
 
 
 def get_embeddings() -> HuggingFaceEmbeddings:
-    """Return a singleton HuggingFaceEmbeddings instance.
+    """HuggingFaceEmbeddings 싱글톤 인스턴스를 반환합니다.
 
     Returns:
-        HuggingFaceEmbeddings: A cached embeddings instance.
+        HuggingFaceEmbeddings: 캐시된 임베딩 인스턴스
 
     Raises:
-        RuntimeError: If the embedding model fails to load.
+        RuntimeError: 임베딩 모델 로드 실패 시
     """
     global _EMBEDDINGS_SINGLETON
     if _EMBEDDINGS_SINGLETON is not None:
@@ -50,7 +47,7 @@ def get_embeddings() -> HuggingFaceEmbeddings:
             model_kwargs={"device": "cpu"},
             encode_kwargs={"normalize_embeddings": True},
         )
-    except Exception as exc:  # pragma: no cover - model init error path
+    except Exception as exc:
         raise RuntimeError(
             (
                 "임베딩 모델 로드에 실패했습니다. 모델: {model}\n"

@@ -1,8 +1,8 @@
-# scripts/rag/build_knowledge_base.py
-
 """
 Qdrant 지식 DB 구축 (LangChain 표준)
-실행: python scripts/rag/build_knowledge_base.py
+
+사용법:
+    python scripts/build_knowledge_base.py
 """
 
 from langchain_core.documents import Document
@@ -12,7 +12,6 @@ except ImportError:
     try:
         from langchain_qdrant import Qdrant as QdrantVectorStore
     except ImportError:
-        # langchain-community fallback
         from langchain_community.vectorstores import Qdrant as QdrantVectorStore
 from langchain_huggingface import HuggingFaceEmbeddings
 from qdrant_client import QdrantClient
@@ -24,9 +23,11 @@ load_dotenv()
 
 
 def create_embedding_text(product: dict) -> str:
-    """구조화된 데이터를 검색 최적화된 자연어로 변환"""
-    parts = []
+    """구조화된 제품 데이터를 검색 최적화된 자연어 텍스트로 변환합니다.
     
+    벡터 임베딩과 동일한 로직을 사용하여 BM25와 Dense 검색 간 일관성을 유지합니다.
+    """
+    parts = []
     parts.append(f"{product['brand']} {product['name']}")
     
     if product.get('key_ingredient'):
@@ -48,8 +49,7 @@ def create_embedding_text(product: dict) -> str:
 
 
 def load_cosmetics_from_db():
-    """MySQL에서 화장품 데이터를 Document 리스트로 변환"""
-    
+    """MySQL에서 화장품 데이터를 로드하여 Document 리스트로 변환합니다."""
     conn = mysql.connector.connect(
         host=os.getenv('DB_HOST'),
         user=os.getenv('DB_USER'),
@@ -94,8 +94,10 @@ def load_cosmetics_from_db():
 
 
 def build_qdrant_knowledge_base():
-    """LangChain 표준 방식으로 Qdrant 지식 DB 구축"""
+    """LangChain 표준 방식으로 Qdrant 지식 DB를 구축합니다.
     
+    기존 컬렉션이 있으면 삭제 후 재생성하며, price 필드 인덱스를 자동으로 생성합니다.
+    """
     print("=" * 60)
     print("Qdrant 지식 DB 구축")
     print("=" * 60)
@@ -144,7 +146,6 @@ def build_qdrant_knowledge_base():
     from qdrant_client.models import PayloadSchemaType
     
     try:
-        # price 필드에 대한 정수형 인덱스 생성 (range 필터용)
         qdrant_client.create_payload_index(
             collection_name=collection_name,
             field_name="price",
@@ -152,7 +153,6 @@ def build_qdrant_knowledge_base():
         )
         print("      ✓ 'price' 필드 인덱스 생성 완료")
     except Exception as e:
-        # 이미 존재하는 경우 무시
         if "already exists" in str(e).lower():
             print("      ✓ 'price' 필드 인덱스 이미 존재")
         else:

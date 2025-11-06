@@ -72,8 +72,7 @@ def generate_search_query(diagnosis_info: DiagnosisInfo | Dict[str, Any]) -> Que
         result = chain.invoke(payload)
         if not isinstance(result, dict):
             raise ValueError("LLM 출력 형식 오류")
-        # Validate with pydantic
-        # Coerce price_filter if present
+        
         pf = result.get("price_filter")
         if isinstance(pf, dict) and pf:
             gte = pf.get("gte")
@@ -82,7 +81,6 @@ def generate_search_query(diagnosis_info: DiagnosisInfo | Dict[str, Any]) -> Que
                 result["price_filter"] = None
         return QuerySpec.model_validate(result)
     except Exception:
-        # retry once
         try:
             result = chain.invoke(payload)
             if not isinstance(result, dict):

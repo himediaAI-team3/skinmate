@@ -1,11 +1,11 @@
-"""Prepare BM25 documents pickle for keyword retriever.
+"""BM25 키워드 검색기를 위한 문서 피클 파일 생성.
 
-This script is an one-off utility that:
-  1) Loads cosmetic products from MySQL
-  2) Converts rows into langchain Document (same text as embeddings)
-  3) Saves to backend/scripts/bm25_documents.pkl
+이 스크립트는 다음 작업을 수행합니다:
+    1) MySQL에서 화장품 제품 데이터 로드
+    2) 각 행을 LangChain Document로 변환 (임베딩과 동일한 텍스트 형식)
+    3) backend/scripts/bm25_documents.pkl 파일로 저장
 
-Usage:
+사용법:
     python backend/scripts/prepare_bm25_documents.py
 """
 
@@ -25,10 +25,9 @@ load_dotenv()
 
 
 def create_embedding_text(product: dict) -> str:
-    """Convert structured product row to search-optimized natural text.
+    """구조화된 제품 데이터를 검색 최적화된 자연어 텍스트로 변환합니다.
 
-    This mirrors the logic used for vector embeddings to keep parity
-    between BM25 and dense representation.
+    벡터 임베딩과 동일한 로직을 사용하여 BM25와 Dense 검색 간 일관성을 유지합니다.
     """
     parts = []
     parts.append(f"{product['brand']} {product['name']}")
@@ -52,7 +51,7 @@ def create_embedding_text(product: dict) -> str:
 
 
 def load_cosmetics_from_db() -> List[Document]:
-    """Load cosmetics from MySQL and convert to Document list."""
+    """MySQL에서 화장품 데이터를 로드하여 Document 리스트로 변환합니다."""
     conn = mysql.connector.connect(
         host=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
@@ -98,7 +97,6 @@ def main() -> None:
     print(f"      ✓ {len(documents)}개 제품 로드 완료")
 
     print("[2/3] Document 변환 중...")
-    # Already converted in load_cosmetics_from_db
     print("      ✓ 변환 완료")
 
     print("[3/3] backend/scripts/bm25_documents.pkl 저장 중...")

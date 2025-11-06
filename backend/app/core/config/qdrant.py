@@ -1,12 +1,11 @@
-"""Qdrant configuration (singleton).
+"""Qdrant 설정 (싱글톤).
 
-Provides singleton helpers for Qdrant client and LangChain QdrantVectorStore
-that attaches to an existing collection.
+기존 컬렉션에 연결하는 Qdrant 클라이언트와 LangChain QdrantVectorStore 싱글톤을 제공합니다.
 
-Environment Variables:
-    - QDRANT_URL: Base URL of Qdrant service.
-    - QDRANT_API_KEY: API key for Qdrant (if auth is enabled).
-    - QDRANT_COLLECTION_NAME: Existing collection name (default: "cosmetics").
+환경 변수:
+    - QDRANT_URL: Qdrant 서비스 기본 URL
+    - QDRANT_API_KEY: Qdrant API 키 (인증이 활성화된 경우)
+    - QDRANT_COLLECTION_NAME: 컬렉션 이름 (기본값: "cosmetics")
 """
 
 from __future__ import annotations
@@ -18,10 +17,10 @@ from dotenv import load_dotenv
 
 try:
     from langchain_qdrant import QdrantVectorStore  # type: ignore
-except Exception:  # pragma: no cover - fallback
+except Exception:
     try:
         from langchain_qdrant import Qdrant as QdrantVectorStore  # type: ignore
-    except Exception:  # pragma: no cover - last resort
+    except Exception:
         from langchain_community.vectorstores import Qdrant as QdrantVectorStore  # type: ignore
 
 from qdrant_client import QdrantClient
@@ -43,14 +42,14 @@ def _require_env(name: str) -> str:
 
 
 def get_qdrant_client() -> QdrantClient:
-    """Return a singleton QdrantClient.
+    """QdrantClient 싱글톤을 반환합니다.
 
     Returns:
-        QdrantClient: Qdrant client instance.
+        QdrantClient: Qdrant 클라이언트 인스턴스
 
     Raises:
-        EnvironmentError: If required env variables are missing.
-        RuntimeError: If connection initialization fails.
+        EnvironmentError: 필수 환경 변수가 없을 때
+        RuntimeError: 연결 초기화 실패 시
     """
     global _QDRANT_CLIENT_SINGLETON
     if _QDRANT_CLIENT_SINGLETON is not None:
@@ -61,7 +60,7 @@ def get_qdrant_client() -> QdrantClient:
 
     try:
         _QDRANT_CLIENT_SINGLETON = QdrantClient(url=url, api_key=api_key)
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:
         raise RuntimeError(
             "Qdrant 클라이언트 초기화에 실패했습니다. URL/API Key를 확인하세요."
         ) from exc
@@ -70,14 +69,14 @@ def get_qdrant_client() -> QdrantClient:
 
 
 def get_vector_store() -> QdrantVectorStore:
-    """Return a singleton QdrantVectorStore bound to an existing collection.
+    """기존 컬렉션에 연결된 QdrantVectorStore 싱글톤을 반환합니다.
 
     Returns:
-        QdrantVectorStore: Vector store for the existing collection.
+        QdrantVectorStore: 기존 컬렉션용 벡터 스토어
 
     Raises:
-        EnvironmentError: If required env variables are missing.
-        RuntimeError: If vector store initialization fails.
+        EnvironmentError: 필수 환경 변수가 없을 때
+        RuntimeError: 벡터 스토어 초기화 실패 시
     """
     global _VECTOR_STORE_SINGLETON
     if _VECTOR_STORE_SINGLETON is not None:
@@ -98,7 +97,7 @@ def get_vector_store() -> QdrantVectorStore:
             api_key=api_key,
             collection_name=collection,
         )
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:
         raise RuntimeError(
             (
                 "Qdrant 벡터 스토어 연결에 실패했습니다.\n"
