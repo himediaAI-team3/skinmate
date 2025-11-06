@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, type ReactNode } from 'react';
 import { useParams } from 'next/navigation';
 import { analysisApi } from '@/features/loading';
 import type { SkinAnalysisOutputT } from '@/entities/loading';
@@ -14,7 +15,7 @@ export default function ResultPage() {
 
   // 이미지 베이스 URL
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  const IMG_BASE = `${API_BASE}/api/files`;  // 피부 이미지용
+  const IMG_BASE = `${API_BASE}/api/files`; // 피부 이미지용
 
   // 결과 데이터 로드
   useEffect(() => {
@@ -47,8 +48,8 @@ export default function ResultPage() {
     disabled,
     variant = 'primary', // 'primary' | 'outline' | 'glass'
   }: {
-    href?: string;
-    children: React.ReactNode;
+    href?: string; // null은 받지 않고, 호출부에서 ?? undefined로 정규화
+    children: ReactNode;
     label?: string;
     disabled?: boolean;
     variant?: 'primary' | 'outline' | 'glass';
@@ -62,25 +63,22 @@ export default function ResultPage() {
       isValid = false;
     }
     const isDisabled = disabled || !isValid;
-  
+
     // 공통 클래스
     const base =
       'group relative inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition will-change-transform focus:outline-none focus:ring-2 focus:ring-orange-200 hover:scale-[1.01] active:scale-[0.99]';
-  
+
     // variant별 스타일
     const variantClass =
       variant === 'primary'
         ? [
-            // 선명한 그라데이션 배경 + 흰글씨
             'text-white shadow-sm hover:shadow',
             'bg-gradient-to-r from-orange-500 to-pink-500',
-            // 살짝 광택
             'after:absolute after:inset-0 after:rounded-2xl after:pointer-events-none',
             'after:[background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0))]',
           ].join(' ')
         : variant === 'outline'
         ? [
-            // 투명 배경 + 그라데이션 보더(눈에 띄는 테두리)
             'bg-white/30 backdrop-blur text-gray-900',
             'shadow-sm hover:shadow',
             'before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:[background:linear-gradient(135deg,#f59e0b,#ec4899)]',
@@ -88,14 +86,13 @@ export default function ResultPage() {
             'relative overflow-hidden',
           ].join(' ')
         : [
-            // 강화된 glass (기존 톤에서 대비+보더 강화)
             'text-gray-900 shadow-sm hover:shadow',
             'bg-white/80 backdrop-blur border border-gray-300',
             'relative overflow-hidden',
             'before:absolute before:inset-0 before:rounded-2xl before:pointer-events-none',
             'before:[background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,255,255,.5))]',
           ].join(' ');
-  
+
     return (
       <a
         href={isValid ? href : undefined}
@@ -104,15 +101,9 @@ export default function ResultPage() {
         aria-label={label || '구매하러 가기'}
         title={label || '구매하러 가기'}
         onClick={(e) => isDisabled && e.preventDefault()}
-        className={[
-          base,
-          variantClass,
-          isDisabled ? 'opacity-50 pointer-events-none' : '',
-        ].join(' ')}
+        className={[base, variantClass, isDisabled ? 'opacity-50 pointer-events-none' : ''].join(' ')}
       >
-        <span className={variant === 'primary' ? 'relative' : 'relative bg-clip-text'}>
-          {children}
-        </span>
+        <span className={variant === 'primary' ? 'relative' : 'relative bg-clip-text'}>{children}</span>
         <ExternalLink
           size={16}
           className={
@@ -137,7 +128,10 @@ export default function ResultPage() {
           <p className="mt-1">{error}</p>
         </div>
         <div className="pt-10 pb-6">
-          <a href="/upload" className="block w-full bg-orange-500 text-white text-center font-bold py-4 px-8 rounded-full shadow-lg hover:bg-orange-600 transition-colors">
+          <a
+            href="/upload"
+            className="block w-full bg-orange-500 text-white text-center font-bold py-4 px-8 rounded-full shadow-lg hover:bg-orange-600 transition-colors"
+          >
             다시 업로드하기
           </a>
         </div>
@@ -168,17 +162,10 @@ export default function ResultPage() {
       {/* 등록된 이미지: file_id 기준으로 표시 */}
       <section>
         <h2 className="text-xl font-bold text-gray-800">등록된 이미지</h2>
-        <div
-          className="mt-4 w-full aspect-square max-h-[520px] bg-gray-100 rounded-2xl overflow-hidden shadow-sm
-                     flex items-center justify-center"
-        >
+        <div className="mt-4 w-full aspect-square max-h-[520px] bg-gray-100 rounded-2xl overflow-hidden shadow-sm flex items-center justify-center">
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={imageUrl}
-              alt="Uploaded skin"
-              className="w-full h-full object-cover"
-            />
+            <img src={imageUrl} alt="Uploaded skin" className="w-full h-full object-cover" />
           ) : (
             <p className="text-gray-500">등록된 이미지를 찾을 수 없습니다.</p>
           )}
@@ -203,14 +190,14 @@ export default function ResultPage() {
               <div className="flex items-start gap-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={p.file_path ? `${API_BASE}${p.file_path}` : (imageUrl || '')}
+                  src={p.file_path ? `${API_BASE}${p.file_path}` : imageUrl ?? ''}
                   alt={p.name}
                   className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
                 />
                 <div className="flex-1">
                   <p className="text-sm text-gray-500">{p.brand}</p>
                   <p className="font-semibold text-gray-800 mt-1">{p.name}</p>
-                  <p className="font-bold text-orange-600 mt-2">{Number(p.price).toLocaleString()}원</p>
+                  <p className="font-bold text-orange-600 mt-2">{Number(p.price ?? 0).toLocaleString()}원</p>
                 </div>
               </div>
 
@@ -218,8 +205,8 @@ export default function ResultPage() {
                 <p className="text-xs font-bold text-gray-600">추천 이유</p>
                 <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">{p.reason}</p>
 
-                {/* ▶ 구매하러 가기 버튼 (기존 링크 대체) */}
-                <GlassActionButton href={p.buy_url} label="구매하러 가기" variant="glass">
+                {/* ▶ 구매하러 가기 버튼: buy_url을 undefined로 정규화해 null 방지 */}
+                <GlassActionButton href={p.buy_url ?? undefined} label="구매하러 가기" variant="glass">
                   구매하러 가기
                 </GlassActionButton>
               </div>
