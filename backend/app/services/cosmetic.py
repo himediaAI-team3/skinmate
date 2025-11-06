@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
 from fastapi import status
+from pydantic import BaseModel, Field
+import logging
 from app.core.exception import ApiException
 from app.repository.cosmetic import CosmeticRepository
 from app.schemas.cosmetic import CosmeticSearchParams, CosmeticSearchResponse, CosmeticSearchItem, CosmeticDetailResponse
@@ -8,6 +10,18 @@ from app.utils.prompt import load_prompt
 from app.utils.llm import parse_llm_json
 from app.core.config.llm import get_llm, TEMPERATURE_COSMETIC
 from langchain_core.messages import HumanMessage
+
+logger = logging.getLogger(__name__)
+
+
+# Pydantic 모델: 화장품 분석 결과
+class CosmeticAnalysisResult(BaseModel):
+    skin_type: str = Field(description="피부타입 (1~2개)")
+    skin_disease: str = Field(description="관련 피부질환 (1~4개)")
+    main_effect: str = Field(description="주요 효능 (3~5개)")
+    care_symptom: str = Field(description="주요 케어 증상 (4~6개)")
+    key_ingredient: str = Field(description="핵심 성분 (3~6개)")
+    description: str = Field(description="제품 설명 (2~3문장)")
 
 
 class CosmeticService:
@@ -91,10 +105,41 @@ class CosmeticService:
             ingredients=base.get('ingredients', ''),
         )
 
+        # Structured Output을 지원하는 LLM 생성
         llm = get_llm(TEMPERATURE_COSMETIC)
-        messages = [HumanMessage(content=filled)]
-        resp = llm.invoke(messages)
-        data = parse_llm_json(resp.content)
+        structured_llm = llm.with_structured_output(CosmeticAnalysisResult)
+        
+        try:
+            # Structured Output 직접 호출
+            result = structured_llm.invoke([HumanMessage(content=filled)])
+            
+            logger.info(f"화장품 분석 완료 (Structured Output): cosmetic_id={cosmetic_id}")
+            
+            # Pydantic 모델 → dict 변환
+            data = {
+                'skin_type': result.skin_type,
+                'skin_disease': result.skin_disease,
+                'main_effect': result.main_effect,
+                'care_symptom': result.care_symptom,
+                'key_ingredient': result.key_ingredient,
+                'description': result.description,
+            }
+            
+        except Exception as e:
+            logger.warning(f"Structured Output 실패, 폴백 시도 (cosmetic_id={cosmetic_id}): {e}")
+            
+            # 폴백: 기존 방식 시도
+            try:
+                resp = llm.invoke([HumanMessage(content=filled)])
+                data = parse_llm_json(resp.content)
+                logger.info(f"화장품 분석 완료 (폴백 JSON 파싱): cosmetic_id={cosmetic_id}")
+                
+            except Exception as fallback_error:
+                logger.error(f"폴백도 실패 (cosmetic_id={cosmetic_id}): {fallback_error}")
+                raise ApiException(
+                    status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    f"LLM이 올바른 형식을 반환하지 않았습니다."
+                )
 
         # 정규화
         data_out = {

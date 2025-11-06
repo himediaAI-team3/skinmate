@@ -5,10 +5,23 @@ from functools import lru_cache
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 
-from qdrant_client.models import PointStruct, Filter, FieldCondition, Range, MatchValue, Prefetch
+from qdrant_client.models import PointStruct, Filter, FieldCondition, Range, MatchAny, Prefetch
 from fastembed import TextEmbedding, SparseTextEmbedding
 
 from app.core.config.qdrant import get_qdrant_client, QDRANT_HYBRID_COLLECTION
+
+
+def parse_comma_separated(value: str) -> list:
+    """
+    콤마로 구분된 문자열을 배열로 변환
+    
+    예: "민감성, 건성" -> ["민감성", "건성"]
+    예: "여드름" -> ["여드름"]
+    예: "" or None -> []
+    """
+    if not value:
+        return []
+    return [item.strip() for item in value.split(",") if item.strip()]
 
 
 @lru_cache(maxsize=1)
@@ -33,10 +46,12 @@ class VectorStoreService:
     
     @staticmethod
     def create_sparse_text(cosmetic) -> str:
-        """Sparse(BM25) 임베딩용 텍스트: 질환명 + 핵심성분 + 케어증상"""
+        """Sparse(BM25) 임베딩용 텍스트: 질환명 + 피부타입 + 핵심성분 + 케어증상"""
         parts = []
         if cosmetic.skin_disease:
             parts.append(cosmetic.skin_disease)
+        if cosmetic.skin_type:
+            parts.append(cosmetic.skin_type)
         if cosmetic.key_ingredient:
             parts.append(cosmetic.key_ingredient)
         if cosmetic.care_symptom:
@@ -52,8 +67,8 @@ class VectorStoreService:
             "brand": cosmetic.brand or "",
             "category": cosmetic.category or "",
             "price": int(cosmetic.price) if cosmetic.price else 0,
-            "skin_type": cosmetic.skin_type or "",
-            "skin_disease": cosmetic.skin_disease or "",
+            "skin_types": parse_comma_separated(cosmetic.skin_type),
+            "skin_diseases": parse_comma_separated(cosmetic.skin_disease),
         }
     
     @staticmethod
@@ -140,24 +155,37 @@ class VectorStoreService:
         must_conditions = []
         should_conditions = []
         
+        # 3-1. Price 하드 필터 (필수 조건)
         if min_price is not None and max_price is not None:
             must_conditions.append(
                 FieldCondition(key="price", range=Range(gte=min_price, lte=max_price))
             )
         
-        if disease_name:
-            should_conditions.append(
-                FieldCondition(key="skin_disease", match=MatchValue(value=disease_name))
-            )
-        
+        # 3-2. Skin Type 소프트 필터 (선호 조건)
         if skin_type:
             should_conditions.append(
-                FieldCondition(key="skin_type", match=MatchValue(value=skin_type))
+                FieldCondition(
+                    key="skin_types",
+                    match=MatchAny(any=[skin_type])
+                )
             )
         
+        # 3-3. Disease 소프트 필터 (선호 조건)
+        if disease_name:
+            should_conditions.append(
+                FieldCondition(
+                    key="skin_diseases",
+                    match=MatchAny(any=[disease_name])
+                )
+            )
+        
+        # 필터 조합
         query_filter = None
         if must_conditions or should_conditions:
-            query_filter = Filter(must=must_conditions, should=should_conditions)
+            query_filter = Filter(
+                must=must_conditions if must_conditions else None,
+                should=should_conditions if should_conditions else None
+            )
         
         # 4. 하이브리드 검색 (RRF 자동 병합)
         results = client.query_points(
@@ -175,13 +203,7 @@ class VectorStoreService:
         for r in results.points:
             output.append({
                 "cosmetic_id": r.payload["cosmetic_id"],
-                "score": r.score,
-                "name": r.payload["name"],
-                "brand": r.payload["brand"],
-                "category": r.payload["category"],
-                "price": r.payload["price"],
-                "skin_type": r.payload["skin_type"],
-                "skin_disease": r.payload["skin_disease"],
+                "score": r.score
             })
         
         return output

@@ -132,12 +132,12 @@ def create_hybrid_collection_if_not_exists():
         )
         client.create_payload_index(
             collection_name=QDRANT_HYBRID_COLLECTION,
-            field_name="skin_disease",
+            field_name="skin_diseases",
             field_schema=PayloadSchemaType.KEYWORD
         )
         client.create_payload_index(
             collection_name=QDRANT_HYBRID_COLLECTION,
-            field_name="skin_type",
+            field_name="skin_types",
             field_schema=PayloadSchemaType.KEYWORD
         )
         print("Payload 인덱스 생성 완료")

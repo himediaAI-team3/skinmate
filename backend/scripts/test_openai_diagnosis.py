@@ -119,8 +119,8 @@ def main():
     print("=" * 80)
     
     # 테스트 이미지 설정
-    image_base_path = r"C:\Users\201\Desktop\원천데이터\VS_주사_정면"
-    image_filename = "H1_385246_P1_L0"
+    image_base_path = r"C:\Users\201\Desktop\원천데이터\VS_여드름_정면"
+    image_filename = "H2_2361_P3_L0"
     
     # 테스트 회원 ID
     member_id = 1

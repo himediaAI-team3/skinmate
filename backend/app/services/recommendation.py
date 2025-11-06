@@ -100,7 +100,7 @@ class RecommendationService:
         
         logger.info(f"Vector 검색 결과 Top {len(search_results)}:")
         for i, result in enumerate(search_results, 1):
-            logger.info(f"  {i}. {result['name']} ({result['brand']}) - {result['price']}원 (유사도: {result['score']:.4f})")
+            logger.info(f"  {i}. cosmetic_id={result['cosmetic_id']} (유사도: {result['score']:.4f})")
         
         # 5. MySQL에서 상세 정보 조회
         cosmetic_ids = [r['cosmetic_id'] for r in search_results]
@@ -149,11 +149,16 @@ class RecommendationService:
         if not diagnosis:
             raise ValueError(f"진단 결과를 찾을 수 없습니다: analysis_id={analysis_id}")
         
+        # 분석 정보 조회 (피부타입)
+        analysis = AnalysisRepository.get_by_id(db, analysis_id)
+        skin_type = analysis.skin_type if analysis and analysis.skin_type else "알 수 없음"
+        
         # 프롬프트 로드
         instruction = load_prompt("summary_refine.yaml")
         filled = instruction.format(
             disease_name=diagnosis.disease_name,
-            summary=diagnosis.summary
+            summary=diagnosis.summary,
+            skin_type=skin_type
         )
         
         # Structured Output을 지원하는 LLM 생성
