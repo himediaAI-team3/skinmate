@@ -1,13 +1,50 @@
-import type {
-  AnalysisHistory,
-  Paged,
-  GetHistoryParams,
-} from '@/entities/history';
-import { http } from '@/lib/http';
+// /src/features/history/index.ts
+'use client';
 
-/** 공용 페이지 응답 정규화 */
-function normalizePage<T>(raw: any): Paged<T> {
-  // 케이스 0: { code, success, message, data: { items, total, page, size }, ... }
+import { getAccessToken } from '@/features/auth';
+import {
+  ApiResponseHistoryPage,
+  type AnalysisHistory,
+  type GetHistoryParams,
+  type Paged,
+} from '@/entities/history';
+
+/* ============ 공통 유틸 ============ */
+function base(): string {
+  const B = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '');
+  if (!B) throw new Error('env 누락: NEXT_PUBLIC_API_URL (예: http://127.0.0.1:8000)');
+  return B;
+}
+
+function authHeaders(): HeadersInit {
+  const at = getAccessToken();
+  return at ? { Authorization: `Bearer ${at}` } : {};
+}
+
+async function readPayload(res: Response) {
+  const ct = res.headers.get('Content-Type') || '';
+  if (ct.toLowerCase().includes('application/json')) {
+    try { return await res.json(); } catch { return null; }
+  }
+  try { return await res.text(); } catch { return null; }
+}
+
+function normalizeToPaged<T>(raw: any): Paged<T> {
+  // { code, success, message, data: { items, total, page, size } } 전제
+  const parsed = ApiResponseHistoryPage.safeParse(raw);
+  if (parsed.success) {
+    const d = parsed.data.data;
+    const size = d.size ?? d.items?.length ?? 0;
+    return {
+      items: d.items as unknown as T[],
+      page: d.page ?? 1,
+      size,
+      total: d.total ?? 0,
+      totalPages: Math.max(1, Math.ceil((d.total ?? 0) / Math.max(1, size || 1))),
+    };
+  }
+
+  // 혹시 다른 형태면 최대한 방어
   if (raw?.data?.items && typeof raw.data.total === 'number') {
     const d = raw.data;
     const size = d.size ?? d.items?.length ?? 0;
@@ -16,90 +53,84 @@ function normalizePage<T>(raw: any): Paged<T> {
       page: d.page ?? 1,
       size,
       total: d.total,
-      totalPages: Math.max(1, Math.ceil((d.total ?? 0) / Math.max(1, size))),
+      totalPages: Math.max(1, Math.ceil((d.total ?? 0) / Math.max(1, size || 1))),
     };
-  }
-  // 기존 케이스들
-  if (raw?.items && typeof raw.total === 'number') {
-    return {
-      items: raw.items,
-      page: raw.page ?? 1,
-      size: raw.size ?? raw.items?.length ?? 0,
-      total: raw.total,
-      totalPages:
-        raw.totalPages ??
-        Math.max(1, Math.ceil((raw.total ?? 0) / Math.max(1, raw.size ?? 1))),
-    };
-  }
-  if (raw?.content && typeof raw.totalElements === 'number') {
-    return {
-      items: raw.content,
-      page: (raw.number ?? 0) + 1,
-      size: raw.size ?? raw.content?.length ?? 0,
-      total: raw.totalElements,
-      totalPages:
-        raw.totalPages ??
-        Math.max(
-          1,
-          Math.ceil((raw.totalElements ?? 0) / Math.max(1, raw.size ?? 1)),
-        ),
-    };
-  }
-  if (Array.isArray(raw)) {
-    return { items: raw, page: 1, size: raw.length, total: raw.length, totalPages: 1 };
   }
   return { items: [], page: 1, size: 0, total: 0, totalPages: 1 };
 }
 
-/** 분석 이력 조회: GET /api/skin-analysis/history/{member_id} */
-export async function getAnalysisHistory(
-  params: GetHistoryParams,
-  init?: RequestInit,
-): Promise<Paged<AnalysisHistory>> {
+/* ============ 이력 조회: GET /api/skin-analysis/history (JWT) ============ */
+export async function getAnalysisHistory(params: GetHistoryParams): Promise<Paged<AnalysisHistory>> {
   const {
-    member_id,
     page = 1,
     size = 10,
     disease_name = '',
     period = 'all',
-  } = params;
+  } = params || {};
 
-  const member =
-    member_id ??
-    Number(process.env.NEXT_PUBLIC_TEST_MEMBER_ID ?? 1);
+  const q = new URLSearchParams();
+  q.set('page', String(page));
+  q.set('size', String(size));
+  if (disease_name) q.set('disease_name', disease_name);
+  if (period) q.set('period', period);
 
-  const usp = new URLSearchParams();
-  usp.set('page', String(page));
-  usp.set('size', String(size));
-  if (disease_name) usp.set('disease_name', disease_name);
-  if (period) usp.set('period', period);
+  const url = `${base()}/api/skin-analysis/history?${q.toString()}`;
 
-  const url = `/api/skin-analysis/history/${member}?${usp.toString()}`;
-  const data = await http<any>(url, {
+  const res = await fetch(url, {
     method: 'GET',
-    // fetch 옵션 전달 필요 시 아래로 전달
-    // signal: init?.signal as any,
+    headers: {
+      ...authHeaders(),
+      Accept: 'application/json',
+    },
   });
 
-  const normalized = normalizePage<AnalysisHistory>(data);
-  // 필드 매핑: analysis_id → id, created_at → analyzed_at, summary fallback
-  normalized.items = normalized.items.map((x: any) => ({
-    id: x.analysis_id ?? x.id, // ← 핵심
-    member_id: x.member_id ?? member,
-    disease_name: x.disease_name ?? x.diagnosis ?? '정상',
-    summary: x.summary ?? x.title ?? x.note ?? x.disease_name ?? '', // ← 요약 없으면 질환명 사용
-    analyzed_at: x.analyzed_at ?? x.created_at ?? x.date,
+  const payload = await readPayload(res);
+
+  if (res.status === 401) {
+    throw new Error('인증이 필요합니다. 다시 로그인해 주세요.');
+  }
+  if (!res.ok) {
+    const msg = (payload && (payload.message || payload.detail)) || `HTTP ${res.status}`;
+    throw new Error(`분석 이력 조회 실패: ${msg}`);
+  }
+
+  // 표준 페이지 구조로 정규화 → UI 타입으로 매핑
+  const pageData = normalizeToPaged<any>(payload);
+  const items: AnalysisHistory[] = (pageData.items || []).map((x: any) => ({
+    id: x.analysis_id,
+    disease_name: x.disease_name,
+    analyzed_at: x.created_at,
+    summary: x.disease_name || '분석 결과',
   }));
-  return normalized;
+
+  return {
+    ...pageData,
+    items,
+  };
 }
 
-/** 분석 이력 삭제: DELETE /api/skin-analysis/{analysis_id} */
-export async function deleteAnalysis(
-  analysis_id: number,
-  init?: RequestInit,
-): Promise<void> {
-  const url = `/api/skin-analysis/${analysis_id}`;
-  await http<void>(url, {
+/* ============ 삭제: DELETE /api/skin-analysis/{analysis_id} (JWT) ============ */
+export async function deleteAnalysis(analysis_id: number): Promise<void> {
+  if (!Number.isFinite(analysis_id) || analysis_id <= 0) {
+    throw new Error('analysis_id가 올바르지 않습니다.');
+  }
+
+  const url = `${base()}/api/skin-analysis/${analysis_id}`;
+  const res = await fetch(url, {
     method: 'DELETE',
+    headers: {
+      ...authHeaders(),
+      Accept: 'application/json',
+    },
   });
+
+  const payload = await readPayload(res);
+
+  if (res.status === 401) {
+    throw new Error('인증이 필요합니다. 다시 로그인해 주세요.');
+  }
+  if (!res.ok) {
+    const msg = (payload && (payload.message || payload.detail)) || `HTTP ${res.status}`;
+    throw new Error(`삭제 실패: ${msg}`);
+  }
 }
