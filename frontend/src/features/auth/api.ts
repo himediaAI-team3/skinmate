@@ -1,73 +1,106 @@
-// /features/auth/api.ts
+// /src/features/auth/api.ts
+'use client';
+
 import type { SocialProvider } from '@/entities/auth';
 import { OAUTH_PROVIDERS } from '@/entities/auth';
 import { http } from '@/lib/http';
 
-/**
- * Kakao 인가 URL을 프론트에서 직접 생성 (프론트 콜백 경로로 복귀)
- * - 필요 env:
- *   NEXT_PUBLIC_KAKAO_REST_KEY
- *   NEXT_PUBLIC_FRONT_BASE   (예: http://192.168.0.249:3000)
- */
-function buildKakaoAuthorizeUrl(): string {
-  const clientId  = process.env.NEXT_PUBLIC_KAKAO_REST_KEY!;
-  const frontBase = process.env.NEXT_PUBLIC_FRONT_BASE!;
-  const redirectUri = `${frontBase}/login/oauth2/code/kakao`;
-
-  // CSRF 방지용 state
-  const state = Math.random().toString(36).slice(2);
-  if (typeof window !== 'undefined') {
-    sessionStorage.setItem('oauth:kakao:state', state);
-  }
-
-  const url = new URL('https://kauth.kakao.com/oauth/authorize');
-  url.searchParams.set('client_id', clientId);
-  url.searchParams.set('redirect_uri', redirectUri);
-  url.searchParams.set('response_type', 'code');
-  url.searchParams.set('state', state);
-  // scope 필요 시:
-  // url.searchParams.set('scope', 'account_email profile_nickname');
-
-  return url.toString();
+/* ================================
+ * 백엔드 authorize URL (구글/네이버 등 확장용)
+ * ================================ */
+function getApiBase(): string {
+  const apiBase = process.env.NEXT_PUBLIC_API_AUTH;
+  if (!apiBase) throw new Error('NEXT_PUBLIC_API_AUTH 누락');
+  return apiBase.replace(/\/+$/, '');
 }
 
-/**
- * 1) 인가 URL 생성
- *  - Kakao: kauth로 직접
- *  - 그 외: 메타에 등록된 경로(현재는 미사용/준비중)
- */
+function buildBackendAuthorizeUrl(provider: SocialProvider): string {
+  const apiBase = getApiBase();
+  const meta = OAUTH_PROVIDERS[provider];
+  if (!meta) throw new Error(`알 수 없는 provider: ${provider}`);
+  return `${apiBase}/oauth2/authorization/${meta.registrationId}`;
+}
+
 export function buildAuthorizeUrl(provider: SocialProvider): string {
-  // Kakao는 그대로 백엔드 시작점 사용
-  return OAUTH_PROVIDERS[provider].authorizePath;
+  return buildBackendAuthorizeUrl(provider);
+}
+
+/* ================================
+ * URL 유틸리티 (state 주입)
+ * ================================ */
+function withQuery(urlStr: string, patch: Record<string, string>) {
+  const u = new URL(urlStr);
+  Object.entries(patch).forEach(([k, v]) => u.searchParams.set(k, v));
+  return u.toString();
 }
 
 /**
- * 2) 공급자 인가 엔드포인트로 브라우저 이동
+ * accounts.kakao.com/login?continue=<kauth_url>
+ * 의 "continue" 안쪽(kauth 쿼리)의 state를 교체한다.
  */
-export function redirectToProvider(p: SocialProvider) {
-  const url = buildAuthorizeUrl(p);
-  window.location.href = url; // 백엔드로 이동
+function patchAccountsContinueState(accountsUrl: string, state: string): string {
+  const u = new URL(accountsUrl);
+  const cont = u.searchParams.get('continue');
+  if (!cont) return accountsUrl; // 방어적
+
+  // continue는 인코딩된 kauth URL → 디코드 → state 교체 → 다시 인코드하여 반영
+  const decodedKauth = decodeURIComponent(cont);
+  const patchedKauth = withQuery(decodedKauth, { state });
+  u.searchParams.set('continue', encodeURIComponent(patchedKauth));
+  return u.toString();
 }
 
-/**
- * 3) 아직 미구현 공급자 가드
- */
+/* ================================
+ * 공급자 준비 여부 검사
+ * ================================ */
 export function ensureProviderEnabled(provider: SocialProvider): boolean {
   const meta = OAUTH_PROVIDERS[provider];
-  if (!meta?.enabled) {
+  if (!meta) {
+    console.warn('[auth] Unknown provider:', provider, 'valid=', Object.keys(OAUTH_PROVIDERS));
+    alert('해당 간편 로그인은 준비중입니다');
+    return false;
+  }
+  if (!meta.enabled) {
     alert('해당 간편 로그인은 준비중입니다');
     return false;
   }
   return true;
 }
 
-/* ------------------------------ */
-/*          토큰 유틸들           */
-/* ------------------------------ */
+/* ================================
+ * 리다이렉트 진입점
+ * - Kakao: 긴 URL 사용 + 매 로그인마다 난수 state 생성/주입
+ * - 그 외: 필요 시 buildAuthorizeUrl 사용(현재는 카카오만)
+ * ================================ */
+export function redirectToProvider(provider: SocialProvider) {
+  if (!ensureProviderEnabled(provider)) return;
 
+  // 긴 URL 원본: ENV 우선, 없으면 하드코드(네가 성공했던 URL로 교체 가능)
+  const BASE_LONG_URL =
+    process.env.NEXT_PUBLIC_FULL_KAKAO_LOGIN_URL ??
+    "https://accounts.kakao.com/login/?continue=https%3A%2F%2Fkauth.kakao.com%2Foauth%2Fauthorize%3Fresponse_type%3Dcode%26client_id%3Da7c27574c30bb99e563d2b584d58de73%26redirect_uri%3Dhttp%253A%252F%252F127.0.0.1%253A3000%252Flogin%252Foauth2%252Fcode%252Fkakao%26scope%3Dprofile_nickname%26state%3Dskinmate%26through_account%3Dtrue#login";
+
+  // 1) 매번 난수 state 생성 + 세션 저장 → 콜백에서 동일 값 비교
+  const state = Math.random().toString(36).slice(2);
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem('oauth:kakao:state', state);
+  }
+
+  // 2) 긴 URL 내부(continue=kauth...)의 state 값을 방금 만든 state로 교체
+  const finalUrl =
+    provider === 'kakao'
+      ? patchAccountsContinueState(BASE_LONG_URL, state)
+      : buildAuthorizeUrl(provider);
+
+  // 페이지 이동 (fetch 금지)
+  window.location.assign(finalUrl);
+}
+
+/* ================================
+ * 토큰 유틸
+ * ================================ */
 const ACCESS_KEY = 'accessToken';
 const REFRESH_KEY = 'refreshToken';
-
 export type Tokens = { accessToken: string; refreshToken?: string };
 
 export function saveTokens(tokens: Tokens) {
@@ -76,51 +109,40 @@ export function saveTokens(tokens: Tokens) {
   if (tokens.refreshToken) localStorage.setItem(REFRESH_KEY, tokens.refreshToken);
 }
 
-export function getAccessToken(): string | null {
+export function getAccessToken() {
   return typeof window !== 'undefined' ? localStorage.getItem(ACCESS_KEY) : null;
 }
-
-export function getRefreshToken(): string | null {
+export function getRefreshToken() {
   return typeof window !== 'undefined' ? localStorage.getItem(REFRESH_KEY) : null;
 }
-
 export function clearTokens() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
 }
 
-/**
- * 4) URL(hash 혹은 query)에 포함된 토큰을 파싱하여 localStorage에 저장
- */
+/** URL(hash|query)에 토큰이 있으면 저장 후 URL 정리 */
 export function persistTokensFromLocation(): boolean {
   if (typeof window === 'undefined') return false;
-
   const { location, history } = window;
-  const hash = location.hash?.startsWith('#') ? location.hash.slice(1) : '';
-  const hashParams = new URLSearchParams(hash);
-  const hAT = hashParams.get('accessToken');
-  const hRT = hashParams.get('refreshToken');
 
-  const search = location.search?.startsWith('?') ? location.search.slice(1) : '';
-  const searchParams = new URLSearchParams(search);
-  const qAT = searchParams.get('accessToken');
-  const qRT = searchParams.get('refreshToken');
+  const h = location.hash?.startsWith('#') ? location.hash.slice(1) : '';
+  const hp = new URLSearchParams(h);
+  const s = location.search?.startsWith('?') ? location.search.slice(1) : '';
+  const sp = new URLSearchParams(s);
 
-  const accessToken = hAT ?? qAT ?? undefined;
-  const refreshToken = hRT ?? qRT ?? undefined;
+  const accessToken = hp.get('accessToken') ?? sp.get('accessToken') ?? undefined;
+  const refreshToken = hp.get('refreshToken') ?? sp.get('refreshToken') ?? undefined;
 
   if (accessToken) {
-    saveTokens({ accessToken, refreshToken });
+    saveTokens({ accessToken, refreshToken: refreshToken ?? undefined });
     history.replaceState(null, '', location.pathname);
     return true;
   }
   return false;
 }
 
-/**
- * 5) Authorization 헤더 자동 첨부 fetch
- */
+/** Authorization 자동 주입 fetch */
 export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
   const headers = new Headers(init.headers || {});
   const at = getAccessToken();
@@ -128,12 +150,10 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
   return fetch(input, { ...init, headers });
 }
 
-/**
- * 로그아웃: 서버 RT 삭제 요청 후 로컬 토큰 클리어
- */
+/** 서버 로그아웃 + 로컬 토큰 정리 */
 export async function logout(): Promise<void> {
   try {
-    await http('/auth/logout', { method: 'POST' }); // withAuth 기본값 true → Authorization 자동 첨부
+    await http('/auth/logout', { method: 'POST' });
   } catch (e) {
     console.warn('logout API failed, clearing local tokens anyway.', e);
   } finally {

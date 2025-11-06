@@ -1,13 +1,14 @@
+// /src/entities/loading/schemas.ts
 import { z } from 'zod';
 
 export const ProductSchema = z.object({
   name: z.string(),
   brand: z.string(),
-  // 백엔드는 DECIMAL -> float로 내려올 수 있음
-  price: z.number().nonnegative(),
-  file_path: z.string().optional(),  // 화장품 이미지 경로 (예: 'cosmetic/1.jpg')
-  // 백엔드가 빈 문자열을 줄 수 있으므로 선택값 허용
-  buy_url: z.string().optional(),
+  // DECIMAL 문자열도 허용 → number로 강제 변환
+  price: z.coerce.number().nonnegative(),
+  // 백엔드가 null 줄 수 있음
+  file_path: z.string().nullable().optional(),
+  buy_url: z.string().nullable().optional(),
   reason: z.string(),
 });
 
@@ -20,11 +21,15 @@ export const SkinAnalysisData = z.object({
   created_at: z.string(),
 });
 
-export const SkinAnalysisOutput = z.object({
-  code: z.number(),
-  success: z.boolean(),
-  message: z.string(),
-  data: SkinAnalysisData,
-});
+export const SkinAnalysisOutput = z
+  .object({
+    code: z.number(),
+    success: z.boolean(),
+    message: z.string(),
+    data: SkinAnalysisData,
+  })
+  // timestamp 등 여분 필드 허용
+  .passthrough();
 
+export type SkinAnalysisDataT = z.infer<typeof SkinAnalysisData>;
 export type SkinAnalysisOutputT = z.infer<typeof SkinAnalysisOutput>;
