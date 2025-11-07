@@ -23,13 +23,13 @@ export default function KakaoCallbackPage() {
         return;
       }
 
-      // ✅ 기본값 보정: ENV 없으면 로컬 기본값
+      // 기본값 보정: ENV 없으면 로컬 기본값
       const apiBase = ENV_API_BASE ?? 'http://127.0.0.1:8080';
       const redirectUri =
         ENV_REDIRECT ??
         (typeof window !== 'undefined'
           ? `${window.location.origin}/login/oauth2/code/kakao`
-          : 'http://127.0.0.1:3000/login/oauth2/code/kakao');
+          : 'https://skinmate.site/login/oauth2/code/kakao');
 
       // 같은 code 재사용 방지(뒤로가기/새로고침)
       const usedKey = `oauth:kakao:code:used:${code}`;
