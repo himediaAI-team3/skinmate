@@ -31,8 +31,8 @@ export default function LoginPage() {
           시작하기 전에<br />로그인해주세요.
         </h2>
         <p className="text-gray-500 mt-2 text-center">간편 로그인을 통해 바로 시작할 수 있어요.</p>
-
         <div className="w-full mt-12 space-y-3">
+{/*
           <button
             onClick={() => handleSocialLogin('google')}
             disabled={!OAUTH_PROVIDERS.google.enabled}
@@ -48,7 +48,7 @@ export default function LoginPage() {
           >
             네이버로 시작하기
           </button>
-
+*/}
           <button
             onClick={() => handleSocialLogin('kakao')}
             disabled={!OAUTH_PROVIDERS.kakao.enabled}

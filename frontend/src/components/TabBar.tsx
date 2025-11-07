@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 type Item = {
   href: string;
@@ -10,6 +10,16 @@ type Item = {
 };
 
 const DIAG_GROUP = ['/info', '/upload', '/loading', '/result'];
+
+// 로그인 필요 메뉴
+const REQUIRES_AUTH = new Set<string>(['/info', '/cosmetics']);
+
+// 로컬스토리지 토큰 조회
+const getAccessToken = () =>
+  (typeof window !== 'undefined' &&
+    (localStorage.getItem('access_token') ||
+     localStorage.getItem('ACCESS_TOKEN') ||
+     localStorage.getItem('token'))) || null;
 
 // ← items는 3개만 유지
 const items: Item[] = [
@@ -57,6 +67,7 @@ const items: Item[] = [
 
 export default function TabBar() {
   const pathname = usePathname();
+  const router = useRouter();
 
   const isActive = (href: string) => {
     if (href === '/info') {
@@ -66,6 +77,17 @@ export default function TabBar() {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
+  // 클릭 가드: 로그인 필요한 메뉴에서 토큰 없으면 알림 + /login 이동
+  const guardNav = (e: React.MouseEvent, href: string) => {
+    if (!REQUIRES_AUTH.has(href)) return; // 인증 필요 없는 탭은 통과
+    const hasToken = !!getAccessToken();
+    if (!hasToken) {
+      e.preventDefault();
+      alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
+      router.push('/login');
+    }
+  };
+
   const TAB_H = 56;
   const tabHeightStyle = { height: `calc(${TAB_H}px + env(safe-area-inset-bottom))` };
   const tabPaddingStyle = { paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' };
@@ -73,40 +95,41 @@ export default function TabBar() {
   return (
     <>
       {/* 컨텐츠가 탭에 가려지지 않도록 스페이서 */}
-      <div aria-hidden className="w-full" />
-        <nav
-          className="
-            fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md
-            border-t border-gray-200 bg-white/95 backdrop-blur
-            shadow-[0_-6px_12px_rgba(0,0,0,0.04)]
-            z-40
-            flex items-center justify-center
-          "
-          style={tabHeightStyle}
-          aria-label="하단 메뉴"
-        >
-          {/* 중앙 정렬 + 간격 확대 */}
-          <ul className="flex items-center justify-center gap-8 sm:gap-10 md:gap-12 h-full">
-            {items.map(({ href, label, icon }) => {
-              const active = isActive(href);
-              return (
-                <li key={href} className="h-full flex">
-                  <Link
-                    href={href}
-                    className="h-full px-6 sm:px-7 md:px-8 flex flex-col items-center justify-center gap-1 text-xs"
-                    aria-current={active ? 'page' : undefined}
-                    aria-label={label}
-                    style={tabPaddingStyle}
-                  >
-                    {icon(active)}
-                    <span className={active ? 'text-gray-900 font-semibold' : 'text-gray-500'}>{label}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+      <div aria-hidden className="w-full" style={tabHeightStyle} />
 
+      <nav
+        className="
+          fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md
+          border-t border-gray-200 bg-white/95 backdrop-blur
+          shadow-[0_-6px_12px_rgba(0,0,0,0.04)]
+          z-40
+          flex items-center justify-center
+        "
+        style={tabHeightStyle}
+        aria-label="하단 메뉴"
+      >
+        {/* 중앙 정렬 + 간격 확대 */}
+        <ul className="flex items-center justify-center gap-8 sm:gap-10 md:gap-12 h-full">
+          {items.map(({ href, label, icon }) => {
+            const active = isActive(href);
+            return (
+              <li key={href} className="h-full flex">
+                <Link
+                  href={href}
+                  className="h-full px-6 sm:px-7 md:px-8 flex flex-col items-center justify-center gap-1 text-xs"
+                  aria-current={active ? 'page' : undefined}
+                  aria-label={label}
+                  style={tabPaddingStyle}
+                  onClick={(e) => guardNav(e, href)}
+                >
+                  {icon(active)}
+                  <span className={active ? 'text-gray-900 font-semibold' : 'text-gray-500'}>{label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
     </>
   );
 }
