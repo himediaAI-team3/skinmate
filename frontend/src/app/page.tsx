@@ -1,13 +1,37 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { Camera, BrainCircuit, Award } from 'lucide-react';
 
 export default function Welcome() {
+  const router = useRouter();
+
   // 첫 방문 표시용 쿠키(180일 유지). 이후 / 에 접근하면 메인으로 바로 갑니다.
   useEffect(() => {
     document.cookie = `seenLanding=1; max-age=15552000; path=/`;
   }, []);
+
+  // 시작하기 버튼 클릭 시: 액세스 토큰 유무에 따라 경로 분기
+  const handleStart = () => {
+    // 1) localStorage 키 후보들 확인
+    const lsToken =
+      typeof window !== 'undefined' &&
+      (localStorage.getItem('access_token') ||
+        localStorage.getItem('ACCESS_TOKEN') ||
+        localStorage.getItem('token'));
+
+    // 2) 쿠키에 access 토큰 이름이 노출되어 있다면 확인
+    const cookieMatch =
+      typeof document !== 'undefined' &&
+      document.cookie.match(
+        /(?:^|;\s*)(access_token|ACCESS_TOKEN|access)=([^;]+)/
+      );
+
+    const hasToken = Boolean(lsToken) || Boolean(cookieMatch);
+
+    router.push(hasToken ? '/info' : '/login');
+  };
 
   return (
     <div>
@@ -38,17 +62,21 @@ export default function Welcome() {
             꼭 맞는 화장품을 추천해 드려요.
           </p>
 
-          {/* 첫진입 랜딩의 CTA */}
-          <a href="/login">
-            <button className="mt-8 w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:scale-105 transform transition-transform duration-300">
-              AI 피부 분석 시작하기
-            </button>
-          </a>
+          {/* 첫진입 랜딩의 CTA: 클릭 시 분기 */}
+          <button
+            type="button"
+            onClick={handleStart}
+            className="mt-8 w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:scale-105 transform transition-transform duration-300"
+          >
+            AI 피부 분석 시작하기
+          </button>
         </section>
 
         {/* Features Section */}
         <section className="mt-12">
-          <h3 className="text-xl font-bold text-gray-800 text-center mb-6">SkinMate만의 특별한 기능</h3>
+          <h3 className="text-xl font-bold text-gray-800 text-center mb-6">
+            SkinMate만의 특별한 기능
+          </h3>
           <div className="space-y-4">
             <FeatureCard
               icon={<Camera className="text-orange-500" />}
@@ -77,13 +105,15 @@ function FeatureCard({
   title,
   description,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   description: string;
 }) {
   return (
     <div className="flex items-center space-x-4 bg-gray-100 p-4 rounded-xl">
-      <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center flex-shrink-0">{icon}</div>
+      <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+        {icon}
+      </div>
       <div>
         <p className="font-semibold text-gray-800">{title}</p>
         <p className="text-sm text-gray-500">{description}</p>
