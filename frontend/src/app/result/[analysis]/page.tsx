@@ -1,35 +1,48 @@
+// /src/app/result/[analysis]/page.tsx
 'use client';
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { analysisApi } from '@/features/loading';
-import type { SkinAnalysisOutputT } from '@/entities/loading';
+
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { ExternalLink } from 'lucide-react';
+import { analysisApi, getProductImageSrc } from '@/features/loading';
+import type { SkinAnalysisOutputT, SkinAnalysisDataT } from '@/entities/loading';
 
 export default function ResultPage() {
-  const seg = useParams();
-  const analysisId = Number((seg as any)?.analysis);
+  const router = useRouter();
+  const params = useParams();
+  const analysisId = useMemo(() => {
+    const v = (params as any)?.analysis;
+    const n = Array.isArray(v) ? Number(v[0]) : Number(v);
+    return Number.isFinite(n) ? n : NaN;
+  }, [params]);
 
-  const [data, setData] = useState<SkinAnalysisOutputT['data'] | null>(null);
+  const [data, setData] = useState<SkinAnalysisDataT | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imgErr, setImgErr] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // 이미지 베이스 URL
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  const IMG_BASE = `${API_BASE}/api/files`;  // 피부 이미지용
-
-  // 결과 데이터 로드
+  // 1) 결과 데이터 로드
   useEffect(() => {
     const boot = async () => {
       try {
+        if (!Number.isFinite(analysisId)) throw new Error('유효하지 않은 분석 ID입니다.');
+
+        // 세션 캐시 우선 사용
         const raw = sessionStorage.getItem('skinMateAnalysis');
         if (raw) {
-          const parsed: SkinAnalysisOutputT = JSON.parse(raw);
-          if (parsed?.data?.analysis_id === analysisId) {
-            setData(parsed.data);
-            sessionStorage.removeItem('skinMateAnalysis');
-            return;
+          try {
+            const parsed: SkinAnalysisOutputT = JSON.parse(raw);
+            if (parsed?.data?.analysis_id === analysisId) {
+              setData(parsed.data);
+              sessionStorage.removeItem('skinMateAnalysis');
+              return;
+            }
+          } catch {
+            // 파싱 실패 시 무시하고 서버 조회로 진행
           }
         }
-        if (!analysisId || Number.isNaN(analysisId)) throw new Error('유효하지 않은 분석 ID입니다.');
+
+        // 서버 조회
         const res = await analysisApi.get(analysisId);
         if (!res.success) throw new Error(res.message || '결과 조회 실패');
         setData(res.data);
@@ -40,12 +53,43 @@ export default function ResultPage() {
     boot();
   }, [analysisId]);
 
+  // 2) 원본 업로드 이미지 Blob → objectURL 생성 (Authorization 헤더 필요)
+  useEffect(() => {
+    let alive = true;
+    let objectUrl: string | null = null;
+
+    async function loadImage(fileId: number) {
+      try {
+        const url = await analysisApi.getFileObjectUrl(fileId);
+        if (!alive) return;
+        objectUrl = url;
+        setImageUrl(url);
+      } catch (e: any) {
+        setImgErr(e?.message ?? '이미지를 불러오지 못했습니다.');
+        setImageUrl(null);
+      }
+    }
+
+    if (data?.file_id) {
+      loadImage(data.file_id);
+    } else {
+      setImageUrl(null);
+      setImgErr(null);
+    }
+
+    return () => {
+      alive = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [data?.file_id]);
+
+  // 버튼 컴포넌트
   function GlassActionButton({
     href,
     children,
     label,
     disabled,
-    variant = 'primary', // 'primary' | 'outline' | 'glass'
+    variant = 'glass', // 'primary' | 'outline' | 'glass'
   }: {
     href?: string;
     children: React.ReactNode;
@@ -53,7 +97,6 @@ export default function ResultPage() {
     disabled?: boolean;
     variant?: 'primary' | 'outline' | 'glass';
   }) {
-    // URL 유효성 체크
     let isValid = true;
     try {
       if (!href) throw new Error('no href');
@@ -62,25 +105,20 @@ export default function ResultPage() {
       isValid = false;
     }
     const isDisabled = disabled || !isValid;
-  
-    // 공통 클래스
+
     const base =
       'group relative inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition will-change-transform focus:outline-none focus:ring-2 focus:ring-orange-200 hover:scale-[1.01] active:scale-[0.99]';
-  
-    // variant별 스타일
+
     const variantClass =
       variant === 'primary'
         ? [
-            // 선명한 그라데이션 배경 + 흰글씨
             'text-white shadow-sm hover:shadow',
             'bg-gradient-to-r from-orange-500 to-pink-500',
-            // 살짝 광택
             'after:absolute after:inset-0 after:rounded-2xl after:pointer-events-none',
             'after:[background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0))]',
           ].join(' ')
         : variant === 'outline'
         ? [
-            // 투명 배경 + 그라데이션 보더(눈에 띄는 테두리)
             'bg-white/30 backdrop-blur text-gray-900',
             'shadow-sm hover:shadow',
             'before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:[background:linear-gradient(135deg,#f59e0b,#ec4899)]',
@@ -88,14 +126,13 @@ export default function ResultPage() {
             'relative overflow-hidden',
           ].join(' ')
         : [
-            // 강화된 glass (기존 톤에서 대비+보더 강화)
             'text-gray-900 shadow-sm hover:shadow',
             'bg-white/80 backdrop-blur border border-gray-300',
             'relative overflow-hidden',
             'before:absolute before:inset-0 before:rounded-2xl before:pointer-events-none',
             'before:[background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,255,255,.5))]',
           ].join(' ');
-  
+
     return (
       <a
         href={isValid ? href : undefined}
@@ -104,11 +141,7 @@ export default function ResultPage() {
         aria-label={label || '구매하러 가기'}
         title={label || '구매하러 가기'}
         onClick={(e) => isDisabled && e.preventDefault()}
-        className={[
-          base,
-          variantClass,
-          isDisabled ? 'opacity-50 pointer-events-none' : '',
-        ].join(' ')}
+        className={[base, variantClass, isDisabled ? 'opacity-50 pointer-events-none' : ''].join(' ')}
       >
         <span className={variant === 'primary' ? 'relative' : 'relative bg-clip-text'}>
           {children}
@@ -126,6 +159,7 @@ export default function ResultPage() {
     );
   }
 
+  // 에러/로딩 뷰
   if (error) {
     return (
       <div className="max-w-md mx-auto min-h-screen p-6 bg-white">
@@ -137,14 +171,16 @@ export default function ResultPage() {
           <p className="mt-1">{error}</p>
         </div>
         <div className="pt-10 pb-6">
-          <a href="/upload" className="block w-full bg-orange-500 text-white text-center font-bold py-4 px-8 rounded-full shadow-lg hover:bg-orange-600 transition-colors">
+          <a
+            href="/upload"
+            className="block w-full bg-orange-500 text-white text-center font-bold py-4 px-8 rounded-full shadow-lg hover:bg-orange-600 transition-colors"
+          >
             다시 업로드하기
           </a>
         </div>
       </div>
     );
   }
-
   if (!data) {
     return (
       <div className="max-w-md mx-auto min-h-screen p-6 bg-white">
@@ -156,31 +192,23 @@ export default function ResultPage() {
     );
   }
 
-  // file_id가 있으면 이미지 URL 생성
-  const imageUrl = data.file_id ? `${IMG_BASE}/${data.file_id}` : null;
-
   return (
     <div className="max-w-md mx-auto min-h-screen p-6 bg-white">
       <header className="pt-4 pb-8">
         <h1 className="text-3xl font-bold text-gray-800">AI 분석 결과</h1>
       </header>
 
-      {/* 등록된 이미지: file_id 기준으로 표시 */}
+      {/* 원본 업로드 이미지 (JWT 필요 → Blob → objectURL) */}
       <section>
         <h2 className="text-xl font-bold text-gray-800">등록된 이미지</h2>
-        <div
-          className="mt-4 w-full aspect-square max-h-[520px] bg-gray-100 rounded-2xl overflow-hidden shadow-sm
-                     flex items-center justify-center"
-        >
+        <div className="mt-4 w-full aspect-square max-h-[520px] bg-gray-100 rounded-2xl overflow-hidden shadow-sm flex items-center justify-center">
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={imageUrl}
-              alt="Uploaded skin"
-              className="w-full h-full object-cover"
-            />
+            <img src={imageUrl} alt="Uploaded skin" className="w-full h-full object-cover" />
+          ) : imgErr ? (
+            <p className="text-gray-500">{imgErr}</p>
           ) : (
-            <p className="text-gray-500">등록된 이미지를 찾을 수 없습니다.</p>
+            <p className="text-gray-500">이미지 로딩 중…</p>
           )}
         </div>
       </section>
@@ -200,50 +228,57 @@ export default function ResultPage() {
         <div className="mt-4 space-y-4">
           {data.products.map((p, idx) => {
             const pid = (p as any)?.cosmetic_id as number | undefined;
-            const detailHref = typeof pid === 'number' && !Number.isNaN(pid) ? `/cosmetics/${pid}` : undefined;
+            const detailHref =
+              typeof pid === 'number' && !Number.isNaN(pid) ? `/cosmetics/${pid}` : undefined;
+            const productImg = getProductImageSrc((p as any)?.file_path ?? null);
+
+            const CardImage = (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={productImg}
+                alt={p.name}
+                className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/placeholder.png';
+                }}
+              />
+            );
+
             return (
-            <div key={idx} className="bg-gray-50 p-4 rounded-2xl">
-              <div className="flex items-start gap-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {detailHref ? (
-                  <a href={detailHref} aria-label={`${p.name} 상세 보기`}>
-                    <img
-                      src={p.file_path ? `${API_BASE}${p.file_path}` : (imageUrl || '')}
-                      alt={p.name}
-                      className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
-                    />
-                  </a>
-                ) : (
-                  <img
-                    src={p.file_path ? `${API_BASE}${p.file_path}` : (imageUrl || '')}
-                    alt={p.name}
-                    className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
-                  />
-                )}
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500">{p.brand}</p>
+              <div key={idx} className="bg-gray-50 p-4 rounded-2xl">
+                <div className="flex items-start gap-4">
                   {detailHref ? (
-                    <a href={detailHref} className="font-semibold text-gray-800 mt-1 hover:underline">
-                      {p.name}
+                    <a href={detailHref} aria-label={`${p.name} 상세 보기`}>
+                      {CardImage}
                     </a>
                   ) : (
-                    <p className="font-semibold text-gray-800 mt-1">{p.name}</p>
+                    CardImage
                   )}
-                  <p className="font-bold text-orange-600 mt-2">{Number(p.price).toLocaleString()}원</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-500">{p.brand}</p>
+                    {detailHref ? (
+                      <a href={detailHref} className="font-semibold text-gray-800 mt-1 hover:underline line-clamp-2">
+                        {p.name}
+                      </a>
+                    ) : (
+                      <p className="font-semibold text-gray-800 mt-1 line-clamp-2">{p.name}</p>
+                    )}
+                    <p className="font-bold text-orange-600 mt-2">
+                      {Number(p.price).toLocaleString()}원
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 bg-white p-3 rounded-lg">
+                  <p className="text-xs font-bold text-gray-600">추천 이유</p>
+                  <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">{p.reason}</p>
+                  <GlassActionButton href={(p as any)?.buy_url} label="구매하러 가기" variant="glass">
+                    구매하러 가기
+                  </GlassActionButton>
                 </div>
               </div>
-
-              <div className="mt-3 bg-white p-3 rounded-lg">
-                <p className="text-xs font-bold text-gray-600">추천 이유</p>
-                <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">{p.reason}</p>
-
-                {/* ▶ 구매하러 가기 버튼 (기존 링크 대체) */}
-                <GlassActionButton href={p.buy_url} label="구매하러 가기" variant="glass">
-                  구매하러 가기
-                </GlassActionButton>
-              </div>
-            </div>
-          )})}
+            );
+          })}
         </div>
       </section>
 
@@ -258,5 +293,3 @@ export default function ResultPage() {
     </div>
   );
 }
-
-

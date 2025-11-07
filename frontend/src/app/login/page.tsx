@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import type { SocialProvider } from '@/entities/auth';
+import { OAUTH_PROVIDERS } from '@/entities/auth';
 import { ensureProviderEnabled, redirectToProvider } from '@/features/auth';
 
 const PageHeader = ({ title, backHref }: { title: string; backHref: string }) => (
@@ -19,7 +20,6 @@ const PageHeader = ({ title, backHref }: { title: string; backHref: string }) =>
 export default function LoginPage() {
   const handleSocialLogin = (provider: SocialProvider) => {
     if (!ensureProviderEnabled(provider)) return;
-    // 지금은 OAUTH_PROVIDERS.Kakao.authorizePath가 kauth URL이므로 그대로 이동
     redirectToProvider(provider);
   };
 
@@ -33,16 +33,27 @@ export default function LoginPage() {
         <p className="text-gray-500 mt-2 text-center">간편 로그인을 통해 바로 시작할 수 있어요.</p>
 
         <div className="w-full mt-12 space-y-3">
-          <button onClick={() => handleSocialLogin('Google')}
-                  className="w-full bg-gray-800 text-white font-bold py-4 px-8 rounded-full">
+          <button
+            onClick={() => handleSocialLogin('google')}
+            disabled={!OAUTH_PROVIDERS.google.enabled}
+            className="w-full bg-gray-800 text-white font-bold py-4 px-8 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Google로 시작하기
           </button>
-          <button onClick={() => handleSocialLogin('Naver')}
-                  className="w-full bg-green-500 text-white font-bold py-4 px-8 rounded-full">
+
+          <button
+            onClick={() => handleSocialLogin('naver')}
+            disabled={!OAUTH_PROVIDERS.naver.enabled}
+            className="w-full bg-green-500 text-white font-bold py-4 px-8 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             네이버로 시작하기
           </button>
-          <button onClick={() => handleSocialLogin('Kakao')}
-                  className="w-full bg-yellow-400 text-black font-bold py-4 px-8 rounded-full">
+
+          <button
+            onClick={() => handleSocialLogin('kakao')}
+            disabled={!OAUTH_PROVIDERS.kakao.enabled}
+            className="w-full bg-yellow-400 text-black font-bold py-4 px-8 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             카카오로 시작하기
           </button>
         </div>

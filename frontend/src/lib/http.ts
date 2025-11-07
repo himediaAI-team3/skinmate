@@ -1,84 +1,62 @@
-// /lib/http.ts
-import { getAccessToken } from '@/features/auth'; // 이미 구현한 토큰 getter 사용
-
-export type Options = {
+// /src/lib/http.ts
+type HttpOptions = {
   method?: string;
-  headers?: Record<string, string>;
-  json?: unknown;                 // body를 JSON으로 보낼 때
-  body?: BodyInit | null;         // 바이너리/폼데이터 등 직접 보낼 때
-  credentials?: RequestCredentials; // 쿠키 인증이면 'include'
-  withAuth?: boolean;             // 기본 true: Authorization 자동 첨부
-  throwOnNonOK?: boolean;         // 기본 true: !res.ok 이면 throw
-  signal?: AbortSignal;           // 필요 시 AbortController 신호
+  headers?: HeadersInit;
+  json?: unknown;       // JSON 바디로 보낼 때
+  body?: BodyInit;      // FormData나 Blob 등으로 보낼 때
+  withAuth?: boolean;   // 기본 true
+  throwOnNonOK?: boolean; // 기본 true
 };
 
-export async function http<T>(path: string, opts: Options = {}) {
+export async function http<T = any>(path: string, opts: HttpOptions = {}): Promise<T> {
   const {
+    method = 'GET',
+    headers,
     json,
     body,
-    headers,
-    method = 'GET',
-    credentials,
     withAuth = true,
     throwOnNonOK = true,
-    signal,
   } = opts;
 
-  // 헤더 구성
-  const h = new Headers(headers ?? {});
-  if (json !== undefined && !h.has('content-type')) {
-    h.set('content-type', 'application/json');
+  const base = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '');
+
+  // 절대 URL이면 그대로, 아니면 base와 결합
+  const url = /^https?:\/\//i.test(path) ? path : `${base}${path}`;
+
+  const h = new Headers(headers);
+
+  // JSON VS FormData 바디 설정
+  let finalBody: BodyInit | undefined = body as BodyInit | undefined;
+  if (json !== undefined) {
+    // json이 오면 JSON으로 보냄
+    h.set('Content-Type', 'application/json');
+    finalBody = JSON.stringify(json);
+  } else if (finalBody instanceof FormData) {
+    // FormData는 Content-Type 자동 설정(절대 수동 지정 X)
   }
 
-  // Authorization 자동 첨부
+  // 토큰 자동 첨부
   if (withAuth) {
-    const at = getAccessToken();
+    const at = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
     if (at) h.set('Authorization', `Bearer ${at}`);
   }
-
-  // 절대/상대 경로 그대로 사용(프록시는 Next/Vercel/Nginx에서 처리)
-  const url = path;
 
   const res = await fetch(url, {
     method,
     headers: h,
-    body: json !== undefined ? JSON.stringify(json) : body,
-    credentials,
-    signal,
+    body: finalBody,
+    // 쿠키 세션 기반이면:
+    // credentials: 'include',
   });
 
-  // 컨텐츠 타입 판단
-  const isJson = (res.headers.get('content-type') || '').includes('application/json');
+  const contentType = res.headers.get('Content-Type') || '';
+  const isJson = contentType.toLowerCase().includes('application/json');
+  const payload = isJson ? await res.json().catch(() => ({})) : await res.text().catch(() => '');
 
-  // 오류 처리
-  if (throwOnNonOK && !res.ok) {
-    let detail: any = undefined;
-    try {
-      detail = isJson ? await res.json() : await res.text();
-    } catch {
-      /* ignore */
-    }
-    const msg =
-      (isJson ? detail?.message : undefined) ||
-      res.statusText ||
-      'Request failed';
-
-    const err = new Error(`API ${res.status}: ${msg}`);
-    (err as any).status = res.status;
-    (err as any).detail = detail;
-    throw err;
+  if (!res.ok && throwOnNonOK) {
+    const msg = isJson ? (payload?.message || JSON.stringify(payload)) : String(payload);
+    throw new Error(msg || `HTTP ${res.status}`);
   }
 
-  // No Content
-  if (res.status === 204 || res.status === 205) {
-    return undefined as T;
-  }
-
-  // 성공 응답 파싱
-  if (isJson) {
-    return (await res.json()) as T;
-  }
-  // JSON이 아닌 응답을 기대한다면 호출부에서 제네릭 T를 string 등으로 지정
-  const text = await res.text();
-  return text as unknown as T;
+  return payload as T;
 }
