@@ -3,6 +3,16 @@ from typing import Optional, List
 from decimal import Decimal
 
 
+class CosmeticAnalysisResult(BaseModel):
+    """화장품 분석 결과 (LLM 생성)"""
+    skin_type: str = Field(description="피부타입 (1~2개)")
+    skin_disease: str = Field(description="관련 피부질환 (1~4개)")
+    main_effect: str = Field(description="주요 효능 (3~5개)")
+    care_symptom: str = Field(description="주요 케어 증상 (4~6개)")
+    key_ingredient: str = Field(description="핵심 성분 (3~6개)")
+    description: str = Field(description="제품 설명 (2~3문장)")
+
+
 class CosmeticSearchParams(BaseModel):
     """화장품 목록 검색 파라미터"""
     brand: Optional[str] = Field(None, description="브랜드명 (부분일치)")

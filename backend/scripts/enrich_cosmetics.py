@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.config.database import SessionLocal
 from app.repository.cosmetic import CosmeticRepository
-from app.services.cosmetic import CosmeticService
+from app.services.cosmetic_enrichment import CosmeticEnrichmentService
 
 
 def parse_id_list(ids_str: str) -> List[int]:
@@ -79,13 +79,13 @@ def main():
             processed += 1
             try:
                 if args.dry_run:
-                    data = CosmeticService.generate_cosmetic_llm_fields(db, cid)
+                    data = CosmeticEnrichmentService.generate_cosmetic_llm_fields(db, cid)
                     print(f"\n[DRY-RUN] cosmetic_id={cid}")
                     for k, v in data.items():
                         print(f"  - {k}: {v}")
                     success += 1
                 else:
-                    CosmeticService.enrich_cosmetic_and_save(
+                    CosmeticEnrichmentService.enrich_cosmetic_and_save(
                         db,
                         cosmetic_id=cid,
                         overwrite=args.overwrite,
