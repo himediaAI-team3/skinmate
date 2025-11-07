@@ -34,13 +34,7 @@ async def chat(
     - JWT 토큰 필수 (Authorization: Bearer <token>)
     - thread_id는 사용자별로 격리 (다른 사용자의 대화 접근 불가)
     """
-    member_id = current_user.get("member_id")
-    
-    if not member_id:
-        raise ApiException(
-            http_status.HTTP_401_UNAUTHORIZED,
-            "인증 정보가 유효하지 않습니다."
-        )
+    member_id = current_user["member_id"]
     
     try:
         # Agent 서비스 호출
@@ -74,4 +68,3 @@ async def chat(
             http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             f"채팅 중 오류가 발생했습니다: {str(e)}"
         )
-

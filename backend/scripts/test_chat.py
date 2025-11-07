@@ -1,7 +1,6 @@
 """
 Chat API 통합 테스트
 """
-import os
 import sys
 from pathlib import Path
 
@@ -15,7 +14,7 @@ load_dotenv()
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.services.agent_service import AgentService
-from app.core.config.database import get_database_url
+from app.core.config.database import DATABASE_URL
 
 
 def test_chat_service():
@@ -26,7 +25,7 @@ def test_chat_service():
     
     # DB 세션 생성
     print("\n📦 DB 연결 중...")
-    engine = create_engine(get_database_url())
+    engine = create_engine(DATABASE_URL)
     SessionLocal = sessionmaker(bind=engine)
     db = SessionLocal()
     print("✅ DB 연결 성공")
@@ -92,4 +91,3 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         sys.exit(1)
-

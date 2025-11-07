@@ -18,7 +18,7 @@ def search_cosmetics(
     """화장품 목록 검색"""
     
     # JWT 토큰에서 추출한 member_id 사용
-    member_id = current_user.get("member_id")
+    member_id = current_user["member_id"]
     params.member_id = member_id
     
     # 서비스 호출
@@ -42,7 +42,7 @@ def get_cosmetic_detail(
     """화장품 상세 정보 조회"""
     
     # JWT 토큰에서 추출한 member_id 사용
-    member_id = current_user.get("member_id")
+    member_id = current_user["member_id"]
     
     # 서비스 호출
     result = CosmeticService.get_cosmetic_detail(db, cosmetic_id, member_id)

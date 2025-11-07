@@ -16,6 +16,31 @@ class CosmeticRepository:
         return db.query(Cosmetic).filter(Cosmetic.cosmetic_id == cosmetic_id).count() > 0
     
     @staticmethod
+    def get_by_ids(db: Session, cosmetic_ids: List[int]) -> List[Cosmetic]:
+        """
+        여러 화장품 ID로 조회 (RAG 파이프라인용)
+        Qdrant Vector 검색 Top 10 → MySQL 상세 정보 → LLM 최종 선정
+        
+        Args:
+            db: 데이터베이스 세션
+            cosmetic_ids: 화장품 ID 리스트
+            
+        Returns:
+            List[Cosmetic]: 화장품 객체 리스트
+        """
+        return db.query(Cosmetic).filter(Cosmetic.cosmetic_id.in_(cosmetic_ids)).all()
+    
+    @staticmethod
+    def get_all(db: Session) -> List[Cosmetic]:
+        """
+        모든 화장품 조회
+        
+        Returns:
+            List[Cosmetic]: 화장품 객체 리스트
+        """
+        return db.query(Cosmetic).all()
+    
+    @staticmethod
     def search(
         db: Session, 
         brand: Optional[str] = None,
@@ -160,3 +185,79 @@ class CosmeticRepository:
             'like_count': result.like_count or 0,
             'is_liked': result.is_liked or False
         }
+
+    @staticmethod
+    def get_basic_by_id(db: Session, cosmetic_id: int) -> Optional[dict]:
+        """기본 컬럼만 조회 (LLM 프롬프트 입력용)""" # LLM 생성값으로 기존 6개 컬럼 덮어쓰기
+        row = db.query(
+            Cosmetic.cosmetic_id,
+            Cosmetic.name,
+            Cosmetic.brand,
+            Cosmetic.category,
+            Cosmetic.price,
+            Cosmetic.ingredients,
+            Cosmetic.short_description,
+            Cosmetic.buy_url,
+        ).filter(Cosmetic.cosmetic_id == cosmetic_id).first()
+
+        if not row:
+            return None
+
+        return {
+            'cosmetic_id': row.cosmetic_id,
+            'name': row.name or '',
+            'brand': row.brand or '',
+            'category': row.category or '',
+            'price': row.price,
+            'ingredients': row.ingredients or '',
+            'short_description': row.short_description or '',
+            'buy_url': row.buy_url or '',
+        }
+
+    @staticmethod
+    def upsert_llm_fields_mysql(
+        db: Session,
+        cosmetic_id: int,
+        data: dict,
+        overwrite: bool = True
+    ) -> Cosmetic:
+        """  # LLM 생성값으로 기존 6개 컬럼 덮어쓰기
+        MySQL 기반 업서트: 존재하면 갱신, 없으면 생성
+        - 항상 6개 컬럼을 새 값으로 덮어쓰기
+        """
+
+        obj = db.query(Cosmetic).filter(Cosmetic.cosmetic_id == cosmetic_id).first()
+
+        # 대상 필드만 사용
+        new_values = {
+            'skin_type': data.get('skin_type'),
+            'skin_disease': data.get('skin_disease'),
+            'main_effect': data.get('main_effect'),
+            'care_symptom': data.get('care_symptom'),
+            'key_ingredient': data.get('key_ingredient'),
+            'description': data.get('description'),
+        }
+
+        if obj:
+            # 존재 시: 항상 새 값으로 덮어쓰기
+            for k, v in new_values.items():
+                setattr(obj, k, v)
+            db.add(obj)
+            db.commit()
+            db.refresh(obj)
+            return obj
+
+        # 없으면 새로 생성 (스텁 + 6개 컬럼)
+        obj = Cosmetic(
+            cosmetic_id=cosmetic_id,
+            skin_type=new_values['skin_type'],
+            skin_disease=new_values['skin_disease'],
+            main_effect=new_values['main_effect'],
+            care_symptom=new_values['care_symptom'],
+            key_ingredient=new_values['key_ingredient'],
+            description=new_values['description'],
+        )
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
+        return obj

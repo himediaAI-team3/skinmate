@@ -233,6 +233,15 @@ Thumbs.db
 tmp/
 typings/
 uploads/
+media/
+
+# 정적 파일 (이미지)
+backend/static/
+
+# 민감한 데이터가 포함된 설정 파일
+config.ini
+config.json
+secrets.json
 var/
 venv.bak/
 venv/
