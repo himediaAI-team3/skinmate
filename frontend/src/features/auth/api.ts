@@ -78,7 +78,7 @@ export function redirectToProvider(provider: SocialProvider) {
   // 긴 URL 원본: ENV 우선, 없으면 하드코드(네가 성공했던 URL로 교체 가능)
   const BASE_LONG_URL =
     process.env.NEXT_PUBLIC_FULL_KAKAO_LOGIN_URL ??
-    "https://accounts.kakao.com/login/?continue=https%3A%2F%2Fkauth.kakao.com%2Foauth%2Fauthorize%3Fresponse_type%3Dcode%26client_id%3Da7c27574c30bb99e563d2b584d58de73%26redirect_uri%3Dhttp%253A%252F%252F127.0.0.1%253A3000%252Flogin%252Foauth2%252Fcode%252Fkakao%26scope%3Dprofile_nickname%26state%3Dskinmate%26through_account%3Dtrue#login";
+    "https://accounts.kakao.com/login/?continue=https%3A%2F%2Fkauth.kakao.com%2Foauth%2Fauthorize%3Fresponse_type%3Dcode%26client_id%3Da7c27574c30bb99e563d2b584d58de73%26redirect_uri%3Dhttps%253A%252F%252Fskinmate.site%252Flogin%252Foauth2%252Fcode%252Fkakao%26scope%3Dprofile_nickname%26state%3Dskinmate%26through_account%3Dtrue#login";
 
   // 1) 매번 난수 state 생성 + 세션 저장 → 콜백에서 동일 값 비교
   const state = Math.random().toString(36).slice(2);
