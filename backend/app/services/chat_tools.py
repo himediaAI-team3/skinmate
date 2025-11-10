@@ -102,6 +102,49 @@ def extract_refine_keywords(message: str) -> List[str]:
         logger.info(f"Fallback 키워드 추출: {fallback_keywords}")
         return fallback_keywords
 
+def _fetch_cosmetics_by_ids(db: Session, ids: List[int]) -> List[dict]:
+    """cosmetic_id 목록으로 상세 정보를 조회하여 dict 리스트로 반환"""
+    cosmetics: List[dict] = []
+    for cid in ids:
+        detail = CosmeticRepository.get_detail(db, cid)
+        if detail:
+            cosmetics.append(detail)
+    return cosmetics
+
+def _format_products(cosmetics: List[dict], header: str) -> str:
+    """제품 리스트를 공통 포맷으로 문자열 생성"""
+    lines: List[str] = [header, ""]
+    for idx, cosmetic in enumerate(cosmetics, 1):
+        lines.append(f"{idx}. {cosmetic['name']}")
+        lines.append(f"   브랜드: {cosmetic['brand']}")
+        lines.append(f"   가격: {int(cosmetic['price']):,}원")
+        if cosmetic.get("main_effect"):
+            lines.append(f"   주요 효능: {cosmetic['main_effect']}")
+        lines.append("")
+    return "\n".join(lines)
+
+def _build_refined_queries(original_query: dict, refine_keywords: List[str]) -> tuple[str, str]:
+    """원본 쿼리와 키워드로 dense/sparse 재검색 쿼리 구성"""
+    if not refine_keywords:
+        return original_query["dense_query"], original_query["sparse_keywords"]
+    refined_sparse = original_query["sparse_keywords"] + " " + " ".join(refine_keywords)
+    refined_dense = (
+        original_query["dense_query"]
+        + f" 특히 {', '.join(refine_keywords)}에 집중한 제품이 필요합니다."
+    )
+    return refined_dense, refined_sparse
+
+def _update_cache_after_search(
+    thread_id: str,
+    analysis_id: int,
+    search_results: List[dict],
+    used_top3_ids: List[int],
+) -> None:
+    """검색 결과 기반으로 캐시를 초기화/갱신한다."""
+    remaining_candidates = [r["cosmetic_id"] for r in search_results[3:]]
+    init_recommendation_cache(thread_id, analysis_id, remaining_candidates)
+    logger.info(f"[ALT] returned_top3={used_top3_ids}, cached_remaining={len(remaining_candidates)}")
+
 
 def _get_latest_analysis_id():
     """최근 진단의 analysis_id 조회"""
@@ -262,16 +305,13 @@ def get_alternative_recommendations(user_message: str = "") -> str:
     
     from app.services.recommendation import RecommendationService
     original_query = RecommendationService._build_search_query_from_diagnosis(db, latest_analysis_id)
-    # refine 키워드가 없으면 기본 쿼리로 재검색하여 초기 캐시 생성
-    if not refine_keywords:
-        query_sparse = original_query["sparse_keywords"]
-        query_dense = original_query["dense_query"]
-        logger.info("refine 키워드 없음 → 기본 쿼리로 대체 추천 검색")
-    else:
-        query_sparse = original_query["sparse_keywords"] + " " + " ".join(refine_keywords)
-        query_dense = original_query["dense_query"] + f" 특히 {', '.join(refine_keywords)}에 집중한 제품이 필요합니다."
+    # 재검색 쿼리 구성
+    query_dense, query_sparse = _build_refined_queries(original_query, refine_keywords)
+    if refine_keywords:
         logger.info(f"Refined Dense Query: {query_dense}")
         logger.info(f"Refined Sparse Query: {query_sparse}")
+    else:
+        logger.info("refine 키워드 없음 → 기본 쿼리로 대체 추천 검색")
     
     logger.info(f"[ALT] must_not(excluded)={excluded_ids} (n={len(excluded_ids)})")
     search_results = VectorStoreService.search_hybrid(
@@ -290,28 +330,14 @@ def get_alternative_recommendations(user_message: str = "") -> str:
         return "조건에 맞는 새로운 화장품을 찾을 수 없습니다. 새로운 진단을 받아보세요."
     
     top3_ids = [r['cosmetic_id'] for r in search_results[:3]]
-    cosmetics = []
-    for cid in top3_ids:
-        cosmetic = CosmeticRepository.get_detail(db, cid)
-        if cosmetic:
-            cosmetics.append(cosmetic)
-    remaining_candidates = [r['cosmetic_id'] for r in search_results[3:]]
-    init_recommendation_cache(thread_id, latest_analysis_id, remaining_candidates)
-    logger.info(f"[ALT] returned_top3={top3_ids}, cached_remaining={len(remaining_candidates)}")
+    cosmetics = _fetch_cosmetics_by_ids(db, top3_ids)
+    _update_cache_after_search(thread_id, latest_analysis_id, search_results, top3_ids)
     
     if refine_keywords:
         header = f"'{', '.join(refine_keywords)}' 조건으로 다시 검색한 결과입니다:\n\n"
     else:
         header = "기존 추천을 제외한 다른 화장품 추천 (TOP 3):\n\n"
-    product_text = header
-    for idx, cosmetic in enumerate(cosmetics, 1):
-        product_text += f"{idx}. {cosmetic['name']}\n"
-        product_text += f"   브랜드: {cosmetic['brand']}\n"
-        product_text += f"   가격: {int(cosmetic['price']):,}원\n"
-        if cosmetic['main_effect']:
-            product_text += f"   주요 효능: {cosmetic['main_effect']}\n"
-        product_text += "\n"
-    return product_text
+    return _format_products(cosmetics, header)
 
 # Tool 리스트 (Agent에서 사용)
 TOOLS = [get_my_diagnosis_history, get_recommended_products, get_alternative_recommendations]
