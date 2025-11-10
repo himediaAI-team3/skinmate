@@ -129,6 +129,7 @@ class VectorStoreService:
         max_price: int = None,
         skin_type: str = None,
         disease_name: str = None,
+        excluded_cosmetic_ids: List[int] = None,
         limit: int = 10
     ) -> List[Dict[str, Any]]:
         """하이브리드 검색: Prefetch(dense+sparse) + 필터링"""
@@ -154,6 +155,7 @@ class VectorStoreService:
         # 3. 필터 구성
         must_conditions = []
         should_conditions = []
+        must_not_conditions = []
         
         # 3-1. Price 하드 필터 (필수 조건)
         if min_price is not None and max_price is not None:
@@ -179,12 +181,22 @@ class VectorStoreService:
                 )
             )
         
+        # 3-4. Excluded IDs 제외 필터 (must_not)
+        if excluded_cosmetic_ids:
+            must_not_conditions.append(
+                FieldCondition(
+                    key="cosmetic_id",
+                    match=MatchAny(any=excluded_cosmetic_ids)
+                )
+            )
+        
         # 필터 조합
         query_filter = None
-        if must_conditions or should_conditions:
+        if must_conditions or should_conditions or must_not_conditions:
             query_filter = Filter(
                 must=must_conditions if must_conditions else None,
-                should=should_conditions if should_conditions else None
+                should=should_conditions if should_conditions else None,
+                must_not=must_not_conditions if must_not_conditions else None
             )
         
         # 4. 하이브리드 검색 (RRF 자동 병합)
