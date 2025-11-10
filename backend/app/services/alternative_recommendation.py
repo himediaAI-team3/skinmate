@@ -21,7 +21,18 @@ logger = logging.getLogger(__name__)
 class AlternativeRecommendationService:
     @staticmethod
     def extract_refine_keywords(message: str) -> List[str]:
-        """사용자 메시지에서 refine query 키워드 추출 (LLM + Fallback)"""
+        """
+        사용자 메시지에서 refine query 키워드 추출 (LLM + Fallback)
+        
+        LLM을 사용하여 의미 기반 키워드 추출을 시도하고, 실패 시 패턴 매칭으로 fallback합니다.
+        예: "촉촉한 제품 추천해줘" → ["수분감", "보습"]
+        
+        Args:
+            message: 사용자 메시지
+            
+        Returns:
+            List[str]: 추출된 키워드 리스트 (최대 5개)
+        """
         try:
             llm = get_llm(temperature=0.3)
             prompt = f"""사용자가 화장품 추천에서 원하는 속성이나 개선 포인트를 요약해서 키워드만 뽑아주세요.
@@ -51,7 +62,17 @@ class AlternativeRecommendationService:
 
     @staticmethod
     def load_state(db: Session, latest_analysis_id: int) -> Tuple[Any, Any, List[int]] | str:
-        """진단/분석 상태와 제외 ID 로드. 실패 시 에러 문구 반환."""
+        """
+        진단/분석 상태와 제외할 제품 ID 로드
+        
+        Args:
+            db: DB 세션
+            latest_analysis_id: 최근 진단 ID
+            
+        Returns:
+            Tuple[Any, Any, List[int]] | str: 성공 시 (diagnosis, analysis, excluded_ids),
+                                             실패 시 에러 메시지 문자열
+        """
         diagnosis = DiagnosisRepository.get_by_analysis_id(db, latest_analysis_id)
         analysis = AnalysisRepository.get_by_id(db, latest_analysis_id)
         if not diagnosis or not analysis:
@@ -63,7 +84,18 @@ class AlternativeRecommendationService:
 
     @staticmethod
     def build_refined_queries(original_query: dict, refine_keywords: List[str]) -> Tuple[str, str]:
-        """원본 쿼리와 키워드로 dense/sparse 재검색 쿼리 구성"""
+        """
+        원본 쿼리와 refine 키워드로 dense/sparse 재검색 쿼리 구성
+        
+        refine 키워드가 있으면 원본 쿼리에 키워드를 추가하여 확장합니다.
+        
+        Args:
+            original_query: 원본 검색 쿼리 (dense_query, sparse_keywords)
+            refine_keywords: refine 키워드 리스트 (예: ["수분감", "진정"])
+            
+        Returns:
+            Tuple[str, str]: (refined_dense_query, refined_sparse_query)
+        """
         if not refine_keywords:
             return original_query["dense_query"], original_query["sparse_keywords"]
         refined_sparse = original_query["sparse_keywords"] + " " + " ".join(refine_keywords)
@@ -79,7 +111,19 @@ class AlternativeRecommendationService:
         thread_id: str,
         latest_analysis_id: int
     ) -> List[int]:
-        """캐시에서 해당 thread/analysis 후보 목록 조회(없거나 만료 시 빈 리스트)."""
+        """
+        캐시에서 해당 thread/analysis 후보 목록 조회
+        
+        캐시가 없거나 다른 진단의 캐시이면 빈 리스트를 반환합니다.
+        
+        Args:
+            get_cache: 캐시 조회 함수
+            thread_id: 대화 세션 ID
+            latest_analysis_id: 최근 진단 ID
+            
+        Returns:
+            List[int]: 추천 후보 화장품 ID 리스트 (없거나 만료 시 빈 리스트)
+        """
         cache = get_cache(thread_id)
         if cache and cache.get("analysis_id") != latest_analysis_id:
             logger.info(f"[ALT] cache exists but analysis_id mismatch (cache={cache.get('analysis_id')}, current={latest_analysis_id})")
@@ -90,6 +134,16 @@ class AlternativeRecommendationService:
 
     @staticmethod
     def fetch_cosmetics_by_ids(db: Session, ids: List[int]) -> List[dict]:
+        """
+        cosmetic_id 목록으로 상세 정보를 조회하여 dict 리스트로 반환
+        
+        Args:
+            db: DB 세션
+            ids: 화장품 ID 리스트
+            
+        Returns:
+            List[dict]: 화장품 상세 정보 리스트
+        """
         cosmetics: List[dict] = []
         for cid in ids:
             detail = CosmeticRepository.get_detail(db, cid)
@@ -99,6 +153,16 @@ class AlternativeRecommendationService:
 
     @staticmethod
     def format_products(cosmetics: List[dict], header: str) -> str:
+        """
+        제품 리스트를 공통 포맷으로 문자열 생성
+        
+        Args:
+            cosmetics: 화장품 상세 정보 리스트
+            header: 헤더 문자열
+            
+        Returns:
+            str: 포맷팅된 제품 목록 문자열
+        """
         lines: List[str] = [header, ""]
         for idx, cosmetic in enumerate(cosmetics, 1):
             lines.append(f"{idx}. {cosmetic['name']}")
@@ -116,7 +180,21 @@ class AlternativeRecommendationService:
         candidates: List[int],
         update_cache: Callable[[str, List[int]], None],
     ) -> str | None:
-        """캐시에 후보가 충분하면 3개 반환하고 캐시 갱신, 아니면 None."""
+        """
+        캐시에 후보가 충분하면 3개 반환하고 캐시 갱신, 아니면 None
+        
+        캐시에서 3개 이상의 후보가 있으면 상위 3개를 조회하여 반환하고,
+        사용한 3개를 캐시에서 제거합니다.
+        
+        Args:
+            db: DB 세션
+            thread_id: 대화 세션 ID
+            candidates: 추천 후보 화장품 ID 리스트
+            update_cache: 캐시 갱신 함수
+            
+        Returns:
+            str | None: 포맷팅된 제품 목록 문자열 (후보 부족 시 None)
+        """
         if len(candidates) >= 3:
             next_3 = candidates[:3]
             logger.info(f"[ALT] using_cache: next_3={next_3}, remaining={len(candidates) - 3}")
@@ -134,6 +212,19 @@ class AlternativeRecommendationService:
         search_results: List[Dict[str, Any]],
         used_top3_ids: List[int],
     ) -> None:
+        """
+        검색 결과 기반으로 캐시를 초기화/갱신
+        
+        RAG 검색 결과 10개 중 상위 3개는 사용자에게 반환하고,
+        나머지 7개는 캐시에 저장하여 다음 요청 시 사용합니다.
+        
+        Args:
+            init_cache: 캐시 초기화 함수
+            thread_id: 대화 세션 ID
+            analysis_id: 진단 ID
+            search_results: RAG 검색 결과 리스트 (10개)
+            used_top3_ids: 사용한 상위 3개 화장품 ID 리스트
+        """
         remaining_candidates = [r["cosmetic_id"] for r in search_results[3:]]
         init_cache(thread_id, analysis_id, remaining_candidates)
         logger.info(f"[ALT] returned_top3={used_top3_ids}, cached_remaining={len(remaining_candidates)}")
@@ -147,7 +238,24 @@ class AlternativeRecommendationService:
         thread_id: str,
         init_cache: Callable[[str, int, List[int]], None],
     ) -> str:
-        """RAG 재검색 실행, 캐시 갱신, 결과 포맷 후 반환."""
+        """
+        RAG 재검색 실행, 캐시 갱신, 결과 포맷 후 반환
+        
+        사용자 메시지에서 refine 키워드를 추출하여 검색 쿼리를 확장하고,
+        Qdrant에서 하이브리드 검색을 수행합니다. 검색 결과 10개 중 상위 3개를
+        반환하고 나머지 7개는 캐시에 저장합니다.
+        
+        Args:
+            db: DB 세션
+            latest_analysis_id: 최근 진단 ID
+            excluded_ids: 제외할 화장품 ID 리스트 (이미 추천받은 제품)
+            user_message: 사용자 메시지 (refine 키워드 추출용)
+            thread_id: 대화 세션 ID
+            init_cache: 캐시 초기화 함수
+            
+        Returns:
+            str: 포맷팅된 제품 목록 문자열
+        """
         refine_keywords = AlternativeRecommendationService.extract_refine_keywords(user_message)
         logger.info(f"Refine keywords 감지: {refine_keywords}, RAG 재검색 시작")
         diagnosis = DiagnosisRepository.get_by_analysis_id(db, latest_analysis_id)

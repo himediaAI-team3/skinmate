@@ -15,9 +15,10 @@ from app.core.config.llm import get_llm, TEMPERATURE_CHAT
 class AgentService:
     """LangGraph 기반 Agent 서비스"""
     
-    # 메모리 저장소 (서버 재시작 시 초기화)
+    # 메모리 저장소: 대화 이력 관리용 (서버 재시작 시 초기화)
     _memory = MemorySaver()
-    # 캐시 저장소 (추천 캐시 전용, 서버 재시작 시 초기화)
+    # 캐시 저장소: 추천 캐시 전용 (서버 재시작 시 초기화)
+    # 프로세스 단위 싱글톤으로 모든 Agent가 동일 store 인스턴스 공유
     _store = MemoryStore()
     
     @staticmethod
@@ -39,7 +40,12 @@ class AgentService:
     
     @staticmethod
     def get_store() -> MemoryStore:
-        """추천 캐시 전용 MemoryStore 싱글톤 접근자"""
+        """
+        추천 캐시 전용 MemoryStore 싱글톤 접근자
+        
+        Returns:
+            MemoryStore: 프로세스 단위 싱글톤 MemoryStore 인스턴스
+        """
         return AgentService._store
     
     @staticmethod
