@@ -5,6 +5,7 @@ from app.core.config.database import lifespan
 from app.core.config.file import STATIC_DIR
 from app.core.config.cors import get_cors_config
 from app.core.config.openapi import custom_openapi
+from app.core.config import logging as _logging_config  # 로깅 설정 로드 (INFO 레벨 출력 활성화)
 from app.core.exception import ApiException, api_exception_handler
 from app.core.middleware.auth_middleware import JWTMiddleware
 from app.router import member_router, analysis_router, file_router, like_router, cosmetic_router, test_router, chat_router

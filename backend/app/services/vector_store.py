@@ -2,10 +2,11 @@
 Vector Store 서비스: Qdrant 하이브리드 검색 (dense + BM25 sparse)
 """
 from functools import lru_cache
+import logging
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 
-from qdrant_client.models import PointStruct, Filter, FieldCondition, Range, MatchAny, Prefetch
+from qdrant_client.models import PointStruct, Filter, FieldCondition, Range, MatchAny, Prefetch, HasIdCondition
 from fastembed import TextEmbedding, SparseTextEmbedding
 
 from app.core.config.qdrant import get_qdrant_client, QDRANT_HYBRID_COLLECTION
@@ -183,11 +184,9 @@ class VectorStoreService:
         
         # 3-4. Excluded IDs 제외 필터 (must_not)
         if excluded_cosmetic_ids:
+            # 포인트 ID(=cosmetic_id) 기준으로 제외 (payload 인덱스 불필요)
             must_not_conditions.append(
-                FieldCondition(
-                    key="cosmetic_id",
-                    match=MatchAny(any=excluded_cosmetic_ids)
-                )
+                HasIdCondition(has_id=excluded_cosmetic_ids)
             )
         
         # 필터 조합
@@ -200,15 +199,20 @@ class VectorStoreService:
             )
         
         # 4. 하이브리드 검색 (RRF 자동 병합)
-        results = client.query_points(
-            collection_name=QDRANT_HYBRID_COLLECTION,
-            prefetch=prefetch,
-            query=dense_query_list,
-            using="dense",
-            query_filter=query_filter,
-            limit=limit,
-            with_payload=True
-        )
+        try:
+            results = client.query_points(
+                collection_name=QDRANT_HYBRID_COLLECTION,
+                prefetch=prefetch,
+                query=dense_query_list,
+                using="dense",
+                query_filter=query_filter,
+                limit=limit,
+                with_payload=True
+            )
+        except Exception as e:
+            logging.error(f"[QDRANT] query_points failed: {e}")
+            logging.error(f"[QDRANT] filter={query_filter}, prefetch={prefetch}, using='dense'")
+            raise
         
         # 5. 결과 변환
         output = []
