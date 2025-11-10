@@ -6,6 +6,7 @@ from typing import Tuple
 from sqlalchemy.orm import Session
 from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.store.memory import MemoryStore
 from app.services.chat_tools import TOOLS, set_tool_context, set_thread_id
 from app.utils.prompt import load_prompt
 from app.core.config.llm import get_llm, TEMPERATURE_CHAT
@@ -16,6 +17,8 @@ class AgentService:
     
     # 메모리 저장소 (서버 재시작 시 초기화)
     _memory = MemorySaver()
+    # 캐시 저장소 (추천 캐시 전용, 서버 재시작 시 초기화)
+    _store = MemoryStore()
     
     @staticmethod
     def _create_agent():
@@ -33,6 +36,11 @@ class AgentService:
         )
         
         return agent
+    
+    @staticmethod
+    def get_store() -> MemoryStore:
+        """추천 캐시 전용 MemoryStore 싱글톤 접근자"""
+        return AgentService._store
     
     @staticmethod
     def _validate_thread_id(member_id: int, thread_id: str) -> None:

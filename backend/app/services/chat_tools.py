@@ -18,7 +18,6 @@ from app.services.alternative_recommendation import AlternativeRecommendationSer
 _db_session: ContextVar[Session] = ContextVar('db_session', default=None)
 _current_member_id: ContextVar[int] = ContextVar('current_member_id', default=None)
 _thread_id: ContextVar[str] = ContextVar('thread_id', default=None)
-_recommendation_cache: ContextVar[dict] = ContextVar('recommendation_cache', default={})
 
 logger = logging.getLogger(__name__)
 
@@ -36,36 +35,55 @@ def get_thread_id() -> str:
     """현재 대화 thread_id 조회"""
     return _thread_id.get()
 
-def init_recommendation_cache(thread_id: str, analysis_id: int, candidates: List[int]) -> None:
-    """thread_id 기반 추천 후보 캐시 초기화"""
-    cache = _recommendation_cache.get()
-    if not isinstance(cache, dict):
-        cache = {}
-    cache[thread_id] = {
-        "analysis_id": analysis_id,
-        "candidate_cosmetic_ids": list(candidates) if candidates else [],
-    }
-    _recommendation_cache.set(cache)
+def _store_key(thread_id: str) -> str:
+    return f"altrec:{thread_id}"
 
-def get_recommendation_cache(thread_id: str) -> dict | None:
-    """thread_id 기반 추천 후보 캐시 조회"""
-    cache = _recommendation_cache.get()
-    if not isinstance(cache, dict):
+def _store_get_cache(thread_id: str) -> dict | None:
+    """InMemoryStore에서 캐시 조회"""
+    try:
+        from app.services.agent_service import AgentService  # 지연 임포트로 순환 참조 방지
+        store = AgentService.get_store()
+        key = _store_key(thread_id)
+        data = store.get(key)
+        found = bool(data)
+        candidates = len(data.get("candidate_cosmetic_ids", [])) if data else 0
+        logger.info(f"[STORE] get(key={key}, found={found}, candidates={candidates})")
+        return data
+    except Exception as e:
+        logger.warning(f"[STORE] get 실패: {e}")
         return None
-    return cache.get(thread_id)
 
-def update_recommendation_cache(thread_id: str, used_cosmetic_ids: List[int]) -> None:
-    """방금 사용한 후보 제거하여 캐시 갱신"""
-    cache = _recommendation_cache.get()
-    if not isinstance(cache, dict):
-        return
-    if thread_id in cache:
+def _store_set_cache(thread_id: str, analysis_id: int, candidates: List[int]) -> None:
+    """InMemoryStore에 캐시 저장"""
+    try:
+        from app.services.agent_service import AgentService
+        store = AgentService.get_store()
+        key = _store_key(thread_id)
+        data = {
+            "analysis_id": analysis_id,
+            "candidate_cosmetic_ids": list(candidates) if candidates else [],
+        }
+        store.set(key, data)
+        logger.info(f"[STORE] set(key={key}, candidates={len(data['candidate_cosmetic_ids'])})")
+    except Exception as e:
+        logger.warning(f"[STORE] set 실패: {e}")
+
+def _store_update_cache(thread_id: str, used_cosmetic_ids: List[int]) -> None:
+    """InMemoryStore 캐시에서 사용된 후보 제거 후 저장 (원샷 업데이트)"""
+    try:
+        from app.services.agent_service import AgentService
+        store = AgentService.get_store()
+        key = _store_key(thread_id)
+        data = store.get(key) or {}
         remaining = [
-            cid for cid in cache[thread_id].get("candidate_cosmetic_ids", [])
+            cid for cid in data.get("candidate_cosmetic_ids", [])
             if cid not in set(used_cosmetic_ids or [])
         ]
-        cache[thread_id]["candidate_cosmetic_ids"] = remaining
-        _recommendation_cache.set(cache)
+        data["candidate_cosmetic_ids"] = remaining
+        store.set(key, data)
+        logger.info(f"[STORE] update(key={key}, used={used_cosmetic_ids}, remaining={len(remaining)})")
+    except Exception as e:
+        logger.warning(f"[STORE] update 실패: {e}")
 
 
 def _get_context():
@@ -201,7 +219,7 @@ def get_alternative_recommendations(user_message: str = "") -> str:
     _diagnosis, _analysis, excluded_ids = state
 
     candidates = AlternativeRecommendationService.get_cache_candidates(
-        get_cache=get_recommendation_cache,
+        get_cache=_store_get_cache,
         thread_id=thread_id,
         latest_analysis_id=latest_analysis_id
     )
@@ -209,7 +227,7 @@ def get_alternative_recommendations(user_message: str = "") -> str:
         db=db,
         thread_id=thread_id,
         candidates=candidates,
-        update_cache=update_recommendation_cache,
+        update_cache=_store_update_cache,
     )
     if cached is not None:
         return cached
@@ -220,7 +238,7 @@ def get_alternative_recommendations(user_message: str = "") -> str:
         excluded_ids=excluded_ids,
         user_message=user_message,
         thread_id=thread_id,
-        init_cache=init_recommendation_cache,
+        init_cache=_store_set_cache,
     )
 
 # Tool 리스트 (Agent에서 사용)
