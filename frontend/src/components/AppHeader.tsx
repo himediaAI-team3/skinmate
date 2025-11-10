@@ -2,56 +2,62 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { LogOut, User2, Menu, User, History, Heart, LogIn } from 'lucide-react';
+import { authApi } from '@/features/user/api';
+import { getAccessToken, AUTH_CHANGED_EVENT } from '@/features/auth/api';
 
-// 외부에서 사용할 사용자 타입 export
 export type Me = { id: number | string; name?: string; email?: string; image_url?: string };
 
 type Props = {
-  me?: Me | null;                 // 외부에서 주입 가능
+  me?: Me | null;
   loading?: boolean;
   onLogout?: () => Promise<void> | void;
 };
 
-// 로컬스토리지 토큰 조회 헬퍼 (키 후보 몇 가지 지원)
-const getAccessToken = () =>
-  (typeof window !== 'undefined' &&
-    (localStorage.getItem('access_token') ||
-     localStorage.getItem('ACCESS_TOKEN') ||
-     localStorage.getItem('token'))) || null;
+const hasToken = () => !!getAccessToken();
 
 export default function AppHeader({ me = null, loading = false, onLogout }: Props) {
-  // 데모 사용자 (로그인 상태에서 me가 없을 때만 보조로 사용)
-  const DEMO_ME: Me = {
-    id: '1',
-    name: '박진우',
-    email: 'jinwoopz@naver.com',
-    image_url: '/images/2.webp',
-  };
-  const ver = '20251103'; // 캐시 무력화용
+  const DEMO_ME: Me = { id: '1', name: '박진우', email: 'jinwoopz@naver.com', image_url: '/images/2.webp' };
+  const ver = '20251103';
 
+  const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);     // ✅ 로딩 상태
+  const busyRef = useRef(false);                            // ✅ 중복 클릭 락
+  const alertedRef = useRef(false);                         // ✅ 알림 1회 보장
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // 최초 마운트 시 토큰 확인
+  // 최초 마운트
+  useEffect(() => setIsAuthed(hasToken()), []);
+
+  // 라우트 변경 시 토큰 재평가
+  useEffect(() => setIsAuthed(hasToken()), [pathname]);
+
+  // 메뉴 열릴 때 최신 상태 반영
+  useEffect(() => { if (open) setIsAuthed(hasToken()); }, [open]);
+
+  // 다른 탭(storage) + 같은 탭(auth-changed) 반응
   useEffect(() => {
-    setIsAuthed(!!getAccessToken());
+    const refresh = () => setIsAuthed(hasToken());
+    window.addEventListener('storage', refresh);
+    window.addEventListener('auth-changed', refresh);
+    return () => {
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener('auth-changed', refresh);
+    };
   }, []);
 
-  // 메뉴 열릴 때마다 최신 토큰 상태 재확인 (로그인/로그아웃 직후 반영)
+  // AUTH_CHANGED_EVENT 상수 리스너(선택적; 위와 중복 방지용으로 유지)
   useEffect(() => {
-    if (open) setIsAuthed(!!getAccessToken());
-  }, [open]);
-
-  // 외부에서 storage 변경 시(다른 탭 등) 반영
-  useEffect(() => {
-    const onStorage = () => setIsAuthed(!!getAccessToken());
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    const onAuthChanged = () => setIsAuthed(!!getAccessToken());
+    window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
+    return () => window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
   }, []);
 
-  // 바깥 클릭/ESC로 닫기
+  // 바깥 클릭/ESC 닫기
   useEffect(() => {
     if (!open) return;
     const onClickOutside = (e: MouseEvent) => {
@@ -66,22 +72,35 @@ export default function AppHeader({ me = null, loading = false, onLogout }: Prop
     };
   }, [open]);
 
-  // 표시용 사용자(로그인 상태에서만 보임)
   const userForDisplay = isAuthed ? (me ?? DEMO_ME) : null;
 
   const handleLogout = async () => {
+    // ✅ 중복 방지: 이미 진행 중이면 무시
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setLoggingOut(true);
+
+    // ✅ 즉시 UX 반영: 메뉴 닫고 헤더 상태 false로 (optimistic)
+    setOpen(false);
+    setIsAuthed(false);
+
     try {
       if (onLogout) {
         await onLogout();
       } else {
-        // onLogout 미제공 시, 일반적인 키들을 제거 (필요 없으면 지워도 됨)
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('ACCESS_TOKEN');
-        localStorage.removeItem('token');
+        await authApi.logout(); // 내부에서 토큰 즉시 삭제 + 서버 호출
       }
+      // ✅ 알림은 한 번만
+      if (!alertedRef.current) {
+        alertedRef.current = true;
+        alert('로그아웃되었습니다.');
+      }
+    } catch {
+      // 실패해도 optimistic으로 이미 로그아웃 처리됨
     } finally {
-      setIsAuthed(!!getAccessToken());
-      setOpen(false);
+      setLoggingOut(false);
+      busyRef.current = false;
+      router.push('/');
     }
   };
 
@@ -95,6 +114,7 @@ export default function AppHeader({ me = null, loading = false, onLogout }: Prop
         <div ref={rootRef} className="relative">
           <button
             onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
+            type="button"
             className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition"
             aria-haspopup="menu" aria-expanded={open} aria-controls="appheader-menu" aria-label="메뉴 열기" title="메뉴"
           >
@@ -119,11 +139,7 @@ export default function AppHeader({ me = null, loading = false, onLogout }: Prop
                 <div className="flex items-center gap-3">
                   {userForDisplay.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={`${userForDisplay.image_url}?v=${ver}`}
-                      alt="avatar"
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
+                    <img src={`${userForDisplay.image_url}?v=${ver}`} alt="avatar" className="w-10 h-10 rounded-full object-cover" />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
                       <User2 size={18} />
@@ -133,9 +149,7 @@ export default function AppHeader({ me = null, loading = false, onLogout }: Prop
                     <p className="text-sm font-semibold text-gray-800 truncate">
                       {userForDisplay.name || userForDisplay.email || '사용자'}
                     </p>
-                    {userForDisplay.email && (
-                      <p className="text-xs text-gray-500 truncate">{userForDisplay.email}</p>
-                    )}
+                    {userForDisplay.email && <p className="text-xs text-gray-500 truncate">{userForDisplay.email}</p>}
                   </div>
                 </div>
               ) : (
@@ -146,15 +160,9 @@ export default function AppHeader({ me = null, loading = false, onLogout }: Prop
               )}
             </div>
 
-            {/* 메뉴 본문: 로그인 여부로 분기 */}
             {!isAuthed ? (
               <div className="p-2">
-                <Link
-                  href="/login"
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-900"
-                  role="menuitem"
-                  onClick={() => setOpen(false)}
-                >
+                <Link href="/login" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-900" role="menuitem" onClick={() => setOpen(false)}>
                   <LogIn size={18} /> 로그인 하러 가기
                 </Link>
               </div>
@@ -174,10 +182,21 @@ export default function AppHeader({ me = null, loading = false, onLogout }: Prop
                 <div className="px-2 pb-2 border-t">
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 text-left text-red-600"
+                    type="button"
+                    disabled={loggingOut}                                   // ✅ 비활성화
+                    aria-busy={loggingOut}
+                    className={[
+                      'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left',
+                      loggingOut
+                        ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                        : 'hover:bg-red-50 text-red-600',
+                    ].join(' ')}
                     role="menuitem"
+                    data-e2e="logout-btn"
+                    title={loggingOut ? '로그아웃 중…' : '로그아웃'}
                   >
-                    <LogOut size={18} /> 로그아웃
+                    <LogOut size={18} />
+                    {loggingOut ? '로그아웃 중…' : '로그아웃'}
                   </button>
                 </div>
               </>

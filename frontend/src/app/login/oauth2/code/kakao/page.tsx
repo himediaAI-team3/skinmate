@@ -5,7 +5,6 @@ import { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { saveTokens } from '@/features/auth';
 
-// 빌드타임 ENV(있으면 사용), 없으면 로컬 기본값 사용
 const ENV_API_BASE = process.env.NEXT_PUBLIC_API_AUTH as string | undefined;
 const ENV_REDIRECT = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI as string | undefined;
 
@@ -23,7 +22,6 @@ export default function KakaoCallbackPage() {
         return;
       }
 
-      // 기본값 보정: ENV 없으면 로컬 기본값
       const apiBase = ENV_API_BASE ?? 'http://127.0.0.1:8080';
       const redirectUri =
         ENV_REDIRECT ??
@@ -31,18 +29,15 @@ export default function KakaoCallbackPage() {
           ? `${window.location.origin}/login/oauth2/code/kakao`
           : 'https://skinmate.site/login/oauth2/code/kakao');
 
-      // 같은 code 재사용 방지(뒤로가기/새로고침)
       const usedKey = `oauth:kakao:code:used:${code}`;
       if (sessionStorage.getItem(usedKey) === '1') {
         router.replace('/login?error=code_already_used');
         return;
       }
 
-      // StrictMode 중복 방지
       if (inFlight.current) return;
       inFlight.current = true;
 
-      // CSRF state 확인 (리다이렉트 직전에 저장한 값과 동일해야 함)
       const expectedState = sessionStorage.getItem('oauth:kakao:state') || '';
       if (expectedState && expectedState !== returnedState) {
         router.replace('/login?error=bad_state');
@@ -53,7 +48,6 @@ export default function KakaoCallbackPage() {
         const res = await fetch(`${apiBase}/auth/kakao-login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          // credentials: 'include', // 백엔드가 세션/쿠키면 필요
           body: JSON.stringify({ code, state: returnedState, redirectUri }),
         });
 
@@ -73,7 +67,7 @@ export default function KakaoCallbackPage() {
           return;
         }
 
-        // 토큰 저장
+        // 토큰 저장 (auth-changed 이벤트 발행 포함)
         saveTokens({
           accessToken: data.data.accessToken,
           refreshToken: data.data.refreshToken,
@@ -83,6 +77,10 @@ export default function KakaoCallbackPage() {
         sessionStorage.setItem(usedKey, '1');
         sessionStorage.removeItem('oauth:kakao:state');
 
+        // 로그인 완료 알림
+        alert('로그인되었습니다.');
+
+        // 홈으로 이동
         router.replace('/');
       } catch (e: any) {
         const msg = e?.message || 'exchange_exception';
