@@ -1,3 +1,39 @@
+# # 웹 프레임워크
+# fastapi==0.104.1
+
+# # 파일 업로드 지원
+# python-multipart==0.0.6
+
+# # ASGI 서버
+# uvicorn[standard]==0.24.0
+
+# # ORM 및 데이터베이스 지원
+# sqlalchemy==2.0.23
+# pymysql==1.1.0  # MySQL 드라이버
+# cryptography==41.0.7  # MySQL 인증용
+
+# # 환경변수 관리
+# python-dotenv==1.0.0
+
+# # 로그 포맷팅 (가독성 개선)
+# rich==13.7.0
+
+# # 이미지 처리
+# Pillow==10.1.0
+
+# # YAML 파싱
+# PyYAML==6.0.1
+
+# # LangChain (안정 버전)
+# langchain-openai==0.1.23
+# langchain-core==0.2.39
+# langchain==0.2.16
+# langgraph==0.2.28
+
+# # JWT 검증
+# PyJWT==2.8.0
+
+
 # 웹 프레임워크
 fastapi==0.104.1
 
@@ -19,7 +55,7 @@ python-dotenv==1.0.0
 rich==13.7.0
 
 # 이미지 처리
-Pillow==10.1.0
+Pillow>=10.3.0,<11.0.0
 
 # YAML 파싱
 PyYAML==6.0.1
@@ -29,6 +65,11 @@ langchain-openai==0.1.23
 langchain-core==0.2.39
 langchain==0.2.16
 langgraph==0.2.28
+
+# 벡터 DB 및 임베딩
+qdrant-client==1.12.1
+fastembed==0.3.1
+sentence-transformers==2.7.0
 
 # JWT 검증
 PyJWT==2.8.0

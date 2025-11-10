@@ -6,7 +6,7 @@ from typing import Tuple
 from sqlalchemy.orm import Session
 from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
-from app.services.chat_tools import TOOLS, set_tool_context
+from app.services.chat_tools import TOOLS, set_tool_context, set_thread_id
 from app.utils.prompt import load_prompt
 from app.core.config.llm import get_llm, TEMPERATURE_CHAT
 
@@ -92,6 +92,8 @@ class AgentService:
         
         # 2. Tool 컨텍스트 설정 (DB 세션, member_id)
         set_tool_context(db, member_id)
+        # 2-1. Thread ID 컨텍스트 설정
+        set_thread_id(thread_id)
         
         # 3. Agent 생성 및 실행
         agent = AgentService._create_agent()

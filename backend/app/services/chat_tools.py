@@ -13,12 +13,21 @@ from app.repository.diagnosis import DiagnosisRepository
 # Thread-safe한 Context Variables 사용
 _db_session: ContextVar[Session] = ContextVar('db_session', default=None)
 _current_member_id: ContextVar[int] = ContextVar('current_member_id', default=None)
+_thread_id: ContextVar[str] = ContextVar('thread_id', default=None)
 
 
 def set_tool_context(db: Session, member_id: int):
     """Tool에서 사용할 DB 세션과 member_id 설정 (Thread-safe)"""
     _db_session.set(db)
     _current_member_id.set(member_id)
+
+def set_thread_id(thread_id: str) -> None:
+    """현재 대화 thread_id 설정"""
+    _thread_id.set(thread_id)
+
+def get_thread_id() -> str:
+    """현재 대화 thread_id 조회"""
+    return _thread_id.get()
 
 
 def _get_latest_analysis_id():
