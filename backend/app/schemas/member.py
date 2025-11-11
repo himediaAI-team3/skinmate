@@ -22,9 +22,10 @@ class MemberCreate(BaseModel):
 class MemberResponse(BaseModel):
     """회원 정보 응답 스키마"""
     member_id: int
-    skin_type: str
-    gender: str
-    age_group: int
+    name: Optional[str] = None
+    skin_type: Optional[str] = None
+    gender: Optional[str] = None
+    age_group: Optional[int] = None
     created_at: datetime
 
     class Config:

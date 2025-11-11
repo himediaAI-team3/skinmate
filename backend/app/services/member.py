@@ -14,6 +14,14 @@ class MemberService:
         return MemberRepository.exists(db, member_id)
     
     @staticmethod
+    def get_member(db: Session, member_id: int) -> Member:
+        """회원 정보 조회"""
+        member = MemberRepository.get_by_id(db, member_id)
+        if member is None:
+            raise ApiException(status.HTTP_404_NOT_FOUND, "회원을 찾을 수 없습니다")
+        return member
+    
+    @staticmethod
     def update_member(db: Session, member_id: int, data: MemberCreate) -> Member:
         # 회원 존재 여부 확인
         if not MemberRepository.exists(db, member_id):

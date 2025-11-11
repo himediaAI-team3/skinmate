@@ -57,9 +57,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String authorizationHeader) {
         // Bearer Token에서 memberId 추출
         String token = authorizationHeader.substring(7); // "Bearer " 제거
-
         Integer memberId = jwtTokenProvider.getMemberIdFromToken(token);
-
         authService.logout(memberId);
         
         return ResponseEntity.ok(
