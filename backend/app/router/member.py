@@ -9,6 +9,21 @@ from app.utils.security import get_current_user
 
 router = APIRouter(prefix="/api/members", tags=["members"])
 
+@router.get("/me", response_model=ApiResponse[MemberResponse])
+def get_my_info(
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
+):
+    member_id = current_user["member_id"]
+    member = MemberService.get_member(db, member_id)
+
+    return ApiResponse(
+        code=status.HTTP_200_OK,
+        success=True,
+        message="성공",
+        data=MemberResponse.model_validate(member)
+    )
+
 @router.put("/me", response_model=ApiResponse)
 def update_my_info(
     data: MemberCreate,
