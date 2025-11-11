@@ -1,7 +1,10 @@
+// src/app/_components/TabBar.tsx (사용 중인 경로에 맞춰 저장)
 'use client';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { getAccessToken, AUTH_CHANGED_EVENT } from '@/features/auth/api';
 
 type Item = {
   href: string;
@@ -11,15 +14,8 @@ type Item = {
 
 const DIAG_GROUP = ['/info', '/upload', '/loading', '/result'];
 
-// 로그인 필요 메뉴
+// ✅ 로그인 필요한 메뉴만 명시
 const REQUIRES_AUTH = new Set<string>(['/info', '/cosmetics']);
-
-// 로컬스토리지 토큰 조회
-const getAccessToken = () =>
-  (typeof window !== 'undefined' &&
-    (localStorage.getItem('access_token') ||
-     localStorage.getItem('ACCESS_TOKEN') ||
-     localStorage.getItem('token'))) || null;
 
 // ← items는 3개만 유지
 const items: Item[] = [
@@ -69,6 +65,25 @@ export default function TabBar() {
   const pathname = usePathname();
   const router = useRouter();
 
+  const [isAuthed, setIsAuthed] = useState<boolean>(!!getAccessToken());
+  const warnRef = useRef(false); // 알림 중복 방지(1초 rate-limit)
+
+  // 로그인 상태 동기화: 같은 탭(AUTH_CHANGED_EVENT), 다른 탭(storage)
+  useEffect(() => {
+    const refresh = () => setIsAuthed(!!getAccessToken());
+    window.addEventListener('storage', refresh);
+    window.addEventListener(AUTH_CHANGED_EVENT, refresh);
+    return () => {
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener(AUTH_CHANGED_EVENT, refresh);
+    };
+  }, []);
+
+  // 라우트 변동 시에도 재확인(로그인 콜백 → 홈 이동 상황 반영)
+  useEffect(() => {
+    setIsAuthed(!!getAccessToken());
+  }, [pathname]);
+
   const isActive = (href: string) => {
     if (href === '/info') {
       return DIAG_GROUP.some((p) => pathname === p || pathname.startsWith(`${p}/`));
@@ -77,15 +92,21 @@ export default function TabBar() {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
-  // 클릭 가드: 로그인 필요한 메뉴에서 토큰 없으면 알림 + /login 이동
+  // 보호 탭 클릭 가드
   const guardNav = (e: React.MouseEvent, href: string) => {
-    if (!REQUIRES_AUTH.has(href)) return; // 인증 필요 없는 탭은 통과
-    const hasToken = !!getAccessToken();
-    if (!hasToken) {
-      e.preventDefault();
+    if (!REQUIRES_AUTH.has(href)) return; // 보호 안하면 통과
+    if (isAuthed) return;                 // 로그인됨 → 통과
+
+    // 미로그인 → 이동 막고 로그인 페이지로
+    e.preventDefault();
+
+    if (!warnRef.current) {
+      warnRef.current = true;
       alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
-      router.push('/login');
+      setTimeout(() => (warnRef.current = false), 1000); // 1초 내 중복 알림 방지
     }
+
+    router.push('/login');
   };
 
   const TAB_H = 56;
@@ -108,7 +129,6 @@ export default function TabBar() {
         style={tabHeightStyle}
         aria-label="하단 메뉴"
       >
-        {/* 중앙 정렬 + 간격 확대 */}
         <ul className="flex items-center justify-center gap-8 sm:gap-10 md:gap-12 h-full">
           {items.map(({ href, label, icon }) => {
             const active = isActive(href);

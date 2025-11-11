@@ -1,36 +1,35 @@
+// /src/app/welcome/page.tsx  (또는 Welcome 컴포넌트가 있는 파일)
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Camera, BrainCircuit, Award } from 'lucide-react';
+import { getAccessToken, AUTH_CHANGED_EVENT } from '@/features/auth/api';
 
 export default function Welcome() {
   const router = useRouter();
+  const [isAuthed, setIsAuthed] = useState(false);
 
-  // 첫 방문 표시용 쿠키(180일 유지). 이후 / 에 접근하면 메인으로 바로 갑니다.
+  // 첫 방문 표시용 쿠키(180일 유지)
   useEffect(() => {
     document.cookie = `seenLanding=1; max-age=15552000; path=/`;
   }, []);
 
-  // 시작하기 버튼 클릭 시: 액세스 토큰 유무에 따라 경로 분기
+  // 초기 토큰 상태 + 변화 감지(storage, auth-changed)
+  useEffect(() => {
+    const sync = () => setIsAuthed(!!getAccessToken());
+    sync(); // 초기 1회
+    window.addEventListener('storage', sync);
+    window.addEventListener(AUTH_CHANGED_EVENT, sync);
+    return () => {
+      window.removeEventListener('storage', sync);
+      window.removeEventListener(AUTH_CHANGED_EVENT, sync);
+    };
+  }, []);
+
+  // 시작하기 버튼: 토큰 있으면 /info, 없으면 /login
   const handleStart = () => {
-    // 1) localStorage 키 후보들 확인
-    const lsToken =
-      typeof window !== 'undefined' &&
-      (localStorage.getItem('access_token') ||
-        localStorage.getItem('ACCESS_TOKEN') ||
-        localStorage.getItem('token'));
-
-    // 2) 쿠키에 access 토큰 이름이 노출되어 있다면 확인
-    const cookieMatch =
-      typeof document !== 'undefined' &&
-      document.cookie.match(
-        /(?:^|;\s*)(access_token|ACCESS_TOKEN|access)=([^;]+)/
-      );
-
-    const hasToken = Boolean(lsToken) || Boolean(cookieMatch);
-
-    router.push(hasToken ? '/info' : '/login');
+    router.push(isAuthed ? '/info' : '/login');
   };
 
   return (
@@ -40,7 +39,6 @@ export default function Welcome() {
         <section className="bg-gradient-to-br from-orange-50 via-white to-pink-50 p-8 rounded-3xl text-center card-glow relative">
           <div className="w-28 h-28 bg-white rounded-full flex items-center justify-center mx-auto shadow-md">
             <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-pink-500 rounded-full flex items-center justify-center">
-              {/* Image 컴포넌트를 img 태그로 변경 */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/main_icon.png"
@@ -62,7 +60,6 @@ export default function Welcome() {
             꼭 맞는 화장품을 추천해 드려요.
           </p>
 
-          {/* 첫진입 랜딩의 CTA: 클릭 시 분기 */}
           <button
             type="button"
             onClick={handleStart}

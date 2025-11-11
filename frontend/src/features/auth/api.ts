@@ -1,4 +1,4 @@
-// /src/features/auth/api.ts
+// /src/app/features/auth/api.ts
 'use client';
 
 import type { SocialProvider } from '@/entities/auth';
@@ -75,7 +75,7 @@ export function ensureProviderEnabled(provider: SocialProvider): boolean {
 export function redirectToProvider(provider: SocialProvider) {
   if (!ensureProviderEnabled(provider)) return;
 
-  // 긴 URL 원본: ENV 우선, 없으면 하드코드(네가 성공했던 URL로 교체 가능)
+  // 긴 URL 원본: ENV 우선, 없으면 하드코드(성공했던 URL로 교체 가능)
   const BASE_LONG_URL =
     process.env.NEXT_PUBLIC_FULL_KAKAO_LOGIN_URL ??
     "https://accounts.kakao.com/login/?continue=https%3A%2F%2Fkauth.kakao.com%2Foauth%2Fauthorize%3Fresponse_type%3Dcode%26client_id%3Da7c27574c30bb99e563d2b584d58de73%26redirect_uri%3Dhttps%253A%252F%252Fskinmate.site%252Flogin%252Foauth2%252Fcode%252Fkakao%26scope%3Dprofile_nickname%26state%3Dskinmate%26through_account%3Dtrue#login";
@@ -99,26 +99,34 @@ export function redirectToProvider(provider: SocialProvider) {
 /* ================================
  * 토큰 유틸
  * ================================ */
+export const AUTH_CHANGED_EVENT = 'auth-changed';   // 같은 탭 갱신용 이벤트
 const ACCESS_KEY = 'accessToken';
 const REFRESH_KEY = 'refreshToken';
+
 export type Tokens = { accessToken: string; refreshToken?: string };
 
+/** 토큰 저장(+ 같은 탭 즉시 반영을 위한 이벤트 발행) */
 export function saveTokens(tokens: Tokens) {
   if (typeof window === 'undefined') return;
   if (tokens.accessToken) localStorage.setItem(ACCESS_KEY, tokens.accessToken);
   if (tokens.refreshToken) localStorage.setItem(REFRESH_KEY, tokens.refreshToken);
+  window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
 }
 
 export function getAccessToken() {
   return typeof window !== 'undefined' ? localStorage.getItem(ACCESS_KEY) : null;
 }
+
 export function getRefreshToken() {
   return typeof window !== 'undefined' ? localStorage.getItem(REFRESH_KEY) : null;
 }
+
+/** 전체 토큰 정리(+ 이벤트 발행) */
 export function clearTokens() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
+  window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
 }
 
 /** URL(hash|query)에 토큰이 있으면 저장 후 URL 정리 */
@@ -153,10 +161,14 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
 /** 서버 로그아웃 + 로컬 토큰 정리 */
 export async function logout(): Promise<void> {
   try {
-    await http('/auth/logout', { method: 'POST' });
+    const at = getAccessToken();
+    await http('/api/auth/logout', {
+      method: 'POST',
+      headers: at ? { Authorization: `Bearer ${at}` } : undefined,
+    });
   } catch (e) {
     console.warn('logout API failed, clearing local tokens anyway.', e);
   } finally {
-    clearTokens();
+    clearTokens(); // 항상 로컬 정리 + 이벤트 발행
   }
 }
