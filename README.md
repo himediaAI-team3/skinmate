@@ -9,6 +9,7 @@
 1. 의존성 설치
     - cd backend
     - pip install -r requirements.txt
+	- (MySQL DB 서버 설치)
 
 2. 로컬에 `.env` 생성
     - env.example 에서 필요한 값을 `.env`에 채워 넣기
