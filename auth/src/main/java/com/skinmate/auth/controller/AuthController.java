@@ -55,11 +55,11 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String authorizationHeader) {
-        
         // Bearer Token에서 memberId 추출
         String token = authorizationHeader.substring(7); // "Bearer " 제거
-        Long memberId = jwtTokenProvider.getMemberIdFromToken(token);
-        
+
+        Integer memberId = jwtTokenProvider.getMemberIdFromToken(token);
+
         authService.logout(memberId);
         
         return ResponseEntity.ok(
@@ -70,4 +70,3 @@ public class AuthController {
         );
     }
 }
-

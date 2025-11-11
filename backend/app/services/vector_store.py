@@ -2,10 +2,11 @@
 Vector Store 서비스: Qdrant 하이브리드 검색 (dense + BM25 sparse)
 """
 from functools import lru_cache
+import logging
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 
-from qdrant_client.models import PointStruct, Filter, FieldCondition, Range, MatchAny, Prefetch
+from qdrant_client.models import PointStruct, Filter, FieldCondition, Range, MatchAny, Prefetch, HasIdCondition
 from fastembed import TextEmbedding, SparseTextEmbedding
 
 from app.core.config.qdrant import get_qdrant_client, QDRANT_HYBRID_COLLECTION
@@ -129,9 +130,28 @@ class VectorStoreService:
         max_price: int = None,
         skin_type: str = None,
         disease_name: str = None,
+        excluded_cosmetic_ids: List[int] = None,
         limit: int = 10
     ) -> List[Dict[str, Any]]:
-        """하이브리드 검색: Prefetch(dense+sparse) + 필터링"""
+        """
+        하이브리드 검색: Prefetch(dense+sparse) + 필터링
+        
+        Dense 벡터(의미 기반)와 Sparse 벡터(BM25)를 모두 사용하여 하이브리드 검색을 수행합니다.
+        RRF(Reciprocal Rank Fusion)로 자동 병합되며, 필터링 조건을 적용합니다.
+        
+        Args:
+            query_dense_text: Dense 벡터 검색용 쿼리 텍스트
+            query_sparse_text: Sparse 벡터(BM25) 검색용 쿼리 텍스트
+            min_price: 최소 가격 필터 (하드 필터)
+            max_price: 최대 가격 필터 (하드 필터)
+            skin_type: 피부 타입 필터 (소프트 필터)
+            disease_name: 피부 질환 필터 (소프트 필터)
+            excluded_cosmetic_ids: 제외할 화장품 ID 리스트 (이미 추천받은 제품)
+            limit: 반환할 결과 개수
+            
+        Returns:
+            List[Dict[str, Any]]: 검색 결과 리스트 (cosmetic_id, name, brand, price 등)
+        """
         client = get_qdrant_client()
         
         # 1. 쿼리 임베딩 (싱글톤 모델 사용)
@@ -154,6 +174,7 @@ class VectorStoreService:
         # 3. 필터 구성
         must_conditions = []
         should_conditions = []
+        must_not_conditions = []
         
         # 3-1. Price 하드 필터 (필수 조건)
         if min_price is not None and max_price is not None:
@@ -179,24 +200,39 @@ class VectorStoreService:
                 )
             )
         
+        # 3-4. Excluded IDs 제외 필터 (must_not)
+        # 이미 추천받은 제품을 검색 결과에서 제외하기 위한 필터
+        if excluded_cosmetic_ids:
+            # 포인트 ID(=cosmetic_id) 기준으로 제외 (payload 인덱스 불필요)
+            # HasIdCondition은 포인트 ID를 직접 사용하므로 인덱스가 필요 없음
+            must_not_conditions.append(
+                HasIdCondition(has_id=excluded_cosmetic_ids)
+            )
+        
         # 필터 조합
         query_filter = None
-        if must_conditions or should_conditions:
+        if must_conditions or should_conditions or must_not_conditions:
             query_filter = Filter(
                 must=must_conditions if must_conditions else None,
-                should=should_conditions if should_conditions else None
+                should=should_conditions if should_conditions else None,
+                must_not=must_not_conditions if must_not_conditions else None
             )
         
         # 4. 하이브리드 검색 (RRF 자동 병합)
-        results = client.query_points(
-            collection_name=QDRANT_HYBRID_COLLECTION,
-            prefetch=prefetch,
-            query=dense_query_list,
-            using="dense",
-            query_filter=query_filter,
-            limit=limit,
-            with_payload=True
-        )
+        try:
+            results = client.query_points(
+                collection_name=QDRANT_HYBRID_COLLECTION,
+                prefetch=prefetch,
+                query=dense_query_list,
+                using="dense",
+                query_filter=query_filter,
+                limit=limit,
+                with_payload=True
+            )
+        except Exception as e:
+            logging.error(f"[QDRANT] query_points failed: {e}")
+            logging.error(f"[QDRANT] filter={query_filter}, prefetch={prefetch}, using='dense'")
+            raise
         
         # 5. 결과 변환
         output = []

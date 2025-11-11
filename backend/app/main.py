@@ -5,6 +5,7 @@ from app.core.config.database import lifespan
 from app.core.config.file import STATIC_DIR
 from app.core.config.cors import get_cors_config
 from app.core.config.openapi import custom_openapi
+# from app.core.config import logging as _logging_config  # 로깅 설정 로드 (INFO 레벨 출력 활성화) - 개발 완료 후 비활성화
 from app.core.exception import ApiException, api_exception_handler
 from app.core.middleware.auth_middleware import JWTMiddleware
 from app.router import member_router, analysis_router, file_router, like_router, cosmetic_router, test_router, chat_router
@@ -21,11 +22,11 @@ app = FastAPI(
 # OpenAPI 스키마 커스터마이징 설정(JWT Bearer 인증 테스트용)
 app.openapi = lambda: custom_openapi(app)
 
-# CORS 설정
-app.add_middleware(CORSMiddleware, **get_cors_config())
-
 # JWT 검증 미들웨어 등록
 app.add_middleware(JWTMiddleware)
+
+# CORS 설정
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 # 전역 예외 핸들러 등록
 app.add_exception_handler(ApiException, api_exception_handler)
