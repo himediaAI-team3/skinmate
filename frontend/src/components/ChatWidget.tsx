@@ -64,7 +64,7 @@ export default function ChatWidget() {
       console.error('채팅 오류:', error);
       const errorMsg: Msg = {
         role: 'assistant',
-        text: '죄송합니다. 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        text: '챗봇을 이용하시려면 로그인이 필요합니다.',
       };
       setMsgs((m) => [...m, errorMsg]);
     } finally {

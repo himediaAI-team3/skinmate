@@ -2,48 +2,55 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { loadProfile, /* saveProfile, */ toEditable, type EditableProfile } from '@/lib/mypage.store';
+import type { MemberResponse } from '@/entities/account';
+import { getMe, updateMe, getDefaultAvatar } from '@/features/account/api';
 
 const SKIN_TYPES = ['건성', '지성', '복합성', '민감성'] as const;
 const GENDER_TYPES = ['남성', '여성', '기타'] as const;
-const AGE_GROUPS = ['10대', '20대', '30대', '40대', '50대', '60대'] as const;
+const AGE_GROUPS = [10, 20, 30, 40, 50, 60] as const;
 
 export default function EditAccountPage() {
   const router = useRouter();
-  const [form, setForm] = useState<EditableProfile>({
-    name: '',
-    email: '',
-    avatar: '',
-    skinType: '',
-    gender: '',
-    ageGroup: '',
-  });
+  const [me, setMe] = useState<MemberResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // 폼 상태
+  const [name, setName] = useState('');
+  const [skinType, setSkinType] = useState('');
+  const [gender, setGender] = useState('');
+  const [ageGroup, setAgeGroup] = useState<number | ''>('');
 
   useEffect(() => {
-    const p = loadProfile();
-    setForm(toEditable(p));
+    (async () => {
+      try {
+        const data = await getMe();
+        setMe(data ?? null);
+        setName(data?.name ?? '');
+        setSkinType(data?.skin_type ?? '');
+        setGender(data?.gender ?? '');
+        setAgeGroup(data?.age_group ?? '');
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  const onChange = (field: keyof EditableProfile, value: string) =>
-    setForm(prev => ({ ...prev, [field]: value }));
+  const avatar = getDefaultAvatar(me?.gender);
 
-  const onFile = async (file?: File | null) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setForm(prev => ({ ...prev, avatar: reader.result as string }));
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // ⬇⬇ 여기만 변경됨: 저장 눌러도 알림만 띄우고 실제 저장/이동 안 함
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('아직 준비중인 기능입니다. 곧 업데이트될 예정이에요!');
-    // saveProfile(form);
-    // router.push('/account');
+    try {
+      await updateMe({
+        name: name || null,
+        skin_type: skinType || null,
+        gender: gender || null,
+        age_group: typeof ageGroup === 'number' ? ageGroup : null,
+      });
+      alert('저장되었습니다.');
+      router.push('/account');
+    } catch (err) {
+      alert('저장 중 오류가 발생했습니다.');
+    }
   };
 
   return (
@@ -51,26 +58,18 @@ export default function EditAccountPage() {
       <h1 className="text-xl font-extrabold text-gray-900">정보 수정</h1>
 
       <form onSubmit={onSubmit} className="mt-5 space-y-6">
-        {/* 이미지 */}
+        {/* 이미지(현재는 서버 저장 미구현: 프리뷰만) */}
         <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-bold text-gray-900">프로필 이미지</h2>
           <div className="mt-3 flex items-center gap-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={form.avatar || '/images/2.webp'}
+              src={avatar}
               alt="미리보기"
               className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white border border-gray-200 shadow"
             />
-            <div className="space-y-2 w-full">
-              <label className="block">
-                <span className="text-xs font-semibold text-gray-600">이미지 파일 업로드</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="mt-1 block w-full text-sm"
-                  onChange={(e) => onFile(e.target.files?.[0])}
-                />
-              </label>
+            <div className="text-xs text-gray-500">
+              현재는 성별에 따라 기본 이미지가 표시됩니다.
             </div>
           </div>
         </section>
@@ -79,30 +78,22 @@ export default function EditAccountPage() {
         <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-bold text-gray-900">기본 정보</h2>
           <div className="mt-3 grid grid-cols-1 gap-3">
-            <label className="block">
-              <span className="text-xs font-semibold text-gray-600">이름</span>
-              <input
-                type="text"
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                value={form.name}
-                onChange={(e) => onChange('name', e.target.value)}
-                required
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-xs font-semibold text-gray-600">이메일</span>
-              <input
-                type="email"
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                value={form.email}
-                onChange={(e) => onChange('email', e.target.value)}
-                required
-              />
-            </label>
+          <label className="block">
+            <span className="text-xs font-semibold text-gray-600">이름</span>
+            <div
+              className={[
+                'mt-1 w-full text-sm text-gray-900',
+                'px-1 py-2',           // 인풋과 비슷한 세로 리듬 유지
+                'cursor-default select-text',
+              ].join(' ')}
+              aria-readonly="true"
+              title="읽기 전용"
+            >
+              {name || <span className="text-gray-400 italic">이름 미입력</span>}
+            </div>
+          </label>
           </div>
         </section>
-
         {/* 상세 프로필 */}
         <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-bold text-gray-900">프로필 상세</h2>
@@ -111,8 +102,8 @@ export default function EditAccountPage() {
               <span className="text-xs font-semibold text-gray-600">피부타입</span>
               <select
                 className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white"
-                value={form.skinType}
-                onChange={(e) => onChange('skinType', e.target.value)}
+                value={skinType}
+                onChange={(e) => setSkinType(e.target.value)}
                 required
               >
                 <option value="" disabled>선택</option>
@@ -124,8 +115,8 @@ export default function EditAccountPage() {
               <span className="text-xs font-semibold text-gray-600">성별</span>
               <select
                 className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white"
-                value={form.gender}
-                onChange={(e) => onChange('gender', e.target.value)}
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
                 required
               >
                 <option value="" disabled>선택</option>
@@ -134,11 +125,11 @@ export default function EditAccountPage() {
             </label>
 
             <label className="block">
-              <span className="text-xs font-semibold text-gray-600">나이</span>
+              <span className="text-xs font-semibold text-gray-600">나이대</span>
               <select
                 className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white"
-                value={form.ageGroup}
-                onChange={(e) => onChange('ageGroup', e.target.value)}
+                value={ageGroup === '' ? '' : String(ageGroup)}
+                onChange={(e) => setAgeGroup(e.target.value ? Number(e.target.value) : '')}
                 required
               >
                 <option value="" disabled>선택</option>
@@ -159,6 +150,7 @@ export default function EditAccountPage() {
           <button
             type="submit"
             className="rounded-xl bg-gray-900 text-white px-4 py-2 text-sm font-semibold hover:opacity-95"
+            disabled={loading}
           >
             저장
           </button>

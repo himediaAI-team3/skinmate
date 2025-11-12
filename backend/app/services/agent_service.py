@@ -10,6 +10,7 @@ from langgraph.store.memory import MemoryStore
 from app.services.chat_tools import TOOLS, set_tool_context, set_thread_id
 from app.utils.prompt import load_prompt
 from app.core.config.llm import get_llm, TEMPERATURE_CHAT
+import re
 
 
 class AgentService:
@@ -118,5 +119,31 @@ class AgentService:
         
         # 5. 응답 추출
         ai_response = result["messages"][-1].content
+
+        # 6. 후처리: 마크다운/특수기호 정규화
+        ai_response = AgentService._normalize_bullets_preserve_bold(ai_response)
         
         return ai_response, thread_id
+
+    @staticmethod
+    def _normalize_bullets_preserve_bold(text: str) -> str:
+        """
+        최종 응답에서 불필요한 마크다운을 제거/정규화합니다.
+        - 줄 시작 글머리표(*, +)를 하이픈(-)으로 치환
+        - 라인 말미의 공백 기반 강제 개행(두 칸 공백) 제거
+        - 굵게/이탤릭 마크다운(**...*, *...*)을 평문으로 변환
+        - 인라인 코드(`...`) 및 코드펜스(```) 토큰 제거
+        """
+        # 줄 시작 글머리표 * / + -> -
+        text = re.sub(r"(?m)^\s*[\*\+]\s+", "- ", text)
+        # 라인 끝 공백 제거(특히 '  \n' 형태의 강제 개행)
+        text = re.sub(r"[ \t]+\n", "\n", text)
+        # 굵게(**...**) 제거(내용만 남김)
+        text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+        # 이탤릭(*...*) 제거(내용만 남김) - 굵게 제거 이후 처리
+        text = re.sub(r"(?<!\*)\*(?!\*)([^*\n]+)(?<!\*)\*(?!\*)", r"\1", text)
+        # 인라인 코드 `...` 제거
+        text = re.sub(r"`([^`]+)`", r"\1", text)
+        # 코드펜스 ``` 제거
+        text = text.replace("```", "")
+        return text

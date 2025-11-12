@@ -22,11 +22,11 @@ app = FastAPI(
 # OpenAPI 스키마 커스터마이징 설정(JWT Bearer 인증 테스트용)
 app.openapi = lambda: custom_openapi(app)
 
-# CORS 설정
-app.add_middleware(CORSMiddleware, **get_cors_config())
-
 # JWT 검증 미들웨어 등록
 app.add_middleware(JWTMiddleware)
+
+# CORS 설정
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 # 전역 예외 핸들러 등록
 app.add_exception_handler(ApiException, api_exception_handler)
