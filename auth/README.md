@@ -102,17 +102,3 @@ Authorization: Bearer {accessToken}
 | MEMBER_NOT_FOUND | 404 | 회원 없음 |
 | REFRESH_TOKEN_NOT_FOUND | 404 | Refresh Token 없음 |
 | INTERNAL_SERVER_ERROR | 500 | 서버 오류 |
-
-## 6. 실행 방법
-```bash
-# 프로젝트 디렉토리로 이동
-cd auth
-
-# Maven 빌드
-mvn clean install
-
-# 애플리케이션 실행
-mvn spring-boot:run
-```
-
-서버가 `http://localhost:8080`에서 실행됩니다.

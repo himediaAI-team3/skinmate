@@ -1,7 +1,7 @@
 """JWT 인증 미들웨어"""
 from fastapi import Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 from app.utils.security import is_public_path, extract_bearer_token, validate_and_decode_token
 
 
@@ -9,6 +9,20 @@ class JWTMiddleware(BaseHTTPMiddleware):
     """JWT 검증 미들웨어"""
     
     async def dispatch(self, request: Request, call_next):
+        # CORS preflight(OPTIONS) 요청은 인증 검증 없이 즉시 응답
+        if request.method.upper() == "OPTIONS":
+            origin = request.headers.get("origin")
+            allow_headers = request.headers.get("access-control-request-headers", "*")
+            headers = {
+                "Access-Control-Allow-Origin": origin or "*",
+                "Access-Control-Allow-Credentials": "true" if origin else "false",
+                "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS,PATCH",
+                "Access-Control-Allow-Headers": allow_headers,
+                "Vary": "Origin",
+                "Access-Control-Max-Age": "86400",
+            }
+            return Response(status_code=status.HTTP_200_OK, headers=headers)
+        
         # 공개 경로는 검증 제외
         if is_public_path(request.url.path):
             return await call_next(request)
