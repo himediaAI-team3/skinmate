@@ -13,6 +13,7 @@ QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 QDRANT_COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", "skinmate_cosmetics")
 QDRANT_HYBRID_COLLECTION = "skinmate_cosmetics_hybrid"  # 하이브리드 컬렉션명
+QDRANT_DISEASE_QA_COLLECTION = "skinmate_disease_qa"  # 질환 Q&A 컬렉션명
 
 # 벡터 차원 (multilingual-e5-large)
 VECTOR_DIMENSION = 1024
@@ -143,4 +144,49 @@ def create_hybrid_collection_if_not_exists():
         print("Payload 인덱스 생성 완료")
     else:
         print(f"하이브리드 컬렉션 '{QDRANT_HYBRID_COLLECTION}' 이미 존재")
+
+
+def create_disease_qa_collection_if_not_exists():
+    """
+    질환 Q&A 컬렉션 생성 (dense + BM25 sparse)
+    """
+    client = get_qdrant_client()
+    
+    # Collection 존재 여부 확인
+    collections = client.get_collections().collections
+    collection_names = [col.name for col in collections]
+    
+    if QDRANT_DISEASE_QA_COLLECTION not in collection_names:
+        # 컬렉션 생성 (dense + sparse 벡터)
+        client.create_collection(
+            collection_name=QDRANT_DISEASE_QA_COLLECTION,
+            vectors_config={
+                "dense": VectorParams(
+                    size=VECTOR_DIMENSION,
+                    distance=Distance.COSINE
+                )
+            },
+            sparse_vectors_config={
+                "bm25": SparseVectorParams(
+                    modifier=Modifier.IDF
+                )
+            }
+        )
+        print(f"질환 Q&A 컬렉션 '{QDRANT_DISEASE_QA_COLLECTION}' 생성 완료")
+        
+        # Payload 인덱스 생성
+        print("Payload 인덱스 생성 중...")
+        client.create_payload_index(
+            collection_name=QDRANT_DISEASE_QA_COLLECTION,
+            field_name="disease_name",
+            field_schema=PayloadSchemaType.KEYWORD
+        )
+        client.create_payload_index(
+            collection_name=QDRANT_DISEASE_QA_COLLECTION,
+            field_name="file_name",
+            field_schema=PayloadSchemaType.KEYWORD
+        )
+        print("Payload 인덱스 생성 완료")
+    else:
+        print(f"질환 Q&A 컬렉션 '{QDRANT_DISEASE_QA_COLLECTION}' 이미 존재")
 

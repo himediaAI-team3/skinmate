@@ -9,7 +9,11 @@ from sqlalchemy.orm import Session
 from qdrant_client.models import PointStruct, Filter, FieldCondition, Range, MatchAny, Prefetch, HasIdCondition
 from fastembed import TextEmbedding, SparseTextEmbedding
 
-from app.core.config.qdrant import get_qdrant_client, QDRANT_HYBRID_COLLECTION
+from app.core.config.qdrant import get_qdrant_client, QDRANT_HYBRID_COLLECTION, QDRANT_DISEASE_QA_COLLECTION
+from app.core.config.disease_info import get_disease_info_dir, DISEASE_FILES
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+import uuid
+import os
 
 
 def parse_comma_separated(value: str) -> list:
@@ -298,4 +302,226 @@ class VectorStoreService:
             "points_count": collection_info.points_count,
             "status": collection_info.status
         }
+    
+    @staticmethod
+    def load_disease_files() -> List[Dict[str, str]]:
+        """
+        질환 정보 파일 목록 로드 (Vector DB 인덱싱용)
+        
+        Returns:
+            List[Dict[str, str]]: 질환 정보 리스트
+            각 항목은 {"disease_name": "아토피", "file_path": "...", "file_name": "아토피.txt"}
+        """
+        disease_info_dir = get_disease_info_dir()
+        disease_infos = []
+        
+        for file_name in DISEASE_FILES:
+            file_path = os.path.join(disease_info_dir, file_name)
+            
+            if not os.path.exists(file_path):
+                logging.warning(f"질환 정보 파일이 존재하지 않습니다: {file_path}")
+                continue
+            
+            # 파일명에서 질환명 추출 (확장자 제거)
+            disease_name = os.path.splitext(file_name)[0]
+            
+            disease_infos.append({
+                "disease_name": disease_name,
+                "file_path": file_path,
+                "file_name": file_name
+            })
+        
+        logging.info(f"질환 정보 파일 {len(disease_infos)}개 로드 완료")
+        return disease_infos
+    
+    @staticmethod
+    def read_disease_file(file_path: str) -> str:
+        """
+        질환 정보 파일 읽기 (Vector DB 인덱싱용)
+        
+        Args:
+            file_path: 파일 경로
+            
+        Returns:
+            str: 파일 내용 (UTF-8 인코딩)
+        """
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            logging.info(f"파일 읽기 완료: {file_path} ({len(content)}자)")
+            return content
+        except Exception as e:
+            logging.error(f"파일 읽기 실패: {file_path}, 에러: {e}")
+            raise
+    
+    @staticmethod
+    def chunk_disease_info(
+        content: str,
+        chunk_size: int = 800,
+        chunk_overlap: int = 200
+    ) -> List[str]:
+        """
+        질환 정보 텍스트를 의미 단위로 청킹 (Vector DB 인덱싱용)
+        
+        Args:
+            content: 청킹할 텍스트 내용
+            chunk_size: 각 청크의 최대 크기 (문자 수)
+            chunk_overlap: 청크 간 겹치는 문자 수 (컨텍스트 유지)
+            
+        Returns:
+            List[str]: 청크 리스트
+            
+        예시:
+            입력: 5000자 긴 텍스트
+            출력: [청크1(800자), 청크2(800자, 앞 200자 overlap), 청크3(...), ...]
+        """
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            separators=["\n\n", "\n", ". ", " "]  # 문장 중간에서 끊기지 않도록
+        )
+        
+        chunks = splitter.split_text(content)
+        logging.info(f"텍스트 청킹 완료: {len(chunks)}개 청크 생성 (chunk_size={chunk_size}, overlap={chunk_overlap})")
+        
+        return chunks
+    
+    @staticmethod
+    def index_disease_info_batch(
+        disease_files: List[Dict[str, str]] = None,
+        chunk_size: int = 800,
+        chunk_overlap: int = 200
+    ) -> int:
+        """
+        질환 정보 파일을 읽어서 청킹 후 Vector DB에 인덱싱
+        
+        Args:
+            disease_files: 질환 정보 파일 리스트 (None이면 자동으로 로드)
+                각 항목은 {"disease_name": "아토피", "file_path": "...", "file_name": "아토피.txt"}
+            chunk_size: 청크 크기 (문자 수)
+            chunk_overlap: 청크 간 겹치는 문자 수
+            
+        Returns:
+            int: 인덱싱된 총 청크 개수
+        """
+        client = get_qdrant_client()
+        dense_model = get_dense_model()
+        sparse_model = get_sparse_model()
+        
+        # disease_files가 없으면 자동으로 로드
+        if disease_files is None:
+            disease_files = VectorStoreService.load_disease_files()
+        
+        all_points = []
+        chunk_id_counter = 0
+        
+        for disease_file in disease_files:
+            disease_name = disease_file["disease_name"]
+            file_path = disease_file["file_path"]
+            file_name = disease_file["file_name"]
+            
+            # 1. 파일 읽기
+            content = VectorStoreService.read_disease_file(file_path)
+            
+            # 2. 텍스트 청킹
+            chunks = VectorStoreService.chunk_disease_info(content, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+            
+            if not chunks:
+                logging.warning(f"청크가 생성되지 않음: {file_name}")
+                continue
+            
+            # 3. 임베딩 생성 (배치 처리)
+            dense_vectors = list(dense_model.embed(chunks))
+            sparse_vectors = list(sparse_model.embed(chunks))
+            
+            # 4. Point 생성
+            for chunk_index, (chunk_text, dense_vec, sparse_vec) in enumerate(zip(chunks, dense_vectors, sparse_vectors)):
+                # 고유 청크 ID 생성 (문자열 기반 UUID)
+                # Qdrant는 문자열 UUID를 지원하므로 UUID 문자열 사용
+                chunk_id = str(uuid.uuid4())
+                
+                point = PointStruct(
+                    id=chunk_id,
+                    vector={
+                        "dense": dense_vec.tolist() if hasattr(dense_vec, 'tolist') else list(dense_vec),
+                        "bm25": sparse_vec.as_object(),
+                    },
+                    payload={
+                        "disease_name": disease_name,
+                        "file_name": file_name,
+                        "chunk_index": chunk_index,
+                        "chunk_text": chunk_text,
+                    }
+                )
+                all_points.append(point)
+                chunk_id_counter += 1
+        
+        # 5. Qdrant에 배치 업로드
+        if all_points:
+            client.upsert(collection_name=QDRANT_DISEASE_QA_COLLECTION, points=all_points)
+            logging.info(f"질환 정보 인덱싱 완료: {chunk_id_counter}개 청크 저장")
+        
+        return chunk_id_counter
+    
+    @staticmethod
+    def search_disease_qa(
+        query_text: str,
+        limit: int = 5
+    ) -> List[Dict[str, Any]]:
+        """
+        질환 Q&A 하이브리드 검색
+        
+        Args:
+            query_text: 사용자 질문 텍스트
+            limit: 반환할 결과 개수
+            
+        Returns:
+            List[Dict[str, Any]]: 검색 결과 리스트
+                각 항목은 {"chunk_id", "disease_name", "file_name", "chunk_index", "chunk_text", "score"}
+        """
+        client = get_qdrant_client()
+        dense_model = get_dense_model()
+        sparse_model = get_sparse_model()
+        
+        # 1. 쿼리 임베딩
+        dense_query = list(dense_model.query_embed(query_text))[0]
+        sparse_query = list(sparse_model.query_embed(query_text))[0]
+        
+        # numpy array → list 변환
+        dense_query_list = dense_query.tolist() if hasattr(dense_query, 'tolist') else list(dense_query)
+        sparse_query_obj = sparse_query.as_object()
+        
+        # 2. Prefetch 구성
+        prefetch = [
+            Prefetch(query=dense_query_list, using="dense", limit=limit * 2),
+            Prefetch(query=sparse_query_obj, using="bm25", limit=limit * 2),
+        ]
+        
+        # 3. 하이브리드 검색 (RRF 자동 병합)
+        try:
+            results = client.query_points(
+                collection_name=QDRANT_DISEASE_QA_COLLECTION,
+                prefetch=prefetch,
+                query=dense_query_list,
+                using="dense",
+                limit=limit,
+                with_payload=True
+            )
+        except Exception as e:
+            logging.error(f"[QDRANT] disease_qa query_points failed: {e}")
+            raise
+        
+        # 4. 결과 변환
+        output = []
+        for r in results.points:
+            output.append({
+                "chunk_id": str(r.id),
+                "disease_name": r.payload.get("disease_name", ""),
+                "file_name": r.payload.get("file_name", ""),
+                "chunk_index": r.payload.get("chunk_index", 0),
+                "chunk_text": r.payload.get("chunk_text", ""),
+                "score": r.score
+            })
+        
+        return output
 
