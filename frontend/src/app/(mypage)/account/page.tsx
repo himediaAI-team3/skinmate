@@ -2,24 +2,51 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Mail, User2, Info, Heart, History, Sparkles, ChevronRight } from 'lucide-react';
+import { Mail, User2, Info, Heart, History, Sparkles } from 'lucide-react';
 import { MOCK_USER, MOCK_HISTORY, MOCK_LIKES } from '@/lib/mypage.mock';
-import { loadProfile } from '@/lib/mypage.store';
+import type { MemberResponse } from '@/entities/account';
+import { getMe, getDefaultAvatar } from '@/features/account/api';
+
+// 서버 MemberResponse -> 기존 화면의 profile 형태로 매핑
+function toProfileFromServer(me: MemberResponse | null | undefined) {
+  if (!me) return null;
+  return {
+    name: me.name ?? '이름 미입력',
+    email: me.email ?? '',
+    avatar: getDefaultAvatar(me.gender),
+    info: [
+      { label: '피부타입', value: me.skin_type ?? '미입력' },
+      { label: '성별', value: me.gender ?? '미입력' },
+      { label: '나이', value: me.age_group ? `${me.age_group}대` : '미입력' },
+    ],
+  };
+}
 
 export default function AccountPage() {
-  const [profile, setProfile] = useState(MOCK_USER);
+  // 초기엔 기존 목업을 보여주되, 서버에서 받은 값으로 교체
+  const [profile, setProfile] = useState<any>(MOCK_USER);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      setProfile(loadProfile());
-    } catch {
-      setProfile(MOCK_USER);
-    }
+    (async () => {
+      try {
+        const me = await getMe();                 // ← 백엔드 연동
+        const fromServer = toProfileFromServer(me);
+        if (fromServer) setProfile(fromServer);
+      } catch {
+        // 실패 시 기존 목업 유지
+        setProfile(MOCK_USER);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   // 프로필 완성도 (피부타입/성별/나이 채워짐 비율)
   const completeness = useMemo(() => {
-    const map = Object.fromEntries((profile.info || []).map((i: any) => [i.label, i.value]));
+    const map: Record<string, string> = Object.fromEntries(
+      (profile.info || []).map((i: any) => [i.label, i.value])
+    );
     const fields = ['피부타입', '성별', '나이'];
     const filled = fields.filter((f) => {
       const v = map[f];
@@ -28,7 +55,7 @@ export default function AccountPage() {
     return Math.round((filled / fields.length) * 100);
   }, [profile]);
 
-  // 프리뷰 데이터(최신 2건)
+  // 프리뷰 데이터(최신 2건) — 기존 섹션 유지
   const recentHistory = (MOCK_HISTORY || []).slice(0, 2);
   const recentLikes = (MOCK_LIKES || []).slice(0, 2);
 
@@ -48,10 +75,11 @@ export default function AccountPage() {
 
           {/* 헤더 블록 (아바타 오버랩) */}
           <div className="px-5 pb-5 -mt-10">
-            <div className="flex items-end gap-4">
+            {/* ▼ 여기만 변경: items-end → items-center */}
+            <div className="flex items-center gap-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={profile.avatar}
+                src={profile.avatar /* gender 기반 기본 아바타 적용됨 */}
                 alt={`${profile.name} 프로필`}
                 className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white border border-gray-200 shadow"
               />
@@ -60,13 +88,11 @@ export default function AccountPage() {
                 <div className="flex items-center gap-2">
                   <User2 size={16} className="text-gray-500" />
                   <p className="text-[15px] font-extrabold tracking-tight text-gray-900">
-                    {profile.name}
+                    {loading ? '로딩 중…' : profile.name}
                   </p>
                 </div>
-                <div className="mt-1 flex items-center gap-2 text-gray-700">
-                  <Mail size={16} className="text-gray-500" />
-                  <p className="text-sm truncate">{profile.email}</p>
-                </div>
+                {/* 이메일 줄이 필요 없다면 비워두기 */}
+                <div className="mt-1 flex items-center gap-2 text-gray-700"></div>
               </div>
 
               <Link
@@ -163,6 +189,11 @@ export default function AccountPage() {
               </Link>
             </div>
 
+            {/* (필요 시) 최근 2건 프리뷰 섹션을 추가해도 됨
+            <div className="mt-4 space-y-3">
+              ...
+            </div>
+            */}
           </div>
         </div>
       </section>

@@ -6,6 +6,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { LogOut, User2, Menu, User, History, Heart, LogIn } from 'lucide-react';
 import { authApi } from '@/features/user/api';
 import { getAccessToken, AUTH_CHANGED_EVENT } from '@/features/auth/api';
+import type { MemberResponse } from '@/entities/account';
+import { getMe, getDefaultAvatar } from '@/features/account/api'; // ★ 추가
 
 export type Me = { id: number | string; name?: string; email?: string; image_url?: string };
 
@@ -18,28 +20,26 @@ type Props = {
 const hasToken = () => !!getAccessToken();
 
 export default function AppHeader({ me = null, loading = false, onLogout }: Props) {
-  const DEMO_ME: Me = { id: '1', name: '박진우', email: 'jinwoopz@naver.com', image_url: '/images/2.webp' };
   const ver = '20251103';
-
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);     // ✅ 로딩 상태
-  const busyRef = useRef(false);                            // ✅ 중복 클릭 락
-  const alertedRef = useRef(false);                         // ✅ 알림 1회 보장
+  const [loggingOut, setLoggingOut] = useState(false);
+  const busyRef = useRef(false);
+  const alertedRef = useRef(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // 최초 마운트
+  // ★ 추가: 실사용자 스테이트
+  const [meServer, setMeServer] = useState<MemberResponse | null>(null);
+  const [meLoading, setMeLoading] = useState(false);
+
+  // 최초/라우트 변경/메뉴 오픈 때 토큰 평가
   useEffect(() => setIsAuthed(hasToken()), []);
-
-  // 라우트 변경 시 토큰 재평가
   useEffect(() => setIsAuthed(hasToken()), [pathname]);
-
-  // 메뉴 열릴 때 최신 상태 반영
   useEffect(() => { if (open) setIsAuthed(hasToken()); }, [open]);
 
-  // 다른 탭(storage) + 같은 탭(auth-changed) 반응
+  // 스토리지/커스텀 이벤트로 로그인 상태 동기화
   useEffect(() => {
     const refresh = () => setIsAuthed(hasToken());
     window.addEventListener('storage', refresh);
@@ -49,60 +49,62 @@ export default function AppHeader({ me = null, loading = false, onLogout }: Prop
       window.removeEventListener('auth-changed', refresh);
     };
   }, []);
-
-  // AUTH_CHANGED_EVENT 상수 리스너(선택적; 위와 중복 방지용으로 유지)
   useEffect(() => {
     const onAuthChanged = () => setIsAuthed(!!getAccessToken());
     window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
     return () => window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
   }, []);
 
-  // 바깥 클릭/ESC 닫기
-  useEffect(() => {
-    if (!open) return;
-    const onClickOutside = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    window.addEventListener('click', onClickOutside);
-    window.addEventListener('keydown', onEsc);
-    return () => {
-      window.removeEventListener('click', onClickOutside);
-      window.removeEventListener('keydown', onEsc);
-    };
-  }, [open]);
+  // ★ 핵심: 로그인되어 있으면 /api/members/me 호출해서 meServer 로딩
+  const fetchMe = async () => {
+    if (!hasToken()) { setMeServer(null); return; }
+    setMeLoading(true);
+    try {
+      const data = await getMe();
+      setMeServer(data ?? null);
+    } catch {
+      setMeServer(null);
+    } finally {
+      setMeLoading(false);
+    }
+  };
 
-  const userForDisplay = isAuthed ? (me ?? DEMO_ME) : null;
+  // 메뉴가 열릴 때마다 최신 me 가져오기 + 경로 변경 시에도 갱신
+  useEffect(() => { if (isAuthed) fetchMe(); }, [isAuthed]);
+  useEffect(() => { if (open && isAuthed) fetchMe(); }, [open, isAuthed]);
+  useEffect(() => { if (isAuthed) fetchMe(); }, [pathname]); // 페이지 이동 시 리프레시
 
   const handleLogout = async () => {
-    // ✅ 중복 방지: 이미 진행 중이면 무시
     if (busyRef.current) return;
     busyRef.current = true;
     setLoggingOut(true);
-
-    // ✅ 즉시 UX 반영: 메뉴 닫고 헤더 상태 false로 (optimistic)
     setOpen(false);
     setIsAuthed(false);
+    setMeServer(null);
 
     try {
-      if (onLogout) {
-        await onLogout();
-      } else {
-        await authApi.logout(); // 내부에서 토큰 즉시 삭제 + 서버 호출
-      }
-      // ✅ 알림은 한 번만
+      if (onLogout) await onLogout();
+      else await authApi.logout();
       if (!alertedRef.current) {
         alertedRef.current = true;
         alert('로그아웃되었습니다.');
       }
-    } catch {
-      // 실패해도 optimistic으로 이미 로그아웃 처리됨
-    } finally {
+    } catch { /* noop */ } finally {
       setLoggingOut(false);
       busyRef.current = false;
       router.push('/');
     }
   };
+
+  // ★ 표시용 사용자(백엔드 응답 → 헤더용)
+  const userForDisplay: Me | null = isAuthed && meServer
+    ? {
+        id: meServer.member_id,
+        name: meServer.name ?? undefined,
+        email: meServer.email ?? undefined,
+        image_url: getDefaultAvatar(meServer.gender), // 서버에 이미지가 없으므로 gender 기반 기본값
+      }
+    : null;
 
   return (
     <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b">
@@ -133,18 +135,16 @@ export default function AppHeader({ me = null, loading = false, onLogout }: Prop
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-4 py-3 border-b">
-              {loading ? (
+              {(loading || meLoading) ? (
                 <div className="h-10 bg-gray-100 rounded animate-pulse" />
               ) : userForDisplay ? (
                 <div className="flex items-center gap-3">
-                  {userForDisplay.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={`${userForDisplay.image_url}?v=${ver}`} alt="avatar" className="w-10 h-10 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                      <User2 size={18} />
-                    </div>
-                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`${userForDisplay.image_url}?v=${ver}`}
+                    alt="avatar"
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-800 truncate">
                       {userForDisplay.name || userForDisplay.email || '사용자'}
@@ -183,16 +183,13 @@ export default function AppHeader({ me = null, loading = false, onLogout }: Prop
                   <button
                     onClick={handleLogout}
                     type="button"
-                    disabled={loggingOut}                                   // ✅ 비활성화
+                    disabled={loggingOut}
                     aria-busy={loggingOut}
                     className={[
                       'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left',
-                      loggingOut
-                        ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
-                        : 'hover:bg-red-50 text-red-600',
+                      loggingOut ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'hover:bg-red-50 text-red-600',
                     ].join(' ')}
                     role="menuitem"
-                    data-e2e="logout-btn"
                     title={loggingOut ? '로그아웃 중…' : '로그아웃'}
                   >
                     <LogOut size={18} />
