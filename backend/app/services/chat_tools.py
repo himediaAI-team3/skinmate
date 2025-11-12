@@ -12,6 +12,7 @@ from app.repository.cosmetic import CosmeticRepository
 from app.repository.diagnosis import DiagnosisRepository
 from app.services.vector_store import VectorStoreService
 from app.services.alternative_recommendation import AlternativeRecommendationService
+from app.services.disease_qa_service import DiseaseQAService
 
 
 # Thread-safe한 Context Variables 사용
@@ -207,14 +208,14 @@ def get_recommended_products() -> str:
     
     # 추천 제품 조회
     recommendations = RecommendationRepository.get_by_analysis_id(db, latest_analysis_id)
-    
+
     if not recommendations:
         return "아직 추천 제품이 없습니다. 진단 결과를 기다려주세요."
-    
+
     # TOP3 추천 ID 로깅
     top3_ids = [rec.cosmetic_id for rec in recommendations[:3]]
     logger.info(f"[RECO] initial TOP3 ids={top3_ids}")
-    
+
     # 제품 상세 정보 조회 및 포맷팅
     product_text = "AI 추천 화장품 (TOP 3):\n\n"
     for rec in recommendations[:3]:  # TOP 3만
@@ -288,5 +289,27 @@ def get_alternative_recommendations(user_message: str = "") -> str:
         init_cache=_store_set_cache,
     )
 
+
+@tool
+def get_disease_qa(user_question: str) -> str:
+    """
+    피부질환에 대한 전문적인 답변을 제공합니다.
+    
+    사용자가 피부질환에 대해 질문하면, 전문 정보를 검색하여 정확한 답변을 제공합니다.
+    
+    Args:
+        user_question: 사용자의 질문 (예: "아토피 치료 방법은?", "여드름 예방법은?")
+        
+    Returns:
+        str: 피부질환 전문 정보를 바탕으로 한 답변
+    """
+    try:
+        # DiseaseQAService를 사용하여 RAG 검색 및 답변 생성
+        answer = DiseaseQAService.search_and_answer(user_question, top_k=5)
+        return answer
+    except Exception as e:
+        logger.error(f"질환 Q&A 처리 중 오류: {e}")
+        return f"죄송합니다. 질문 처리 중 오류가 발생했습니다: {str(e)}"
+
 # Tool 리스트 (Agent에서 사용)
-TOOLS = [get_my_diagnosis_history, get_recommended_products, get_alternative_recommendations]
+TOOLS = [get_my_diagnosis_history, get_recommended_products, get_alternative_recommendations, get_disease_qa]
