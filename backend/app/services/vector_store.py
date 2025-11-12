@@ -164,11 +164,27 @@ class VectorStoreService:
         # numpy array → list 변환
         dense_query_list = dense_query.tolist() if hasattr(dense_query, 'tolist') else list(dense_query)
         sparse_query_obj = sparse_query.as_object()
+
+        # 2-0. Sparse 쿼리 인덱스 정규화 (중복 제거 및 가중치 합산)
+        # Qdrant는 sparse query.indices가 unique해야 하므로 동일 인덱스는 합산 후 정렬
+        try:
+            merged_index_to_value = {}
+            for index, value in zip(sparse_query_obj.get("indices", []), sparse_query_obj.get("values", [])):
+                merged_index_to_value[index] = merged_index_to_value.get(index, 0.0) + float(value)
+            normalized_sparse_indices = sorted(merged_index_to_value.keys())
+            normalized_sparse_values = [merged_index_to_value[i] for i in normalized_sparse_indices]
+            normalized_sparse_query_obj = {
+                "indices": normalized_sparse_indices,
+                "values": normalized_sparse_values,
+            }
+        except Exception as e:
+            logging.warning(f"[QDRANT] sparse query normalization failed, using original object: {e}")
+            normalized_sparse_query_obj = sparse_query_obj
         
         # 2. Prefetch 구성
         prefetch = [
             Prefetch(query=dense_query_list, using="dense", limit=20),
-            Prefetch(query=sparse_query_obj, using="bm25", limit=20),
+            Prefetch(query=normalized_sparse_query_obj, using="bm25", limit=20),
         ]
         
         # 3. 필터 구성
@@ -230,9 +246,24 @@ class VectorStoreService:
                 with_payload=True
             )
         except Exception as e:
-            logging.error(f"[QDRANT] query_points failed: {e}")
-            logging.error(f"[QDRANT] filter={query_filter}, prefetch={prefetch}, using='dense'")
-            raise
+            logging.error(f"[QDRANT] hybrid query_points failed: {e}")
+            logging.error(f"[QDRANT] filter={query_filter}, using='dense' (prefetch includes bm25)")
+            # 폴백: dense-only로 1회 재시도
+            try:
+                dense_only_prefetch = [Prefetch(query=dense_query_list, using="dense", limit=20)]
+                results = client.query_points(
+                    collection_name=QDRANT_HYBRID_COLLECTION,
+                    prefetch=dense_only_prefetch,
+                    query=dense_query_list,
+                    using="dense",
+                    query_filter=query_filter,
+                    limit=limit,
+                    with_payload=True
+                )
+                logging.info(f"[QDRANT] fallback dense-only succeeded: n_points={len(results.points)}")
+            except Exception as fallback_error:
+                logging.error(f"[QDRANT] dense-only fallback failed: {fallback_error}")
+                return []
         
         # 5. 결과 변환
         output = []
