@@ -155,8 +155,6 @@ def get_my_diagnosis_history() -> str:
     Returns:
         str: 최근 진단 결과 (진단일, 진단명, 증상 요약)
     """
-    print("=" * 60)
-    print("[TOOL EXECUTED] get_my_diagnosis_history() 호출됨")
     db = _db_session.get()
     member_id = _current_member_id.get()
     
@@ -196,8 +194,6 @@ def get_recommended_products() -> str:
     Returns:
         str: 추천 화장품 목록 (제품명, 브랜드, 가격, 추천 이유)
     """
-    print("=" * 60)
-    print("[TOOL EXECUTED] get_recommended_products() 호출됨")
     db = _db_session.get()
     member_id = _current_member_id.get()
     
@@ -212,10 +208,14 @@ def get_recommended_products() -> str:
     
     # 추천 제품 조회
     recommendations = RecommendationRepository.get_by_analysis_id(db, latest_analysis_id)
-    
+
     if not recommendations:
         return "아직 추천 제품이 없습니다. 진단 결과를 기다려주세요."
-    
+
+    # TOP3 추천 ID 로깅
+    top3_ids = [rec.cosmetic_id for rec in recommendations[:3]]
+    logger.info(f"[RECO] initial TOP3 ids={top3_ids}")
+
     # 제품 상세 정보 조회 및 포맷팅
     product_text = "AI 추천 화장품 (TOP 3):\n\n"
     for rec in recommendations[:3]:  # TOP 3만
@@ -249,8 +249,6 @@ def get_alternative_recommendations(user_message: str = "") -> str:
     Returns:
         str: 추천 화장품 목록 포맷 문자열
     """
-    print("=" * 60)
-    print("[TOOL EXECUTED] get_alternative_recommendations() 호출됨")
     # 1. 컨텍스트 검증
     ctx = _get_context()
     if isinstance(ctx, str):
@@ -305,8 +303,6 @@ def get_disease_qa(user_question: str) -> str:
     Returns:
         str: 피부질환 전문 정보를 바탕으로 한 답변
     """
-    print("=" * 60)
-    print("[TOOL EXECUTED] get_disease_qa() 호출됨")
     try:
         # DiseaseQAService를 사용하여 RAG 검색 및 답변 생성
         answer = DiseaseQAService.search_and_answer(user_question, top_k=5)
