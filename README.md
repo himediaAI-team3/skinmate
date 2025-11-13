@@ -1,7 +1,23 @@
 @ -1,55 +0,0 @@
 ## SkinMate
 
-## Backend
+### Docker Compose 실행 환경
+0. Docker & Docker Compose 설치 (Docker desktop 권장)
+1. `backend/env.docker`, `auth/env.docker` 파일의 값을 로컬 환경에 맞게 수정
+2. 프로젝트 루트(skinmate)에서 다음 명령으로 컨테이너를 빌드하고 실행
+   ```
+   docker compose up --build
+   ```
+3. 서비스 기본 포트
+   - FastAPI 백엔드: <http://localhost:8000>
+   - Auth 서버(Spring Boot): <http://localhost:8080>
+   - MySQL: 컨테이너 내부 `db:3306`
+4. 아래 명령으로 컨테이너 정리.
+   ```
+   docker compose down
+   ```
+
+## Backend 개발 환경
 0. 가상환경 설정
     - conda create -n "이름" python==3.12 -y
     - conda activate "이름"
