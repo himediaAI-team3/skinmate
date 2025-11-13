@@ -37,3 +37,6 @@ sentence-transformers==2.7.0
 
 # JWT 검증
 PyJWT==2.8.0
+
+# 진행률바 라이브러리
+tqdm==4.66.4

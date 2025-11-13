@@ -1,4 +1,6 @@
--- Member 테이블 (인증서버에서 생성 및 관리)
+-- SkinMate Auth server DDL
+
+-- Member 테이블 (인증서버에서만 단일 출처로 생성 및 관리하는 테이블)
 CREATE TABLE IF NOT EXISTS member (
     member_id INT AUTO_INCREMENT PRIMARY KEY,
     oauth_provider VARCHAR(50),

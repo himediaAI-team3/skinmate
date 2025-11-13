@@ -1,39 +1,4 @@
--- 더미 회원 데이터 삽입
-INSERT INTO member (
-    member_id, 
-    oauth_provider, 
-    oauth_id, 
-    name, 
-    email, 
-    role,
-    skin_type,
-    gender,
-    age_group,
-    created_at,
-    updated_at,
-    created_id,
-    updated_id
-) VALUES (
-    1,                              -- member_id
-    'kakao',                        -- oauth_provider (카카오 로그인)
-    'kakao_123456789',              -- oauth_id
-    '김지수',                       -- name
-    'jisoo.kim@gmail.com',        -- email
-    'USER',                         -- role
-    '건성',                       -- skin_type
-    '여성',                         -- gender
-    20,                           -- age_group (20대)
-    '2025-01-15 10:30:00',          -- created_at
-    '2025-01-15 10:30:00',          -- updated_at
-    NULL,                           -- created_id
-    NULL                            -- updated_id
-);
-
--- 추가(희망하면 넣기)
--- (2, 'kakao', 'kakao_789012', '이지은', 'jieun.lee@example.com', 'USER', '지성', '여성', 30, '2025-01-15 10:30:00', '2025-10-24 15:57:23',NULL,NULL), 
--- (3, 'kakao', 'kakao_345678', '박서준', 'seojun.park@example.com', 'USER', '건성', '남성', NULL, '2025-01-15 10:30:00', '2025-10-24 15:57:23',NULL,NULL);
-
--- cosmetic 테이블 데이터 INSERT 
+-- cosmetic 테이블 화장품 메타 데이터 dml
 INSERT INTO cosmetic (name, brand, category, price, ingredients, short_description, buy_url, skin_type, skin_disease, main_effect, care_symptom, key_ingredient, description)
 VALUES ('제로이드 인텐시브 크림 80ml', '제로이드', '로션/크림/올인원', 32000, '정제수, 프로판다이올, 카프릴릭/카프릭트라이글리세라이드, 글리세린, 식물성스쿠알란, 세테아릴알코올, 폴리글리세릴-10다이스테아레이트, 글리세릴스테아레이트, 스테아릭애씨드, 다이메티콘, 1,2-헥산다이올, 미리스토일/팔미토일옥소스테아라마이드/아라카마이드엠이에이, 피토스테롤, 토코페릴아세테이트, 카놀라오일, 올리브오일, 세틸팔미테이트, 솔비탄팔미테이트, 솔비탄올리베이트, 비사보롤, 메틸카프로오일타이로지네이트, 잔탄검, 소듐하이알루로네이트, 카보머, 알지닌, 카프릴릴글라이콜', '고보습 장벽크림, 민감성 피부에 적합, 보습 개선', 'https://www.oliveyoung.co.kr/store/goods/getGoodsDetail.do?goodsNo=A000000209418&dispCatNo=1000001000800130001&trackingCd=Cat1000001000800130001_Small&t_page=%EC%B9%B4%ED%85%8C%EA%B3%A0%EB%A6%AC%EA%B4%80&t_click=%EB%A1%9C%EC%85%98/%ED%81%AC%EB%A6%BC/%EC%98%AC%EC%9D%B8%EC%9B%90_%EC%A0%84%EC%B2%B4_%EC%A0%9C%EB%A1%9C%EC%9D%B4%EB%93%9C_%EC%83%81%ED%92%88%EC%83%81%EC%84%B8&t_number=7', '건성, 민감성', '아토피, 건선', '보습, 피부장벽강화, 진정, 수분공급', '건조, 인설, 가려움, 피부장벽손상, 당김', '미리스토일/팔미토일옥소스테아라마이드/아라카마이드엠이에이, 피토스테롤, 소듐하이알루로네이트, 비사보롤', '아토피와 건선으로 인한 손상된 피부 장벽을 복원하고 극건조한 피부에 집중 보습을 제공하는 데 도움을 줍니다. 세라마이드 유사 성분과 피토스테롤이 피부 장벽을 강화하고 수분 손실을 방지하며, 히알루론산이 깊은 수분 공급을 통해 건조와 인설을 완화합니다. 비사보롤 성분이 민감해진 피부를 진정시키고 가려움을 달래주어 예민한 피부에도 안전하게 사용할 수 있습니다.');
 
@@ -726,8 +691,7 @@ INSERT INTO cosmetic (name, brand, category, price, ingredients, short_descripti
 VALUES ('이니스프리 콜라겐 세라마이드 탄력 장벽 크림 50ml', '이니스프리', '로션/크림/올인원', 39000, '정제수, 글리세린, 부틸렌글라이콜, 나이아신아마이드, 스쿠알란, 다이카프릴릴카보네이트, 메틸트라이메티콘, 수크로오스폴리스테아레이트, 펜타에리스리틸테트라에틸헥사노에이트, 1,2-헥산다이올, 글리세릴스테아레이트, 하이드록시에틸우레아, 폴리글리세릴-3다이스테아레이트, 세테아릴알코올, 폴리C10-30알킬아크릴레이트, 하이드로제네이티드폴리아이소부텐, 팔미틱애씨드, 다이페닐다이메티콘, 비스-하이드록시에톡시프로필다이메티콘, 스테아릭애씨드, 하이드록시에틸아크릴레이트/소듐아크릴로일다이메틸타우레이트코폴리머, 잔탄검, 지치뿌리추출물, 하이드롤라이즈드익스텐신(1,005PPM), 호호바씨오일, 아크릴레이트/C10-30알킬아크릴레이트크로스폴리머, 소듐메타포스페이트, 글리세릴카프릴레이트, 폴리글리세릴-10라우레이트, 트로메타민, 해바라기씨오일, 글리세릴스테아레이트시트레이트, 에틸헥실글리세린, 아데노신, 카프릴릴글라이콜, 솔비탄아이소스테아레이트, 하이드로제네이티드레시틴, 당근추출물, 세라마이드엔피(100PPM), 토코페롤, 베타-카로틴, 아세틸테트라펩타이드-2, 수용성콜라겐(0.1PPM)', '탄력보습, 수분장벽', 'https://www.oliveyoung.co.kr/store/goods/getGoodsDetail.do?goodsNo=A000000191376&dispCatNo=90000010001&curation=goods_detail_a002&rccode=pc_detail_01_c&egcode=a202_rel&egrankcode=1&trackingCd=Curation1&t_page=%EC%83%81%ED%92%88%EC%83%81%EC%84%B8&t_click=%EC%97%90%EC%84%BC%EC%8A%A4/%EC%84%B8%EB%9F%BC/%EC%95%B0%ED%94%8C_%EC%83%81%ED%92%88%EC%B6%94%EC%B2%9C_%EC%83%81%ED%92%88%EC%83%81%EC%84%B8&t_number=1', '건성, 민감성', '정상', '보습, 피부장벽강화, 탄력케어, 항산화', '건조, 당김, 피부장벽손상, 탄력저하', '나이아신아마이드, 세라마이드엔피, 수용성콜라겐, 스쿠알란', '건조하고 탄력이 부족한 피부의 수분 장벽을 강화하고 탄력을 케어하는 데 도움을 줍니다. 세라마이드엔피와 스쿠알란이 손상된 피부 장벽을 복원하여 수분 손실을 방지하고, 나이아신아마이드가 피부 보습력을 높여줍니다. 수용성콜라겐과 하이드롤라이즈드익스텐신이 피부 탄력 케어에 도움을 주며, 호호바씨오일과 토코페롤이 항산화 효과를 제공합니다.');
 
 
--- file 테이블 데이터 insert문 
-
+-- file 테이블 화장품 이미지 데이터 dml
 INSERT INTO file (entity_type, entity_id, file_path, file_name, mime_type, size, created_at) VALUES ('cosmetic', 1, 'cosmetic/1.jpg', '1.jpg', 'image/jpeg', 52480, NOW());
 INSERT INTO file (entity_type, entity_id, file_path, file_name, mime_type, size, created_at) VALUES ('cosmetic', 2, 'cosmetic/2.jpg', '2.jpg', 'image/jpeg', 48320, NOW());
 INSERT INTO file (entity_type, entity_id, file_path, file_name, mime_type, size, created_at) VALUES ('cosmetic', 3, 'cosmetic/3.jpg', '3.jpg', 'image/jpeg', 51200, NOW());

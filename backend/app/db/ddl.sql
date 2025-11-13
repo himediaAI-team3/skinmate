@@ -1,24 +1,6 @@
--- SkinMate Database DDL
+-- SkinMate API server DDL
 -- SQLAlchemy Models 기반 생성
 
--- 1. member 테이블
-CREATE TABLE member (
-    member_id INT AUTO_INCREMENT PRIMARY KEY,
-    oauth_provider VARCHAR(50),
-    oauth_id VARCHAR(100),
-    name VARCHAR(100),
-    email VARCHAR(100),
-    role VARCHAR(20) DEFAULT 'USER',
-    skin_type VARCHAR(50),
-    gender VARCHAR(10),
-    age_group INT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    created_id INT,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    updated_id INT
-);
-
--- 2. skin_analysis 테이블
 CREATE TABLE skin_analysis (
     analysis_id INT AUTO_INCREMENT PRIMARY KEY,
     member_id INT,
@@ -31,7 +13,6 @@ CREATE TABLE skin_analysis (
     updated_id INT
 );
 
--- 3. file 테이블
 CREATE TABLE file (
     file_id INT AUTO_INCREMENT PRIMARY KEY,
     entity_type VARCHAR(50),
@@ -46,7 +27,6 @@ CREATE TABLE file (
     updated_id INT
 );
 
--- 4. diagnosis 테이블
 CREATE TABLE diagnosis (
     diagnosis_id INT AUTO_INCREMENT PRIMARY KEY,
     analysis_id INT,
@@ -58,7 +38,6 @@ CREATE TABLE diagnosis (
     updated_id INT
 );
 
--- 5. cosmetic 테이블 (image_url 제외 버전)
 CREATE TABLE cosmetic (
     cosmetic_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(200),
@@ -80,7 +59,6 @@ CREATE TABLE cosmetic (
     updated_id INT
 );
 
--- 6. recommendation 테이블
 CREATE TABLE recommendation (
     recommendation_id INT AUTO_INCREMENT PRIMARY KEY,
     analysis_id INT,
@@ -93,8 +71,8 @@ CREATE TABLE recommendation (
     updated_id INT
 );
 
--- 8. like 테이블 (행 존재=좋아요, 행 없음=취소)
-CREATE TABLE like (
+-- 6. like 테이블 (행 존재=좋아요, 행 없음=취소)
+CREATE TABLE `like` (
     like_id INT AUTO_INCREMENT PRIMARY KEY,
     member_id INT,
     cosmetic_id INT,
@@ -107,7 +85,7 @@ CREATE TABLE like (
     INDEX idx_member_id (member_id)
 ) COMMENT='좋아요 규칙: INSERT(좋아요) → UNIQUE 위반 시 DELETE(취소) / COUNT(cosmetic_id)=총 좋아요 수';
 
--- 9. analysis_result_view (분석 결과 조회용 VIEW)
+-- 7. analysis_result_view (분석 결과 조회용 VIEW)
 CREATE VIEW analysis_result_view AS
 SELECT 
     sa.analysis_id,
