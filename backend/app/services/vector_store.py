@@ -14,6 +14,15 @@ from app.core.config.disease_info import get_disease_info_dir, DISEASE_FILES
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import uuid
 import os
+import threading
+
+try:
+    import tqdm
+except ImportError:  # pragma: no cover
+    tqdm = None
+else:
+    if hasattr(tqdm, "tqdm") and not hasattr(tqdm.tqdm, "_lock"):
+        tqdm.tqdm._lock = threading.RLock()
 
 
 def parse_comma_separated(value: str) -> list:
